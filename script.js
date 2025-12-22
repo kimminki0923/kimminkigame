@@ -607,6 +607,76 @@ resetAiBtn.addEventListener('click', () => {
 });
 stopBtn.addEventListener('click', stopGame);
 
+// --- File I/O (JSON "Pickle" style) ---
+const saveFileBtn = document.getElementById('save-file-btn');
+const loadFileBtn = document.getElementById('load-file-btn');
+const fileInput = document.getElementById('file-input');
+
+if (saveFileBtn) {
+    saveFileBtn.addEventListener('click', () => {
+        const data = {
+            highScore: aiHighScore,
+            coins: gameState.coinCount,
+            qTable: qTable, // Save AI Brain
+            episode: episode,
+            epsilon: epsilon,
+            timestamp: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `infinite_stairs_save_${new Date().getTime()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("💾 게임 데이터가 파일로 저장되었습니다!");
+    });
+}
+
+if (loadFileBtn) {
+    loadFileBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+}
+
+if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                // Restore Game Data
+                aiHighScore = data.highScore || 0;
+                highScoreEl.innerText = aiHighScore;
+
+                gameState.coinCount = data.coins || 0;
+                coinEl.innerText = gameState.coinCount;
+
+                // Restore AI Brain
+                if (data.qTable) {
+                    qTable = data.qTable;
+                    episode = data.episode || 0;
+                    epsilon = data.epsilon || 1.0;
+                    episodeCountEl.innerText = episode;
+                    learningStatusEl.innerText = `Loaded! Ep: ${episode}`;
+                    autoPlayBtn.disabled = false; // Enable AI play if loaded
+                }
+
+                alert("📂 데이터 불러오기 성공!\n점수, 코인, AI 지능이 복구되었습니다.");
+            } catch (err) {
+                console.error(err);
+                alert("❌ 파일 형식이 잘못되었습니다.");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // Reset
+    });
+}
+
 window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyJ') handleInput(0);
     if (e.code === 'KeyF') handleInput(1);

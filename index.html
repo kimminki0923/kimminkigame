@@ -135,6 +135,18 @@
                     <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI 실행</button>
                     <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
                 </div>
+
+                <!-- File Save/Load Controls -->
+                <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.3); padding-top:10px;">
+                    <button id="save-file-btn"
+                        style="font-size:12px; padding:5px 10px; background:#8e44ad; color:white; border:none; border-radius:15px; cursor:pointer;">💾
+                        데이터 저장 (파일)</button>
+                    <button id="load-file-btn"
+                        style="font-size:12px; padding:5px 10px; background:#2980b9; color:white; border:none; border-radius:15px; cursor:pointer;">📂
+                        데이터 불러오기</button>
+                    <input type="file" id="file-input" style="display:none;" accept=".json">
+                </div>
+
                 <div style="color:#eee; margin-top:10px; font-size:14px;">
                     <span id="learning-status">Ready to Learn</span><br>
                     Episode: <span id="episode-count">0</span> | High Score: <span id="high-score">0</span>
