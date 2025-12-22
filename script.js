@@ -533,4 +533,7 @@ btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(
 
 // Init
 resize();
-// Wait for user to start
+initGame();
+gameState.running = false; // Pause immediately to show Start button
+startBtn.style.display = 'inline-block';
+statusEl.innerText = "Press Start";
