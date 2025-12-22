@@ -25,6 +25,7 @@ async function initONNX() {
         console.log("ONNX Model Loaded");
     } catch (e) {
         console.error("ONNX Load Failed", e);
+        alert("AI 로드 실패: " + e.message); // User feedback
         statusEl.innerText = "AI 로드 실패: " + e.message;
     }
 }
