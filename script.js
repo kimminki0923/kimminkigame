@@ -618,6 +618,49 @@ btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(
 btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
+// --- Data Bridge (Connected to auth.js) ---
+window.setGameData = function (score, coins) {
+    console.log(`Setting Game Data: HighScore ${score}, Coins ${coins}`);
+    aiHighScore = score;
+    highScoreEl.innerText = aiHighScore;
+    gameState.coinCount = coins;
+    coinEl.innerText = gameState.coinCount;
+}
+
+function gameOver() {
+    gameState.running = false;
+    gameState.gameOver = true;
+
+    // Save Data (Cloud + Local)
+    if (gameState.score > aiHighScore) {
+        aiHighScore = gameState.score;
+        highScoreEl.innerText = aiHighScore;
+    }
+    // TRIGGER SAVE
+    if (window.saveData) {
+        window.saveData(aiHighScore, gameState.coinCount);
+    }
+
+    if (isTraining) {
+        episode++;
+        episodeCountEl.innerText = episode;
+        learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${aiHighScore}`;
+        if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
+        setTimeout(initGame, 20);
+    } else if (isAutoPlaying) {
+        statusEl.innerText = "Robot Failed. Retry...";
+        setTimeout(initGame, 1000);
+    } else {
+        statusEl.innerText = "Game Over!";
+        menuOverlay.style.display = 'block';
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+
+        // Ensure menu shows high score corretly
+        document.getElementById('high-score').innerText = aiHighScore;
+    }
+}
+
 // Init
 resize();
 gameState.running = false;
@@ -629,3 +672,6 @@ initBackgroundObjects();
 render();
 // Start Loop
 loop();
+
+// Call Init Auth
+if (window.initAuth) window.initAuth();

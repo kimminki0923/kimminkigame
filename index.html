@@ -6,7 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Infinite Stairs</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDKs (Compat version for simplicity) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
+        /* Coin UI Fixed */
         #coin-container {
             position: absolute;
             top: 20px;
@@ -23,6 +29,75 @@
             padding: 5px 15px;
             border-radius: 20px;
         }
+
+        /* User Profile UI */
+        #user-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #login-btn {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+
+        #login-btn:hover {
+            background-color: #357ae8;
+            transform: translateY(-2px);
+        }
+
+        #user-info {
+            display: none;
+            /* Hidden by default */
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+            gap: 10px;
+        }
+
+        #user-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        #user-name {
+            font-size: 14px;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #logout-btn {
+            font-size: 12px;
+            color: #aaa;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        #logout-btn:hover {
+            color: #fff;
+        }
     </style>
 </head>
 
@@ -30,6 +105,16 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         <div id="ui-layer">
+            <!-- User Login UI -->
+            <div id="user-container">
+                <button id="login-btn">G Google 로그인</button>
+                <div id="user-info">
+                    <img id="user-img" src="" alt="User">
+                    <span id="user-name"></span>
+                    <button id="logout-btn">로그아웃</button>
+                </div>
+            </div>
+
             <div id="score">0</div>
 
             <div id="timer-container">
@@ -65,7 +150,11 @@
             <button id="btn-jump">🪜<br>CLIMB</button>
         </div>
     </div>
-    <script src="script.js?v=restore_hq_graphics"></script>
+    <div style="margin-top: 10px; font-size: 12px; color: #888;">
+        (ONNX Model Check: AI buttons available)
+    </div>
+    <script src="auth.js"></script>
+    <script src="script.js?v=auth_added"></script>
 </body>
 
 </html>
