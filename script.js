@@ -422,6 +422,38 @@ function drawBackground(camX, camY) {
         });
         ctx.globalAlpha = 1;
     }
+
+    // 5. PLANETS (Space Only) - RESTORED
+    // Visible when score > 800 (Space layer)
+    const planetAlpha = score < 9500 ? Math.max(0, Math.min(1, (score - 800) / 200)) : Math.max(0, 1 - (score - 9500) / 500);
+    if (planetAlpha > 0) {
+        ctx.globalAlpha = planetAlpha;
+        planets.forEach((p, i) => {
+            const px = (camX * 0.02 + p.x) % 5000 - 1000;
+            const py = p.y - (score * 1.0) + 1000;
+
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(px, py, p.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (p.texture) {
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * 0.8, 0, Math.PI, false);
+                ctx.fill();
+            }
+
+            if (p.ring) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(px, py, p.size * 2.2, p.size * 0.5, -0.3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        });
+        ctx.globalAlpha = 1;
+    }
 }
 
 function render() {
