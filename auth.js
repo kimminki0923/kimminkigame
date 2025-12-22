@@ -93,12 +93,11 @@ function logout() {
     if (auth) auth.signOut();
 }
 
-// --- Data Management (Unified) ---
+// --- Data Management (Refined) ---
 
 // 1. Load
 async function loadData() {
     if (currentUser && isCloudEnabled) {
-        // Cloud load is handled by auth listener, but exposing this if needed
         return await loadCloudData(currentUser.uid);
     } else {
         return loadLocalData();
@@ -110,11 +109,14 @@ async function loadCloudData(uid) {
         const doc = await db.collection('users').doc(uid).get();
         if (doc.exists) {
             const data = doc.data();
-            updateGameData(data.highScore, data.coinCount);
-            console.log("☁️ Data Loaded from Cloud:", data);
+            // Pass loaded data to game
+            const savedScore = data.highScore || 0;
+            const savedCoins = data.coinCount || 0;
+            updateGameData(savedScore, savedCoins);
+            console.log("☁️ Cloud Data Loaded:", data);
         } else {
-            console.log("☁️ No cloud data found, creating new.");
-            saveCloudData(0, 0); // Init
+            console.log("☁️ New User, init data.");
+            saveCloudData(0, 0);
         }
     } catch (e) {
         console.error("Cloud Load Error:", e);
@@ -122,30 +124,25 @@ async function loadCloudData(uid) {
 }
 
 function loadLocalData() {
-    const savedScore = localStorage.getItem('infinite_stairs_highScore') || 0;
-    const savedCoins = localStorage.getItem('infinite_stairs_coins') || 0;
-    updateGameData(parseInt(savedScore), parseInt(savedCoins));
-    console.log("💾 Data Loaded from LocalStorage");
+    const savedScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+    const savedCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
+    updateGameData(savedScore, savedCoins);
 }
 
-// 2. Save
-function saveData(highScore, coinCount) {
-    // Always save local first (backup)
-    localStorage.setItem('infinite_stairs_highScore', highScore);
-    localStorage.setItem('infinite_stairs_coins', coinCount);
-
-    if (currentUser && isCloudEnabled) {
-        saveCloudData(highScore, coinCount);
-    }
-}
-
+// 2. Save (Called from script.js)
+// script.js determines WHAT to save (e.g. cumulative coins)
+// auth.js just executes the save to backend
 function saveCloudData(score, coins) {
+    if (!db || !currentUser) return;
+
+    // Using simple set with merge. 
+    // Ideally for coins we might want atomic increment, but let's trust the client state for now.
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
-        console.log("☁️ Cloud Save Success");
+        console.log("☁️ Saved to Cloud: Score", score, "Coins", coins);
     }).catch((e) => {
         console.error("Cloud Save Failed:", e);
     });
@@ -153,9 +150,20 @@ function saveCloudData(score, coins) {
 
 // Bridge to script.js
 function updateGameData(score, coins) {
-    // Defined in script.js (We will add this bridge)
     if (window.setGameData) {
         window.setGameData(score, coins);
+    }
+}
+
+// Global Save Bridge
+window.saveData = function (score, coins) {
+    // Local Save
+    localStorage.setItem('infinite_stairs_highScore', score);
+    localStorage.setItem('infinite_stairs_coins', coins);
+
+    // Cloud Save
+    if (currentUser && isCloudEnabled) {
+        saveCloudData(score, coins);
     }
 }
 

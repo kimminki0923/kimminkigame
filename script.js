@@ -223,8 +223,20 @@ function performAction(action) {
         gameState.timer = Math.min(MAX_TIMER, gameState.timer + TIMER_BONUS);
 
         if (next.hasCoin) {
-            gameState.coinCount += next.coinVal;
-            coinEl.innerText = gameState.coinCount;
+            gameState.coinCount += next.coinVal; // Session count
+
+            // Real-time Total Update (Only visual if AI, saved if Human)
+            if (!isTraining && !isAutoPlaying) {
+                totalCoins += next.coinVal;
+                coinEl.innerText = totalCoins;
+            } else {
+                // If AI, just show data but don't commit to totalCoins logic yet (or separate them)
+                // Actually user requested "AI earnings excluded". 
+                // So we do NOT add to totalCoins if AI.
+                // But we still want to show "+coin" effect.
+                coinEl.innerText = "(AI)";
+            }
+
             next.hasCoin = false;
 
             let col = '#ffd700'; if (next.coinVal === 5) col = '#00d2d3'; if (next.coinVal === 10) col = '#ff6b6b';
@@ -688,48 +700,66 @@ btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(
 btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
+// --- Data State ---
+let totalCoins = 0; // Persistent Total
+
 // --- Data Bridge (Connected to auth.js) ---
 window.setGameData = function (score, coins) {
-    console.log(`Setting Game Data: HighScore ${score}, Coins ${coins}`);
+    console.log(`Loaded Game Data: HighScore ${score}, Coins ${coins}`);
     aiHighScore = score;
     highScoreEl.innerText = aiHighScore;
-    gameState.coinCount = coins;
-    coinEl.innerText = gameState.coinCount;
+
+    totalCoins = coins; // Set Global Total
+    coinEl.innerText = totalCoins;
 }
 
 function gameOver() {
     gameState.running = false;
     gameState.gameOver = true;
 
-    // Save Data (Cloud + Local)
-    if (gameState.score > aiHighScore) {
-        aiHighScore = gameState.score;
-        highScoreEl.innerText = aiHighScore;
-    }
-    // TRIGGER SAVE
-    if (window.saveData) {
-        window.saveData(aiHighScore, gameState.coinCount);
-    }
-
+    // 1. AI Training/Autoplay Logic
     if (isTraining) {
+        // AI Logic: No Saving
+        if (gameState.score > aiHighScore) aiHighScore = gameState.score;
         episode++;
         episodeCountEl.innerText = episode;
         learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${aiHighScore}`;
         if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
         setTimeout(initGame, 20);
-    } else if (isAutoPlaying) {
+        return; // EXIT
+    }
+
+    if (isAutoPlaying) {
+        // AI Logic: No Saving
         statusEl.innerText = "Robot Failed. Retry...";
         setTimeout(initGame, 1000);
-    } else {
-        statusEl.innerText = "Game Over!";
-        menuOverlay.style.display = 'block';
-        startBtn.style.display = 'inline-block';
-        stopBtn.style.display = 'none';
-
-        // Ensure menu shows high score corretly
-        document.getElementById('high-score').innerText = aiHighScore;
+        return; // EXIT
     }
+
+    // 2. Human Logic: Save Data
+    if (gameState.score > aiHighScore) {
+        aiHighScore = gameState.score;
+        highScoreEl.innerText = aiHighScore;
+    }
+
+    // TRIGGER SAVE (Only for human)
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins);
+    }
+
+    statusEl.innerText = "Game Over!";
+    menuOverlay.style.display = 'block';
+    startBtn.style.display = 'inline-block';
+    stopBtn.style.display = 'none';
+
+    document.getElementById('high-score').innerText = aiHighScore;
 }
+
+// In performAction: Handle totalCoins update
+// We need to inject this Logic into performAction function, wait...
+// I will modify performAction separately or include it here if simple.
+// Since performAction is large, let's do it in separate chunk or rely on gameState.coinCount for session and add to totalCoins at end? 
+// BETTER: Update totalCoins immediately for UI feedback.
 
 // Init
 resize();
