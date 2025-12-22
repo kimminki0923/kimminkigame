@@ -5,11 +5,13 @@ const statusEl = document.getElementById('status');
 const timerBar = document.getElementById('timer-bar');
 const coinEl = document.getElementById('coin-count');
 
-// Buttons from HTML
+// Buttons
 const startBtn = document.getElementById('start-btn');
 const trainBtn = document.getElementById('train-btn');
 const autoPlayBtn = document.getElementById('auto-play-btn');
 const resetAiBtn = document.getElementById('reset-ai-btn');
+
+// Info Elements
 const learningStatusEl = document.getElementById('learning-status');
 const episodeCountEl = document.getElementById('episode-count');
 const highScoreEl = document.getElementById('high-score');
@@ -18,20 +20,7 @@ const highScoreEl = document.getElementById('high-score');
 const btnTurn = document.getElementById('btn-turn');
 const btnJump = document.getElementById('btn-jump');
 
-// --- AI Q-Learning Variables ---
-let qTable = {}; // State -> [Val_Action0(Jump), Val_Action1(Turn)]
-let isTraining = false;
-let isAutoPlaying = false;
-let epsilon = 1.0;
-const EPSILON_DECAY = 0.995;
-const MIN_EPSILON = 0.01;
-const ALPHA = 0.1;
-const GAMMA = 0.9;
-let episode = 0;
-let aiHighScore = 0;
-let trainingSpeed = 1; // 1=Normal, 20=Fast (skip frames)
-
-// --- Game Constants ---
+// Constants
 const STAIR_W = 100;
 const STAIR_H = 25;
 const PLAYER_R = 12;
@@ -39,6 +28,7 @@ const MAX_TIMER = 100;
 const TIMER_DECAY = 0.3;
 const TIMER_BONUS = 15;
 
+// Global State
 let gameState = {
     running: false,
     score: 0,
@@ -50,12 +40,26 @@ let gameState = {
     renderPlayer: { x: 0, y: 0 }
 };
 
-// Background Objects
+// AI State (Q-Learning)
+let qTable = {};
+let isTraining = false;
+let isAutoPlaying = false;
+let epsilon = 1.0;
+const EPSILON_DECAY = 0.995;
+const MIN_EPSILON = 0.01;
+const ALPHA = 0.1;
+const GAMMA = 0.9;
+let episode = 0;
+let aiHighScore = 0;
+
+// Background Assets
 const buildings = [];
 const clouds = [];
 const planets = [];
 const stars = [];
 const particles = [];
+
+// --- Initialization ---
 
 function initBackgroundObjects() {
     buildings.length = 0;
@@ -105,10 +109,8 @@ function initBackgroundObjects() {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    render(); // Re-render on resize
 }
 window.addEventListener('resize', resize);
-
 
 function initGame() {
     gameState.score = 0;
@@ -122,7 +124,9 @@ function initGame() {
 
     startBtn.style.display = 'none';
     timerBar.parentElement.style.opacity = 1;
+    statusEl.innerText = "";
 
+    // Add Initial Stairs
     let cx = 0, cy = 0;
     gameState.stairs.push({ x: cx, y: cy, dir: 1, hasCoin: false, coinVal: 0 });
     gameState.renderPlayer = { x: cx, y: cy };
@@ -132,12 +136,11 @@ function initGame() {
     }
     initBackgroundObjects();
 
+    // Reset UI
     scoreEl.innerText = 0;
     if (coinEl) coinEl.innerText = 0;
-    statusEl.innerText = "";
 
-    requestAnimationFrame(loop);
-
+    // Check AI
     if (isTraining || isAutoPlaying) {
         aiTick();
     }
@@ -145,6 +148,8 @@ function initGame() {
 
 function addStair() {
     const last = gameState.stairs[gameState.stairs.length - 1];
+
+    // Start straight
     if (gameState.stairs.length < 6) {
         gameState.stairs.push({
             x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0
@@ -173,6 +178,8 @@ function addStair() {
     });
 }
 
+// --- AI Engine ---
+
 function getAIState() {
     const currIdx = gameState.score;
     if (currIdx >= gameState.stairs.length - 1) return "Goal";
@@ -182,8 +189,7 @@ function getAIState() {
     let requiredAbsDir = (targetPos.x > currentPos.x) ? 1 : 0;
     let myFacing = gameState.playerDir;
 
-    let state = (requiredAbsDir === myFacing) ? "Forward" : "Turn";
-    return state;
+    return (requiredAbsDir === myFacing) ? "Forward" : "Turn";
 }
 
 function chooseAction(state) {
@@ -205,18 +211,24 @@ function updateQ(state, action, reward, nextState) {
 
 function aiTick() {
     if (!gameState.running) return;
-    let delay = isTraining ? (20) : 150;
+
+    let delay = isTraining ? 20 : 150;
+
     const state = getAIState();
     const action = chooseAction(state);
     const reward = performAction(action);
+
     if (isTraining) {
         const nextState = gameState.running ? getAIState() : "Dead";
         updateQ(state, action, reward, nextState);
     }
+
     if (gameState.running) {
         setTimeout(aiTick, delay);
     }
 }
+
+// --- Action Logic ---
 
 function performAction(action) {
     if (!gameState.running) return 0;
@@ -236,9 +248,11 @@ function performAction(action) {
     else chosenAbsDir = gameState.playerDir === 1 ? 0 : 1;
 
     if (chosenAbsDir === requiredAbsDir) {
+        // Success
         gameState.score++;
         gameState.playerDir = chosenAbsDir;
         scoreEl.innerText = gameState.score;
+
         if (targetPos.hasCoin) {
             gameState.coinCount += targetPos.coinVal;
             if (coinEl) coinEl.innerText = gameState.coinCount;
@@ -246,10 +260,12 @@ function performAction(action) {
             let col = '#ffd700'; if (targetPos.coinVal === 5) col = '#00d2d3'; if (targetPos.coinVal === 10) col = '#ff6b6b';
             particles.push({ type: 'text', val: '+' + targetPos.coinVal, x: targetPos.x, y: targetPos.y, life: 1.0, color: col, dy: -2 });
         }
+
         addStair();
         gameState.timer = Math.min(MAX_TIMER, gameState.timer + TIMER_BONUS);
         return 10;
     } else {
+        // Fail
         gameOver();
         return -50;
     }
@@ -284,6 +300,8 @@ function gameOver() {
     }
 }
 
+// --- Drawing ---
+
 function lerpColor(a, b, t) {
     const ah = parseInt(a.replace('#', ''), 16);
     const ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff;
@@ -298,6 +316,8 @@ function drawBackground(camX, camY) {
     const score = gameState.score;
     const w = canvas.width;
     const h = canvas.height;
+
+    // Simple Gradient
     const keys = [
         { scores: 0, top: '#ff9a9e', bot: '#fecfef' },
         { scores: 200, top: '#89f7fe', bot: '#66a6ff' },
@@ -320,35 +340,55 @@ function drawBackground(camX, camY) {
     ctx.fillRect(0, 0, w, h);
 }
 
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function loop() {
+    // MAIN CHANGE: Always render even if not running
 
-    const targetPlayerPos = gameState.stairs[gameState.score] || { x: 0, y: 0 };
-    gameState.renderPlayer.x += (targetPlayerPos.x - gameState.renderPlayer.x) * 0.2;
-    gameState.renderPlayer.y += (targetPlayerPos.y - gameState.renderPlayer.y) * 0.2;
+    // Updates
+    if (gameState.running) {
+        gameState.timer -= TIMER_DECAY;
+        if (gameState.timer <= 0) {
+            gameState.timer = 0;
+            gameOver();
+        }
+        timerBar.style.width = `${gameState.timer}%`;
+        let col = '#ffeb3b';
+        if (gameState.timer < 30) col = '#f44336';
+        else if (gameState.timer < 60) col = '#ff9800';
+        timerBar.style.background = col;
+
+        // Player Interpolation
+        const targetPlayerPos = gameState.stairs[gameState.score] || { x: 0, y: 0 };
+        gameState.renderPlayer.x += (targetPlayerPos.x - gameState.renderPlayer.x) * 0.2;
+        gameState.renderPlayer.y += (targetPlayerPos.y - gameState.renderPlayer.y) * 0.2;
+    }
+
+    // Render Logic
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const camX = -gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
     const camY = gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + 100;
 
     drawBackground(camX, camY);
 
-    // Stairs
+    // Draw Stairs
     gameState.stairs.forEach((s, i) => {
         if (i < gameState.score - 5 || i > gameState.score + 18) return;
         const sx = camX + s.x * STAIR_W;
         const sy = camY - s.y * STAIR_H;
+
         const grad = ctx.createLinearGradient(sx, sy, sx, sy + STAIR_H);
         grad.addColorStop(0, '#a29bfe'); grad.addColorStop(1, '#6c5ce7');
         if (i === gameState.score) { grad.addColorStop(0, '#fff'); grad.addColorStop(1, '#dfe6e9'); }
         ctx.fillStyle = grad;
         ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+
         if (s.hasCoin) {
             ctx.fillStyle = '#f1c40f';
             ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
         }
     });
 
-    // Player
+    // Draw Player
     const px = camX + gameState.renderPlayer.x * STAIR_W;
     const py = camY - gameState.renderPlayer.y * STAIR_H;
     ctx.fillStyle = '#55efc4';
@@ -372,33 +412,13 @@ function render() {
         ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.font = "bold 24px Arial";
         ctx.fillText(p.val, ppx, ppy); ctx.globalAlpha = 1;
     }
+
+    // Always Request Next Frame
+    requestAnimationFrame(loop);
 }
 
-function loop() {
-    if (!gameState.running && !gameState.gameOver) return;
-
-    if (gameState.running) {
-        gameState.timer -= TIMER_DECAY;
-        if (gameState.timer <= 0) {
-            gameState.timer = 0;
-            gameOver();
-        }
-        timerBar.style.width = `${gameState.timer}%`;
-        let col = '#ffeb3b';
-        if (gameState.timer < 30) col = '#f44336';
-        else if (gameState.timer < 60) col = '#ff9800';
-        timerBar.style.background = col;
-    }
-
-    render();
-
-    if (gameState.running) requestAnimationFrame(loop);
-}
-
-// Event Listeners
-startBtn.addEventListener('click', () => {
-    initGame();
-});
+// Controls
+startBtn.addEventListener('click', initGame);
 
 trainBtn.addEventListener('click', () => {
     isTraining = !isTraining;
@@ -406,7 +426,7 @@ trainBtn.addEventListener('click', () => {
     if (isTraining) {
         trainBtn.innerText = "⏹️ 학습 중지";
         trainBtn.style.backgroundColor = "#e74c3c";
-        if (confirm("AI 학습을 시작합니다. (고속 모드)")) initGame();
+        if (confirm("AI 학습 시작 (고속)")) initGame();
         else { isTraining = false; trainBtn.innerText = "🧠 AI 학습하기"; trainBtn.style.backgroundColor = "#e67e22"; }
     } else {
         trainBtn.innerText = "🧠 AI 학습하기";
@@ -420,7 +440,7 @@ autoPlayBtn.addEventListener('click', () => {
 });
 
 resetAiBtn.addEventListener('click', () => {
-    if (confirm("AI 지식을 초기화할까요?")) {
+    if (confirm("AI 데이터 초기화?")) {
         qTable = {}; episode = 0; epsilon = 1.0; aiHighScore = 0;
         episodeCountEl.innerText = 0; highScoreEl.innerText = 0;
     }
@@ -429,7 +449,7 @@ resetAiBtn.addEventListener('click', () => {
 window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyJ') handleInput(0);
     if (e.code === 'KeyF') handleInput(1);
-    // Remove space initGame to prevent accidental restart in menu
+    if (e.code === 'Space' && !gameState.running && !isTraining) initGame();
 });
 
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
@@ -437,9 +457,14 @@ btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(
 btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
-// Initial Load
+
+// Init
 resize();
-initGame(); // Initialize state
-gameState.running = false; // Stop logic
+// Setup Initial State without running
+gameState.stairs = [];
+for (let i = 0; i < 30; i++) gameState.stairs.push({ x: 0, y: 0, hasCoin: false }); // Dummy data for render
+initBackgroundObjects();
+initGame(); // Initialize real data
+gameState.running = false; // Pause
 startBtn.style.display = 'inline-block';
-render(); // Force First Render! This solves the black screen.
+loop(); // Start Rendering Loop immediately
