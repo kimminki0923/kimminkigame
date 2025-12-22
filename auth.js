@@ -1,12 +1,12 @@
 // --- Firebase Configuration ---
-// 나중에 Firebase 콘솔에서 복사한 값을 여기에 채워넣으세요!
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "SENDER_ID",
-    appId: "APP_ID"
+    apiKey: "AIzaSyBK0urj5DBiDtJlVFXazt_phEwWONsAXx4",
+    authDomain: "infinite-stairs-913f1.firebaseapp.com",
+    projectId: "infinite-stairs-913f1",
+    storageBucket: "infinite-stairs-913f1.firebasestorage.app",
+    messagingSenderId: "149017516724",
+    appId: "1:149017516724:web:c9787b547f48d84babd5e1",
+    measurementId: "G-P6H7Z574G7"
 };
 
 // --- System State ---
