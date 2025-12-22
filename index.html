@@ -25,7 +25,7 @@
                 <span id="coin-count">0</span>
             </div>
             <button id="start-btn">START GAME</button>
-            <!-- Old AI button removed -->
+            <button id="ai-btn">TOGGLE AI</button>
         </div>
 
         <div id="mobile-controls">
@@ -37,27 +37,8 @@
             </button>
         </div>
     </div>
-    <!-- AI Controls -->
-    <div id="ai-controls" style="margin-top: 20px;">
-        <div id="learning-status" style="color: #4EC0E9; margin-bottom: 10px; font-weight: bold;">AI 상태: 학습 준비됨</div>
-        <button id="train-btn"
-            style="background-color: #e67e22; padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; color: white; cursor: pointer; margin: 5px;">🧠
-            AI 학습하기</button>
-        <button id="auto-play-btn"
-            style="background-color: #2ecc71; padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; color: white; cursor: pointer; margin: 5px;"
-            disabled>▶️ 학습된 AI 실행</button>
-        <br>
-        <button id="reset-ai-btn"
-            style="background-color: #e74c3c; font-size: 12px; padding: 5px 10px; border: none; border-radius: 5px; color: white; cursor: pointer; margin-top: 10px;">🗑️
-            AI 리셋</button>
-    </div>
-
-    <!-- Info -->
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">
-        에피소드: <span id="episode-count">0</span> | 최고점수: <span id="high-score">0</span>
-    </div>
-
-    <script src="script.js?v=new_ai_final"></script>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="script.js?v=6"></script>
 </body>
 
 </html>
