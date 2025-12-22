@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinite Stairs AI</title>
+    <title>Infinite Stairs</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -19,13 +19,13 @@
                 <div id="timer-bar"></div>
             </div>
 
-            <div id="status">Waiting...</div>
+            <div id="status">Infinite Stairs</div>
             <div id="coin-container">
                 <span id="coin-icon">🪙</span>
                 <span id="coin-count">0</span>
             </div>
             <button id="start-btn">START GAME</button>
-            <button id="ai-btn">TOGGLE AI</button>
+            <button id="ai-btn" style="display: none;">AI: OFF</button>
         </div>
 
         <div id="mobile-controls">
@@ -37,8 +37,13 @@
             </button>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-    <script src="script.js?v=6"></script>
+
+    <!-- Info -->
+    <div style="margin-top: 10px; font-size: 12px; color: #888;">
+        최고점수: <span id="high-score">0</span>
+    </div>
+
+    <script src="script.js?v=orig_restore"></script>
 </body>
 
 </html>

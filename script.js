@@ -727,9 +727,13 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && !gameState.running) initGame();
 });
 
-// Mobile Controls Events
-btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
-btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
+// Init
+resize();
+initGame();
+gameState.running = false;
+gameState.gameOver = false;
+startBtn.style.display = 'inline-block';
+statusEl.innerText = "Press Start";
 
-btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(0); });
-btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
+// Force one render to show background
+requestAnimationFrame(loop);
