@@ -621,7 +621,15 @@ function render() {
 // --- Main Loop ---
 function loop() {
     if (gameState.running) {
-        gameState.timer -= TIMER_DECAY;
+        // Dynamic Difficulty (Logarithmic Decay)
+        // Base decay: 0.3
+        // As score increases, decay accelerates.
+        // Formula: 0.3 + (Math.log(score + 1) * 0.05)
+        // Max limit to prevent impossible game at very high scores.
+        let currentDecay = TIMER_DECAY + (Math.log(gameState.score + 10) * 0.08);
+        currentDecay = Math.min(currentDecay, 1.2); // Cap max speed
+
+        gameState.timer -= currentDecay;
         if (gameState.timer <= 0) { gameState.timer = 0; gameOver(); }
         timerBar.style.width = `${gameState.timer}%`;
 

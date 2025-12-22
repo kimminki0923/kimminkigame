@@ -61,7 +61,8 @@ canvas {
 
 #score {
     position: absolute;
-    top: 15%;
+    top: 8%;
+    /* Moved up from 15% to avoid overlap */
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 80px;
