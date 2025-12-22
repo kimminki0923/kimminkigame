@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Infinite Stairs</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 </head>
 
 <body>
@@ -14,26 +13,41 @@
         <canvas id="gameCanvas"></canvas>
         <div id="ui-layer">
             <div id="score">0</div>
+
             <div id="timer-container">
                 <div id="timer-bar"></div>
             </div>
+
             <div id="status">Infinite Stairs</div>
             <div id="coin-container">
                 <span id="coin-icon">🪙</span>
                 <span id="coin-count">0</span>
             </div>
-            <button id="start-btn">START GAME</button>
-            <button id="ai-btn" style="display: none;">AI: OFF</button>
+
+            <div id="menu-overlay">
+                <h1 style="color:white; text-shadow:2px 2px 4px #000;">INFINITE STAIRS</h1>
+                <button id="start-btn">START GAME</button>
+                <div style="margin-top:20px;">
+                    <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
+                    <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI 실행</button>
+                    <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
+                </div>
+                <div style="color:#eee; margin-top:10px; font-size:14px;">
+                    <span id="learning-status">Ready to Learn</span><br>
+                    Episode: <span id="episode-count">0</span> | High Score: <span id="high-score">0</span>
+                </div>
+            </div>
+
+            <button id="stop-btn"
+                style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
         </div>
+
         <div id="mobile-controls">
             <button id="btn-turn">↩️<br>TURN</button>
             <button id="btn-jump">🪜<br>CLIMB</button>
         </div>
     </div>
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">
-        (ONNX Model Required for AI - Currently Disabled in Default Mode)
-    </div>
-    <script src="script.js?v=restore_final"></script>
+    <script src="script.js?v=restore_hq_graphics"></script>
 </body>
 
 </html>
