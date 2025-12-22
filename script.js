@@ -216,6 +216,7 @@ function performAction(action) {
     }
 
     if (myNextDir === reqDir) {
+        // Success
         gameState.score++;
         gameState.playerDir = myNextDir;
         scoreEl.innerText = gameState.score;
@@ -244,7 +245,8 @@ function performAction(action) {
         }
         return 10;
     } else {
-        gameOver();
+        // Fail -> Trigger Fall Animation instead of instant Game Over
+        startFalling(myNextDir);
         return -50;
     }
 }
@@ -252,6 +254,52 @@ function performAction(action) {
 function handleInput(action) {
     if (isTraining || isAutoPlaying) return;
     performAction(action);
+}
+
+// Fall Animation Logic
+let isFalling = false;
+let fallVelocity = 0;
+let fallY = 0;
+let fallX = 0;
+
+function startFalling(wrongDir) {
+    isFalling = true;
+    gameState.running = false; // Stop game logic (timer, input)
+
+    // Setup initial fall relative pos
+    fallVelocity = -5; // Jump up slightly first
+    fallY = 0;
+
+    // Move character visually to the wrong side (Air)
+    // wrongDir is abs direction (0 or 1).
+    // stairs[score] is current.
+    // If wrongDir is 1 (Right), x + 1. If 0 (Left), x - 1.
+    const curr = gameState.stairs[gameState.score];
+    fallX = (wrongDir === 1) ? 1 : -1;
+
+    // Point player to wrong dir
+    gameState.playerDir = wrongDir;
+}
+
+function updateFall() {
+    if (!isFalling) return;
+
+    // Physics
+    fallVelocity += 0.8; // Gravity
+    fallY -= fallVelocity; // y is inverted in render (up is +y in logic, but checks need care)
+    // Actually our render uses: camY - s.y * STAIR_H
+    // So positive fallY should mean 'dropping down'.
+    // Let's adjust:
+    // renderPlayer.y will be modified.
+
+    gameState.renderPlayer.y -= (fallVelocity * 0.05); // Drop coordinate
+    gameState.renderPlayer.x += (fallX * 0.05); // Drift away
+
+    // If dropped enough, trigger real game over
+    if (gameState.renderPlayer.y < gameState.stairs[gameState.score].y - 10) {
+        isFalling = false;
+        gameOver();
+    }
 }
 
 function gameOver() {
@@ -583,6 +631,8 @@ function loop() {
         else col = 'linear-gradient(90deg, #ffeb3b, #ff9800, #f44336)';
         timerBar.style.background = col;
     }
+
+    if (isFalling) updateFall(); // Process Animation
 
     render(); // Always render
     requestAnimationFrame(loop);
