@@ -245,7 +245,13 @@ function performAction(action) {
         }
         return 10;
     } else {
-        // Fail -> Trigger Fall Animation instead of instant Game Over
+        // Optimization: Skip animation during training for speed
+        if (isTraining) {
+            gameOver();
+            return -50;
+        }
+
+        // Fail -> Trigger Fall Animation (Only for humans or watching AI)
         startFalling(myNextDir);
         return -50;
     }
