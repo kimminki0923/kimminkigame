@@ -1,736 +1,413 @@
+/**
+ * Infinite Stairs Game with In-Browser Q-Learning AI
+ * 
+ * State Representation:
+ * [Next Step Direction (Left/Right), Current Facing (Left/Right)]
+ */
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const startBtn = document.getElementById('start-btn');
-const aiBtn = document.getElementById('ai-btn');
 const scoreEl = document.getElementById('score');
-const statusEl = document.getElementById('status');
 const timerBar = document.getElementById('timer-bar');
-const coinEl = document.getElementById('coin-count');
+const statusEl = document.getElementById('status');
+const learningStatusEl = document.getElementById('learning-status');
+const coinCountEl = document.getElementById('coin-count');
+const episodeCountEl = document.getElementById('episode-count');
+const highScoreEl = document.getElementById('high-score');
 
-// Mobile Buttons
+// Buttons
 const btnTurn = document.getElementById('btn-turn');
 const btnJump = document.getElementById('btn-jump');
+const startBtn = document.getElementById('start-btn');
+const trainBtn = document.getElementById('train-btn');
+const autoPlayBtn = document.getElementById('auto-play-btn');
+const resetAiBtn = document.getElementById('reset-ai-btn');
 
-// Socket / AI
-let ws = null;
-let ortSession = null;
-const useONNX = true; // Flag to force ONNX
+// Game Constants
+const CANVAS_WIDTH = 360;
+const CANVAS_HEIGHT = 640;
+canvas.width = CANVAS_WIDTH;
+canvas.height = CANVAS_HEIGHT;
 
-// Init ONNX
-async function initONNX() {
-    try {
-        statusEl.innerText = "AI 모델 로딩중...";
-        ortSession = await ort.InferenceSession.create('./model_final.onnx?v=' + Date.now());
-        statusEl.innerText = "AI 준비됨 (Static)";
-        console.log("ONNX Model Loaded");
-    } catch (e) {
-        console.error("ONNX Load Failed", e);
-        alert("AI 로드 실패: " + e.message); // User feedback
-        statusEl.innerText = "AI 로드 실패: " + e.message;
-    }
+const STAIR_WIDTH = 80;
+const STAIR_HEIGHT = 40;
+const CHARACTER_SIZE = 60;
+const MAX_TIME = 10; // seconds
+
+// Game State
+let stairs = [];
+let character = { x: 0, y: 0, facing: 'right', state: 'idle' }; // facing: 'left', 'right'
+let score = 0;
+let coins = 0;
+let timeLeft = MAX_TIME;
+let gameLoopId = null;
+let lastTime = 0;
+let isGameOver = true;
+let stairIndex = 0;
+
+// AI State
+let qTable = {}; // State -> [Value_Climb, Value_Turn]
+let isTraining = false;
+let isAutoPlaying = false;
+let epsilon = 1.0; // Exploration rate (1.0 = 100% random at start)
+const EPSILON_DECAY = 0.995;
+const MIN_EPSILON = 0.01;
+const ALPHA = 0.1; // Learning rate
+const GAMMA = 0.9; // Discount factor
+let episode = 0;
+let aiHighScore = 0;
+let trainingSpeed = 1; // 1 = Normal, 50 = Super Fast
+
+// --- Q-Learning Engine ---
+
+function getAIState() {
+    // Look ahead to the next stair relative to current position
+    // We need to know: Do I need to go same direction or turn?
+
+    if (stairIndex >= stairs.length - 1) return "Goal";
+
+    const currentStair = stairs[stairIndex];
+    const nextStair = stairs[stairIndex + 1];
+
+    // Determine required direction for next step
+    let nextStairDirection = 'right';
+    if (nextStair.x < currentStair.x) nextStairDirection = 'left';
+    else if (nextStair.x > currentStair.x) nextStairDirection = 'right';
+    else nextStairDirection = currentStair.type === 'left' ? 'left' : 'right';
+
+    const state = `${nextStairDirection}_${character.facing}`;
+    return state;
 }
 
-if (useONNX) {
-    initONNX();
-} else {
-    // Legacy WebSocket
-    try {
-        ws = new WebSocket(`ws://${window.location.host}/ws/game`);
-        ws.onopen = () => statusEl.innerText = "서버 연결됨";
-        ws.onmessage = (msg) => {
-            const data = JSON.parse(msg.data);
-            if (data.action !== undefined && gameState.aiEnabled && gameState.running) {
-                handleInput(data.action);
-            }
-        };
-    } catch (e) {
-        statusEl.innerText = "서버 미연결";
+function getBestAction(state) {
+    if (!qTable[state]) {
+        qTable[state] = [0, 0]; // [Climb, Turn]
     }
+    return qTable[state][0] > qTable[state][1] ? 0 : 1; // 0=Climb, 1=Turn
 }
 
-// AI Loop for ONNX
-setInterval(async () => {
-    if (gameState.running && gameState.aiEnabled && ortSession) {
-        await runInference();
+function chooseAction(state) {
+    if (isTraining && Math.random() < epsilon) {
+        return Math.floor(Math.random() * 2); // Explore
     }
-}, 100); // 100ms interval (10 FPS for AI)
-
-async function runInference() {
-    if (!ortSession) return;
-
-    // Construct Observation: [next_1_dir, next_2_dir, next_3_dir, next_4_dir, next_5_dir]
-    // 0 = Left, 1 = Right.
-    // However, our backend trained on:
-    // If stair.x > current.x -> target is 1 (Right)
-    // If stair.x < current.x -> target is 0 (Left)
-    // Actually the RL env used relative coords? 
-    // Let's check env.py or recreate logic.
-    // Backend env.py used: 
-    // obs[i] = 1.0 if next_stairs[i].x > next_stairs[i-1].x else 0.0
-    // Essentially: Is the NEXT step to the Right (1) or Left (0)?
-
-    const obsData = [];
-    const idx = gameState.score;
-    // We need 5 steps ahead relative to current
-    // Current stair is at idx.
-    // Step 1: idx -> idx+1 direction
-    for (let i = 0; i < 5; i++) {
-        const s1 = gameState.stairs[idx + i];  // current (or prev)
-        const s2 = gameState.stairs[idx + i + 1]; // next
-        if (s1 && s2) {
-            // 1 if Right, 0 if Left
-            obsData.push(s2.x > s1.x ? 1 : 0);
-        } else {
-            obsData.push(0); // Padding
-        }
-    }
-
-    // Prepare Tensor
-    const inputTensor = new ort.Tensor('float32', Float32Array.from(obsData), [1, 5]);
-
-    // Run
-    const feeds = { input: inputTensor };
-    const results = await ortSession.run(feeds);
-    const output = results.output.data; // Logits [L, R]
-
-    // Deterministic: Argmax
-    // output[0] = Logit for 0 (Left)
-    // output[1] = Logit for 1 (Right)
-    const predictedAbsDir = output[1] > output[0] ? 1 : 0;
-
-    // Convert Absolute Dir (0/1) to Relative Action (0=Jump, 1=Turn)
-    // If Predicted == CurrentDir -> Jump (0)
-    // If Predicted != CurrentDir -> Turn (1)
-
-    const action = (predictedAbsDir === gameState.playerDir) ? 0 : 1;
-    handleInput(action);
+    return getBestAction(state); // Exploit
 }
 
+function updateQTable(state, action, reward, nextState) {
+    if (!qTable[state]) qTable[state] = [0, 0];
+    if (!qTable[nextState]) qTable[nextState] = [0, 0];
 
-let gameState = {
-    running: false,
-    score: 0,
-    coinCount: 0,
-    playerDir: 1,
-    stairs: [],
-    gameOver: false,
-    aiEnabled: false,
-    timer: 100, // 0 to 100
+    const oldValue = qTable[state][action];
+    const nextMax = Math.max(...qTable[nextState]);
 
-    // Animation
-    renderPlayer: { x: 0, y: 0 }
-};
-
-const STAIR_W = 100;
-const STAIR_H = 25;
-const PLAYER_R = 12;
-const MAX_TIMER = 100;
-const TIMER_DECAY = 0.3; // Frame 당 감소량
-const TIMER_BONUS = 15; // 성공시 충전량
-
-// Background Objects
-const buildings = [];
-const clouds = [];
-const planets = [];
-const stars = [];
-const particles = []; // For floating text and effects
-
-function initBackgroundObjects() {
-    buildings.length = 0;
-    for (let i = 0; i < 25; i++) {
-        buildings.push({
-            x: Math.random() * 3000 - 1500,
-            width: 60 + Math.random() * 100,
-            height: 150 + Math.random() * 400,
-            color: `hsl(230, 25%, ${10 + Math.random() * 15}%)`, // Darker, sleeker buildings
-            windows: Math.random() > 0.5
-        });
-    }
-    clouds.length = 0;
-    for (let i = 0; i < 40; i++) {
-        clouds.push({
-            x: Math.random() * 4000 - 2000,
-            y: Math.random() * 800,
-            size: 50 + Math.random() * 80,
-            speed: (Math.random() - 0.5) * 0.8,
-            opacity: 0.3 + Math.random() * 0.5
-        });
-    }
-    planets.length = 0;
-    const pColors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#e056fd'];
-    for (let i = 0; i < 20; i++) {
-        planets.push({
-            x: Math.random() * 5000 - 2500,
-            y: Math.random() * 4000,
-            size: 15 + Math.random() * 80,
-            color: pColors[Math.floor(Math.random() * pColors.length)],
-            ring: Math.random() > 0.6,
-            texture: Math.random() > 0.5
-        });
-    }
-    stars.length = 0;
-    for (let i = 0; i < 200; i++) {
-        stars.push({
-            x: Math.random() * 2000,
-            y: Math.random() * 2000,
-            size: Math.random() * 2,
-            blinkSpeed: 0.05 + Math.random() * 0.1,
-            phase: Math.random() * Math.PI * 2
-        });
-    }
+    // Q Learning Formula
+    const newValue = oldValue + ALPHA * (reward + GAMMA * nextMax - oldValue);
+    qTable[state][action] = newValue;
 }
 
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
+// --- Game Logic ---
 
 function initGame() {
-    gameState.score = 0;
-    gameState.coinCount = 0;
-    gameState.running = true;
-    gameState.gameOver = false;
-    gameState.playerDir = 1;
-    gameState.stairs = [];
-    gameState.timer = MAX_TIMER;
-    particles.length = 0;
+    stairs = [];
+    stairIndex = 0;
+    score = 0;
+    timeLeft = MAX_TIME;
+    isGameOver = false;
 
-    startBtn.style.display = 'none';
-    aiBtn.style.display = 'none';
-    timerBar.parentElement.style.opacity = 1;
+    // Initial Stairs (Random walk)
+    let currentX = CANVAS_WIDTH / 2 - STAIR_WIDTH / 2;
+    let currentY = CANVAS_HEIGHT - 100;
 
-    let cx = 0, cy = 0;
-    gameState.stairs.push({ x: cx, y: cy, dir: 1, hasCoin: false, coinVal: 0 });
-    gameState.renderPlayer = { x: cx, y: cy };
+    // Ground
+    stairs.push({ x: currentX, y: currentY, type: 'start' });
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 20; i++) {
         addStair();
     }
-    initBackgroundObjects();
 
-    scoreEl.innerText = 0;
-    if (coinEl) coinEl.innerText = 0;
-    statusEl.innerText = "";
-    sendState();
-    loop();
-}
+    character = {
+        x: stairs[0].x + 10,
+        y: stairs[0].y - CHARACTER_SIZE + 10,
+        facing: 'right',
+        state: 'idle'
+    };
 
-function showButtons() {
-    startBtn.style.display = 'inline-block';
-    aiBtn.style.display = 'inline-block';
+    // Re-draw immediately
+    render();
 }
 
 function addStair() {
-    const last = gameState.stairs[gameState.stairs.length - 1];
+    const lastStair = stairs[stairs.length - 1];
+    let nextX = lastStair.x;
+    let nextY = lastStair.y - STAIR_HEIGHT;
 
-    // START CONSTRAINT: Force straight for first 5 steps
-    if (gameState.stairs.length < 6) {
-        gameState.stairs.push({
-            x: last.x + 1,
-            y: last.y + 1,
-            dir: 1,
-            hasCoin: false,
-            coinVal: 0
-        });
-        return;
-    }
+    // Random direction
+    const direction = Math.random() < 0.5 ? 'left' : 'right';
 
-    let nextDir;
-    if (Math.random() < 0.7) {
-        nextDir = last.dir; // Straight
+    if (direction === 'left') {
+        nextX -= STAIR_WIDTH / 2;
     } else {
-        nextDir = last.dir === 1 ? 0 : 1; // Turn
+        nextX += STAIR_WIDTH / 2;
     }
 
-    // COIN GENERATION
-    let hasCoin = false;
-    let coinVal = 0;
-
-    if (Math.random() < 0.3) {
-        hasCoin = true;
-        const r = Math.random();
-        if (r < 0.6) coinVal = 1;      // 60% Small
-        else if (r < 0.9) coinVal = 5; // 30% Medium
-        else coinVal = 10;             // 10% Large
-    }
-
-    gameState.stairs.push({
-        x: last.x + (nextDir === 1 ? 1 : -1),
-        y: last.y + 1,
-        dir: nextDir,
-        hasCoin: hasCoin,
-        coinVal: coinVal
-    });
-}
-
-function handleInput(action) {
-    if (!gameState.running) return;
-
-    const currentStairIndex = gameState.score;
-    const currPos = gameState.stairs[currentStairIndex];
-    const targetPos = gameState.stairs[currentStairIndex + 1];
-
-    if (!targetPos) {
-        addStair();
-        return handleInput(action);
-    }
-
-    const requiredDir = (targetPos.x > currPos.x) ? 1 : 0;
-    let chosenDir;
-
-    // 0: J (Forward), 1: F (Turn)
-    if (action === 0) {
-        chosenDir = gameState.playerDir;
-    } else {
-        chosenDir = gameState.playerDir === 1 ? 0 : 1;
-    }
-
-    if (chosenDir === requiredDir) {
-        gameState.score++;
-        gameState.playerDir = chosenDir;
-        scoreEl.innerText = gameState.score;
-
-        // Coin Collection
-        if (targetPos.hasCoin) {
-            gameState.coinCount += targetPos.coinVal;
-            if (coinEl) coinEl.innerText = gameState.coinCount;
-            targetPos.hasCoin = false; // Collected
-
-            // Effect
-            let col = '#ffd700';
-            if (targetPos.coinVal === 5) col = '#00d2d3'; // Silver/Cyan
-            if (targetPos.coinVal === 10) col = '#ff6b6b'; // Red/Gem
-
-            particles.push({
-                type: 'text',
-                val: '+' + targetPos.coinVal,
-                x: targetPos.x,
-                y: targetPos.y,
-                life: 1.0,
-                color: col,
-                dy: -2
-            });
-        }
-
-        addStair();
-
-        // Refill Timer
-        gameState.timer = Math.min(MAX_TIMER, gameState.timer + TIMER_BONUS);
-
-        sendState();
-    } else {
-        gameOver();
-    }
+    stairs.push({ x: nextX, y: nextY, type: direction });
 }
 
 function gameOver() {
-    gameState.running = false;
-    gameState.gameOver = true;
+    isGameOver = true;
     statusEl.innerText = "Game Over!";
-    showButtons();
+    startBtn.style.display = 'block';
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ event: "game_over", score: gameState.score }));
+    if (score > aiHighScore) {
+        aiHighScore = score;
+        highScoreEl.innerText = aiHighScore;
+    }
+
+    // AI Training Loop
+    if (isTraining) {
+        episode++;
+        episodeCountEl.innerText = episode;
+
+        // Decay Epsilon
+        if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
+
+        // Update Status
+        learningStatusEl.innerText = `AI 상태: 학습 진행중 (탐험률: ${(epsilon * 100).toFixed(0)}%)`;
+
+        setTimeout(startTrainingEpisode, 50 / trainingSpeed); // Super fast restart
+    } else if (isAutoPlaying) {
+        statusEl.innerText = "AI 실패. 재시도...";
+        setTimeout(() => {
+            startGame();
+            isAutoPlaying = true;
+            statusEl.innerText = "AI 실행중...";
+            aiTick();
+        }, 1000);
     }
 }
 
-function sendState() {
-    if (ws && ws.readyState === WebSocket.OPEN && gameState.running) {
-        const view = 5;
-        const idx = gameState.score;
-        let obs = [];
-        for (let i = 0; i < view; i++) {
-            const s1 = gameState.stairs[idx + i];
-            const s2 = gameState.stairs[idx + i + 1];
-            if (s1 && s2) {
-                obs.push(s2.x > s1.x ? 1 : 0);
-            } else obs.push(0);
-        }
-        ws.send(JSON.stringify({
-            event: "state",
-            obs: obs,
-            playerDir: gameState.playerDir,
-            score: gameState.score,
-            ai_active: gameState.aiEnabled
-        }));
+function actionClimb() {
+    if (isGameOver) return -10;
+
+    const currentState = getAIState();
+    const currentStair = stairs[stairIndex];
+    const nextStair = stairs[stairIndex + 1];
+
+    let reward = 0;
+
+    // Determine correct direction
+    let requiredDirection = 'right';
+    if (nextStair.x < currentStair.x) requiredDirection = 'left';
+    else if (nextStair.x > currentStair.x) requiredDirection = 'right';
+    else requiredDirection = character.facing; // Should not happen based on generation logic
+
+    if (character.facing === requiredDirection) {
+        // Correct Move
+        stairIndex++;
+        score++;
+        timeLeft = Math.min(timeLeft + 1, MAX_TIME); // Bonus time
+        addStair(); // Infinite generation
+        reward = 10; // Positive reward
+
+        // Update visual position
+        character.x = nextStair.x + 10;
+        character.y = nextStair.y - CHARACTER_SIZE + 10;
+
+    } else {
+        // Wrong move (Fell off)
+        reward = -100; // Big penalty
+        gameOver();
     }
+
+    // Q-Learning Update
+    if (isTraining) {
+        const nextState = isGameOver ? "Dead" : getAIState();
+        updateQTable(currentState, 0, reward, nextState);
+    }
+
+    return reward;
 }
 
-// Color Utility
-function lerpColor(a, b, t) {
-    const ah = parseInt(a.replace('#', ''), 16);
-    const ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff;
-    const bh = parseInt(b.replace('#', ''), 16);
-    const br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff;
+function actionTurn() {
+    if (isGameOver) return -10;
 
-    const nr = ar + (br - ar) * t;
-    const ng = ag + (bg - ag) * t;
-    const nb = ab + (bb - ab) * t;
+    const currentState = getAIState();
 
-    return `rgb(${Math.floor(nr)}, ${Math.floor(ng)}, ${Math.floor(nb)})`;
+    // Turn changes facing
+    character.facing = character.facing === 'left' ? 'right' : 'left';
+
+    // Turn cost (small penalty to prevent infinite spinning)
+    let reward = -0.1;
+
+    // Q-Learning Update
+    if (isTraining) {
+        // Next state is same stair, different facing
+        // We need to re-evaluate state because facing changed
+        const nextState = getAIState();
+        updateQTable(currentState, 1, reward, nextState);
+    }
+
+    return reward;
 }
 
-function drawBackground(camX, camY) {
-    const score = gameState.score;
-    const w = canvas.width;
-    const h = canvas.height;
-    const time = Date.now() * 0.001;
+// --- Main Loop ---
 
-    // Progression:
-    const keys = [
-        { scores: 0, top: '#ff9a9e', bot: '#fecfef' },    // Lovely Sunset
-        { scores: 200, top: '#89f7fe', bot: '#66a6ff' },   // Clear Day
-        { scores: 500, top: '#2c3e50', bot: '#fd746c' },   // Stratosphere Dusk
-        { scores: 800, top: '#0f2027', bot: '#203a43' },   // Orbit
-        { scores: 1000, top: '#000000', bot: '#1c1c1c' },  // Deep Space
-        { scores: 9900, top: '#000000', bot: '#1c1c1c' },  // Still Deep Space
-        { scores: 10000, top: '#ffffff', bot: '#dcdde1' }  // HEAVEN (White/Silver)
-    ];
+function gameLoop(timestamp) {
+    if (isGameOver && !isTraining) return;
 
-    let k1 = keys[0], k2 = keys[keys.length - 1];
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (score >= keys[i].scores && score <= keys[i + 1].scores) {
-            k1 = keys[i];
-            k2 = keys[i + 1];
-            break;
-        } else if (score > keys[i].scores) {
-            k1 = keys[i];
-        }
-    }
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
 
-    let t = (score - k1.scores) / (k2.scores - k1.scores + 0.001);
-    t = Math.max(0, Math.min(1, t));
-
-    const curTop = lerpColor(k1.top, k2.top, t);
-    const curBot = lerpColor(k1.bot, k2.bot, t);
-
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, curTop);
-    grad.addColorStop(1, curBot);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    // --- HEAVEN PARTICLES ---
-    if (score > 9000) {
-        const heavenAlpha = Math.max(0, Math.min(1, (score - 9000) / 1000));
-        if (heavenAlpha > 0) {
-            ctx.globalAlpha = heavenAlpha * 0.5;
-            ctx.fillStyle = '#fff';
-            // Simple feather/angel dust
-            for (let i = 0; i < 50; i++) {
-                const fx = (i * 100 + time * 20) % w;
-                const fy = (i * 200 + time * 10) % h;
-                ctx.beginPath();
-                ctx.arc(fx, fy, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1;
-
-            // Divine Light
-            const lightGrad = ctx.createRadialGradient(w / 2, 0, 0, w / 2, 0, h);
-            lightGrad.addColorStop(0, `rgba(255, 255, 255, ${heavenAlpha * 0.3})`);
-            lightGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = lightGrad;
-            ctx.fillRect(0, 0, w, h);
-        }
-    }
-
-    // --- CELESTIAL BODIES ---
-    // Sun / Moon depending on height
-    const sunY = h * 0.2 + (score * 0.5);
-    if (sunY < h + 100 && score < 8000) {
-        // Sun Glow
-        const sunGrad = ctx.createRadialGradient(w / 2, sunY, 0, w / 2, sunY, 150);
-        sunGrad.addColorStop(0, 'rgba(255, 255, 200, 0.4)');
-        sunGrad.addColorStop(1, 'rgba(255, 255, 200, 0)');
-        ctx.fillStyle = sunGrad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = '#ffde7d';
-        ctx.beginPath();
-        ctx.arc(w / 2, sunY, 60, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // Stars (Visible at high altitudes)
-    const starOpacity = score < 9500 ? Math.max(0, Math.min(1, (score - 600) / 400)) : Math.max(0, 1 - (score - 9500) / 500); // Fade out in Heaven
-    if (starOpacity > 0) {
-        ctx.globalAlpha = starOpacity;
-        ctx.fillStyle = '#ffffff';
-        stars.forEach(s => {
-            const sx = (camX * 0.05 + s.x) % w;
-            const sy = (camY * 0.05 + s.y) % h;
-            const size = s.size + Math.sin(time * 5 + s.phase) * 0.5;
-            ctx.beginPath();
-            ctx.arc(sx, sy, Math.max(0, size), 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1;
-    }
-
-    // --- BUILDINGS --- (Fade out quickly)
-    const buildAlpha = Math.max(0, 1 - score / 150);
-    if (buildAlpha > 0) {
-        ctx.globalAlpha = buildAlpha;
-        buildings.forEach(b => {
-            // Parallax
-            const bx = (camX * 0.3 + b.x + 50000) % 3000 - 1000;
-            const by = h - b.height + (score * 3);
-
-            ctx.fillStyle = b.color;
-            ctx.fillRect(bx, by, b.width, b.height);
-
-            if (b.windows) {
-                ctx.fillStyle = 'rgba(255,255,200,0.3)';
-                for (let wy = by + 10; wy < by + b.height; wy += 20) {
-                    for (let wx = bx + 5; wx < bx + b.width - 5; wx += 15) {
-                        if (Math.random() > 0.3) ctx.fillRect(wx, wy, 8, 12);
-                    }
-                }
-            }
-        });
-        ctx.globalAlpha = 1;
-    }
-
-    // --- CLOUDS ---
-    const cloudAlpha = score < 600 ? 1 : Math.max(0, 1 - (score - 600) / 200);
-    if (cloudAlpha > 0) {
-        ctx.globalAlpha = cloudAlpha * 0.7;
-        clouds.forEach((c) => {
-            const cx = (camX * 0.1 + c.x + time * c.speed * 50 + 50000) % 4000 - 1000;
-            const cy = h * 0.5 + c.y + (score * 2) - 300;
-
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(cx, cy, c.size, 0, Math.PI * 2);
-            ctx.arc(cx + c.size * 0.7, cy - c.size * 0.5, c.size * 0.8, 0, Math.PI * 2);
-            ctx.arc(cx - c.size * 0.7, cy - c.size * 0.3, c.size * 0.6, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1;
-    }
-
-    // --- PLANETS --- (Space Only)
-    const planetAlpha = score < 9500 ? Math.max(0, Math.min(1, (score - 800) / 200)) : Math.max(0, 1 - (score - 9500) / 500);
-    if (planetAlpha > 0) {
-        ctx.globalAlpha = planetAlpha;
-        planets.forEach((p, i) => {
-            const px = (camX * 0.02 + p.x) % 5000 - 1000;
-            const py = p.y - (score * 1.0) + 1000;
-
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(px, py, p.size, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (p.texture) {
-                ctx.fillStyle = 'rgba(0,0,0,0.1)';
-                ctx.beginPath();
-                ctx.arc(px, py, p.size * 0.8, 0, Math.PI, false);
-                ctx.fill();
-            }
-
-            if (p.ring) {
-                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.ellipse(px, py, p.size * 2.2, p.size * 0.5, -0.3, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-        });
-        ctx.globalAlpha = 1;
-    }
-}
-
-function loop() {
-    if (!gameState.running && !gameState.gameOver) return;
-
-    // 1. Timer Logic
-    if (gameState.running) {
-        gameState.timer -= TIMER_DECAY;
-        if (gameState.timer <= 0) {
-            gameState.timer = 0;
-            gameOver();
-        }
-        timerBar.style.width = `${gameState.timer}%`;
-
-        if (gameState.timer < 30) timerBar.style.background = '#f44336';
-        else if (gameState.timer < 60) timerBar.style.background = '#ff9800';
-        else timerBar.style.background = 'linear-gradient(90deg, #ffeb3b, #ff9800, #f44336)';
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const targetPlayerPos = gameState.stairs[gameState.score] || { x: 0, y: 0 };
-
-    gameState.renderPlayer.x += (targetPlayerPos.x - gameState.renderPlayer.x) * 0.2;
-    gameState.renderPlayer.y += (targetPlayerPos.y - gameState.renderPlayer.y) * 0.2;
-
-    const camX = -gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
-
-    // CAMERA OFFSET FIX (Lower the character)
-    // Old: + canvas.height/2 - 200;
-    // New: + canvas.height/2 + 50; (Lower is higher Y in current coord logic? Wait.)
-    // Logic: camY subtraction moves objects UP.
-    // sy = camY - s.y * STAIR_H
-    // If we want objects LOWER on screen, sy must be larger.
-    // So camY must be larger.
-    const camY = gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + 100;
-
-    drawBackground(camX, camY);
-
-    // Stairs
-    gameState.stairs.forEach((s, i) => {
-        if (i < gameState.score - 5 || i > gameState.score + 18) return;
-
-        const sx = camX + s.x * STAIR_W;
-        const sy = camY - s.y * STAIR_H;
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
-
-        // Body with Gradient
-        const grad = ctx.createLinearGradient(sx, sy, sx, sy + STAIR_H);
-        if (i === gameState.score) {
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(1, '#dfe6e9');
-        } else {
-            // HEAVEN STAIRS?
-            if (gameState.score > 10000) {
-                grad.addColorStop(0, '#fdcb6e'); // Gold
-                grad.addColorStop(1, '#e17055');
+    if (!isGameOver) {
+        timeLeft -= dt;
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            if (isTraining) {
+                // Time out penalty
+                // Force game over logic handled in next check or explicit
+                gameOver();
             } else {
-                grad.addColorStop(0, '#a29bfe');
-                grad.addColorStop(1, '#6c5ce7');
+                gameOver();
             }
         }
-        ctx.fillStyle = grad;
-        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+    }
 
-        // Highlight
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
+    render();
 
-        // COINS
-        if (s.hasCoin) {
-            const time = Date.now() * 0.005;
-            const cy = sy - 40 + Math.sin(time) * 5;
+    if (!isGameOver) {
+        requestAnimationFrame(gameLoop);
+    }
+}
 
-            // Size based on Value
-            let size = 10;
-            let col = '#f1c40f'; // 1
-            if (s.coinVal === 5) { size = 15; col = '#00d2d3'; }
-            if (s.coinVal === 10) { size = 20; col = '#ff6b6b'; }
+function render() {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            ctx.fillStyle = col;
-            ctx.strokeStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(sx, cy, size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.stroke();
+    // Camera follow
+    let cameraY = 0;
+    if (character.y < CANVAS_HEIGHT / 2) {
+        cameraY = CANVAS_HEIGHT / 2 - character.y;
+    }
 
-            // Text?
-            ctx.fillStyle = '#000';
-            ctx.font = "bold 10px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(s.coinVal, sx, cy + 3);
+    ctx.save();
+    ctx.translate(0, cameraY);
 
-            // Sparkle
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(sx - size * 0.3, cy - size * 0.3, size * 0.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
+    // Draw Stairs
+    stairs.forEach((s, i) => {
+        if (i < stairIndex - 5) return; // Optimization
+        ctx.fillStyle = i === stairIndex ? '#e74c3c' : '#3498db';
+        ctx.fillRect(s.x, s.y, STAIR_WIDTH, STAIR_HEIGHT);
     });
 
-    // Particles (Coins text)
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.life -= 0.02;
-        p.y += p.dy * p.life; // Slow down
-        if (p.life <= 0) {
-            particles.splice(i, 1);
-            continue;
-        }
+    // Draw Character
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(character.x, character.y, CHARACTER_SIZE / 2, CHARACTER_SIZE);
 
-        const px = camX + p.x * STAIR_W;
-        const py = camY - p.y * STAIR_H - 50;
-
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.font = "bold 24px Arial";
-        ctx.fillText(p.val || p.text, px, py);
-        ctx.globalAlpha = 1;
-    }
-
-    // Player
-    const px = camX + gameState.renderPlayer.x * STAIR_W;
-    const py = camY - gameState.renderPlayer.y * STAIR_H;
-
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(px, py + 5, PLAYER_R, PLAYER_R * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Body
-    const pGrad = ctx.createRadialGradient(px - 4, py - 24, 2, px, py - 20, PLAYER_R);
-    if (gameState.score > 10000) {
-        pGrad.addColorStop(0, '#ffffff');
-        pGrad.addColorStop(1, '#dfe6e9');
+    // Draw Eyes
+    ctx.fillStyle = 'white';
+    if (character.facing === 'right') {
+        ctx.fillRect(character.x + 20, character.y + 10, 5, 5);
     } else {
-        pGrad.addColorStop(0, '#55efc4');
-        pGrad.addColorStop(1, '#00b894');
+        ctx.fillRect(character.x + 5, character.y + 10, 5, 5);
     }
-    ctx.fillStyle = pGrad;
-    ctx.beginPath();
-    ctx.arc(px, py - 20, PLAYER_R, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
 
-    // Eyes
-    ctx.fillStyle = '#000';
-    const lookDir = gameState.playerDir === 1 ? 1 : -1;
-    ctx.beginPath();
-    ctx.arc(px + lookDir * 4, py - 22, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.restore();
 
-    // Arrow
-    ctx.fillStyle = '#ffeaa7';
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "center";
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = 'black';
-    const arrow = gameState.playerDir === 1 ? "→" : "←";
-    const bounce = Math.sin(Date.now() / 150) * 4;
-    ctx.fillText(arrow, px, py - 45 + bounce);
-    ctx.shadowBlur = 0;
-
-    if (gameState.running) requestAnimationFrame(loop);
+    // UI Update
+    scoreEl.innerText = score;
+    timerBar.style.width = `${(timeLeft / MAX_TIME) * 100}%`;
+    coinCountEl.innerText = coins;
 }
-// Controls
-startBtn.addEventListener('click', initGame);
-aiBtn.addEventListener('click', () => {
-    gameState.aiEnabled = !gameState.aiEnabled;
-    aiBtn.innerText = gameState.aiEnabled ? "AI: ON" : "AI: OFF";
-    aiBtn.style.background = gameState.aiEnabled ? "#f44336" : "#2196f3";
-});
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'KeyJ') handleInput(0);
-    if (e.code === 'KeyF') handleInput(1);
-    if (e.code === 'Space' && !gameState.running) initGame();
+
+// --- Interaction ---
+
+function startGame() {
+    initGame();
+    lastTime = performance.now();
+    startBtn.style.display = 'none';
+    statusEl.innerText = "Playing...";
+    requestAnimationFrame(gameLoop);
+}
+
+// --- AI Runner ---
+
+function aiTick() {
+    if (isGameOver) return;
+
+    let delay = isTraining ? (20) : 200; // Super fast training, normal playing
+
+    const state = getAIState();
+    const action = chooseAction(state); // 0=Climb, 1=Turn
+
+    if (action === 0) actionClimb();
+    else actionTurn();
+
+    render(); // Force render update for visual
+
+    if (!isGameOver) {
+        setTimeout(aiTick, delay);
+    }
+}
+
+function startTrainingEpisode() {
+    if (!isTraining) return;
+    initGame();
+    lastTime = performance.now();
+    // Do not run gameLoop for animation frame to save performance? 
+    // Or run it to see. Let's run it.
+    requestAnimationFrame(gameLoop);
+    aiTick();
+}
+
+// --- Event Listeners ---
+
+btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); actionTurn(); });
+btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); actionClimb(); });
+btnTurn.addEventListener('click', actionTurn);
+btnJump.addEventListener('click', actionClimb);
+
+startBtn.addEventListener('click', startGame);
+
+trainBtn.addEventListener('click', () => {
+    isTraining = !isTraining;
+    isAutoPlaying = false;
+
+    if (isTraining) {
+        trainBtn.innerText = "⏹️ 학습 중지";
+        trainBtn.style.backgroundColor = "#e74c3c";
+        statusEl.innerText = "AI 학습중...";
+        autoPlayBtn.disabled = true;
+        startTrainingEpisode();
+    } else {
+        trainBtn.innerText = "🧠 AI 학습하기";
+        trainBtn.style.backgroundColor = "#e67e22";
+        statusEl.innerText = "학습 중지됨";
+        learningStatusEl.innerText = "AI 상태: 학습 완료 (지식 보유중)";
+        autoPlayBtn.disabled = false;
+
+        // Stop the loop
+        isGameOver = true;
+    }
 });
 
-// Mobile Controls Events
-btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
-btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
+autoPlayBtn.addEventListener('click', () => {
+    isAutoPlaying = true;
+    isTraining = false;
+    statusEl.innerText = "AI 실행중...";
+    startGame();
+    aiTick();
+});
 
-btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(0); });
-btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
+resetAiBtn.addEventListener('click', () => {
+    if (confirm("정말 AI의 지식을 초기화하시겠습니까?")) {
+        qTable = {};
+        episode = 0;
+        epsilon = 1.0;
+        aiHighScore = 0;
+        episodeCountEl.innerText = 0;
+        highScoreEl.innerText = 0;
+        learningStatusEl.innerText = "AI 상태: 리셋됨";
+    }
+});
+
+// Initial Setup
+initGame();
