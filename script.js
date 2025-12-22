@@ -20,7 +20,7 @@ const useONNX = true; // Flag to force ONNX
 async function initONNX() {
     try {
         statusEl.innerText = "AI 모델 로딩중...";
-        ortSession = await ort.InferenceSession.create('./model.onnx');
+        ortSession = await ort.InferenceSession.create('./model_fixed.onnx');
         statusEl.innerText = "AI 준비됨 (Static)";
         console.log("ONNX Model Loaded");
     } catch (e) {
