@@ -1,50 +1,39 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const startBtn = document.getElementById('start-btn');
-const aiBtn = document.getElementById('ai-btn');
 const scoreEl = document.getElementById('score');
 const statusEl = document.getElementById('status');
 const timerBar = document.getElementById('timer-bar');
 const coinEl = document.getElementById('coin-count');
 
+// Menu & Buttons
+const menuOverlay = document.getElementById('menu-overlay');
+const startBtn = document.getElementById('start-btn');
+const trainBtn = document.getElementById('train-btn');
+const autoPlayBtn = document.getElementById('auto-play-btn');
+const resetAiBtn = document.getElementById('reset-ai-btn');
+const stopBtn = document.getElementById('stop-btn');
+
+const learningStatusEl = document.getElementById('learning-status');
+const episodeCountEl = document.getElementById('episode-count');
+const highScoreEl = document.getElementById('high-score');
+
 // Mobile Buttons
 const btnTurn = document.getElementById('btn-turn');
 const btnJump = document.getElementById('btn-jump');
 
-// Socket / AI
-let ws = null;
-let ortSession = null;
-const useONNX = true;
+// --- AI Logic (Q-Learning) ---
+let qTable = {};
+let isTraining = false;
+let isAutoPlaying = false;
+let epsilon = 1.0;
+const EPSILON_DECAY = 0.999; // Slower decay for better learning
+const MIN_EPSILON = 0.01;
+const ALPHA = 0.1;
+const GAMMA = 0.9;
+let episode = 0;
+let aiHighScore = 0;
 
-async function initONNX() {
-    try {
-        statusEl.innerText = "AI 모델 로딩중...";
-        // Intentionally failing or placeholder if file missing, handled by catch
-        ortSession = await ort.InferenceSession.create('./model.onnx');
-        statusEl.innerText = "AI 준비됨";
-    } catch (e) {
-        console.error("ONNX Load Failed", e);
-        // Do not alert, just log. Setup game anyway.
-        statusEl.innerText = "AI 로드 실패(게임은 가능)";
-    }
-}
-
-if (useONNX) {
-    initONNX();
-}
-
-let gameState = {
-    running: false,
-    score: 0,
-    coinCount: 0,
-    playerDir: 1,
-    stairs: [],
-    gameOver: false,
-    aiEnabled: false,
-    timer: 100,
-    renderPlayer: { x: 0, y: 0 }
-};
-
+// Game Config
 const STAIR_W = 100;
 const STAIR_H = 25;
 const PLAYER_R = 12;
@@ -52,6 +41,18 @@ const MAX_TIMER = 100;
 const TIMER_DECAY = 0.3;
 const TIMER_BONUS = 15;
 
+let gameState = {
+    running: false,
+    score: 0,
+    coinCount: 0,
+    playerDir: 1, // 1=Right, 0=Left
+    stairs: [],
+    gameOver: false,
+    timer: 100,
+    renderPlayer: { x: 0, y: 0 }
+};
+
+// --- Beautiful Graphics Assets ---
 const buildings = [];
 const clouds = [];
 const planets = [];
@@ -71,35 +72,19 @@ function initBackgroundObjects() {
     }
     clouds.length = 0;
     for (let i = 0; i < 40; i++) {
-        clouds.push({
-            x: Math.random() * 4000 - 2000,
-            y: Math.random() * 800,
-            size: 50 + Math.random() * 80,
-            speed: (Math.random() - 0.5) * 0.8,
-            opacity: 0.3 + Math.random() * 0.5
-        });
+        clouds.push({ x: Math.random() * 4000 - 2000, y: Math.random() * 800, size: 50 + Math.random() * 80, speed: (Math.random() - 0.5) * 0.8, opacity: 0.3 + Math.random() * 0.5 });
     }
     planets.length = 0;
     const pColors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#e056fd'];
     for (let i = 0; i < 20; i++) {
         planets.push({
-            x: Math.random() * 5000 - 2500,
-            y: Math.random() * 4000,
-            size: 15 + Math.random() * 80,
-            color: pColors[Math.floor(Math.random() * pColors.length)],
-            ring: Math.random() > 0.6,
-            texture: Math.random() > 0.5
+            x: Math.random() * 5000 - 2500, y: Math.random() * 4000, size: 15 + Math.random() * 80,
+            color: pColors[Math.floor(Math.random() * pColors.length)], ring: Math.random() > 0.6, texture: Math.random() > 0.5
         });
     }
     stars.length = 0;
     for (let i = 0; i < 200; i++) {
-        stars.push({
-            x: Math.random() * 2000,
-            y: Math.random() * 2000,
-            size: Math.random() * 2,
-            blinkSpeed: 0.05 + Math.random() * 0.1,
-            phase: Math.random() * Math.PI * 2
-        });
+        stars.push({ x: Math.random() * 2000, y: Math.random() * 2000, size: Math.random() * 2, blinkSpeed: 0.05 + Math.random() * 0.1, phase: Math.random() * Math.PI * 2 });
     }
 }
 
@@ -108,12 +93,13 @@ function resize() {
     canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resize);
-resize();
 
+// --- Core Game Functions ---
 
 function initGame() {
+    // Reset Game State
     gameState.score = 0;
-    gameState.coinCount = 0;
+    gameState.coinCount = 0; // Keep global coin count? Maybe reset per game
     gameState.running = true;
     gameState.gameOver = false;
     gameState.playerDir = 1;
@@ -121,13 +107,18 @@ function initGame() {
     gameState.timer = MAX_TIMER;
     particles.length = 0;
 
-    startBtn.style.display = 'none';
-    aiBtn.style.display = 'none';
-    timerBar.parentElement.style.opacity = 1;
+    // UI Updates
+    menuOverlay.style.display = 'none';
+    if (isTraining || isAutoPlaying) {
+        stopBtn.style.display = 'inline-block';
+    } else {
+        stopBtn.style.display = 'none'; // Human play doesn't need stop button on screen usually, but let's keep it clean
+        // Maybe add a pause button for human? For now, no.
+    }
 
-    let cx = 0, cy = 0;
-    gameState.stairs.push({ x: cx, y: cy, dir: 1, hasCoin: false, coinVal: 0 });
-    gameState.renderPlayer = { x: cx, y: cy };
+    // Init Object
+    gameState.stairs.push({ x: 0, y: 0, dir: 1, hasCoin: false, coinVal: 0 });
+    gameState.renderPlayer = { x: 0, y: 0 };
 
     for (let i = 0; i < 30; i++) {
         addStair();
@@ -135,33 +126,45 @@ function initGame() {
     initBackgroundObjects();
 
     scoreEl.innerText = 0;
-    if (coinEl) coinEl.innerText = 0;
     statusEl.innerText = "";
 
-    // Core Fix: Must loop to render
-    loop();
+    // AI Trigger
+    if (isTraining || isAutoPlaying) {
+        if (isAutoPlaying) {
+            statusEl.innerText = "Robot Playing...";
+        }
+        aiTick();
+    }
 }
 
-function showButtons() {
+function stopGame() {
+    gameState.running = false;
+    isTraining = false;
+    isAutoPlaying = false;
+    menuOverlay.style.display = 'block';
+    stopBtn.style.display = 'none';
+
+    // Reset buttons
+    trainBtn.innerText = "🧠 AI 학습하기";
+    trainBtn.style.background = "#e67e22";
+    autoPlayBtn.disabled = false;
+
+    statusEl.innerText = "Ready";
     startBtn.style.display = 'inline-block';
-    aiBtn.style.display = 'none'; // Keep AI hidden for now
 }
 
 function addStair() {
     const last = gameState.stairs[gameState.stairs.length - 1];
     if (gameState.stairs.length < 6) {
-        gameState.stairs.push({ x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0 });
+        gameState.stairs.push({
+            x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0
+        });
         return;
     }
-    let nextDir;
-    if (Math.random() < 0.7) { nextDir = last.dir; } else { nextDir = last.dir === 1 ? 0 : 1; }
-    let hasCoin = false;
-    let coinVal = 0;
-    if (Math.random() < 0.3) {
-        hasCoin = true;
-        const r = Math.random();
-        if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
-    }
+    let nextDir = Math.random() < 0.7 ? last.dir : (last.dir === 1 ? 0 : 1);
+    let hasCoin = Math.random() < 0.3;
+    let coinVal = hasCoin ? (Math.random() < 0.6 ? 1 : 5) : 0;
+
     gameState.stairs.push({
         x: last.x + (nextDir === 1 ? 1 : -1),
         y: last.y + 1,
@@ -171,43 +174,144 @@ function addStair() {
     });
 }
 
-function handleInput(action) {
-    if (!gameState.running) return;
-    const currentStairIndex = gameState.score;
-    const currPos = gameState.stairs[currentStairIndex];
-    const targetPos = gameState.stairs[currentStairIndex + 1];
+function performAction(action) {
+    // 0: Jump, 1: Turn
+    if (!gameState.running) return -10;
 
-    if (!targetPos) { addStair(); return handleInput(action); }
+    const idx = gameState.score;
+    const curr = gameState.stairs[idx];
+    const next = gameState.stairs[idx + 1];
 
-    const requiredDir = (targetPos.x > currPos.x) ? 1 : 0;
-    let chosenDir;
-    if (action === 0) { chosenDir = gameState.playerDir; } else { chosenDir = gameState.playerDir === 1 ? 0 : 1; }
+    if (!next) { addStair(); return performAction(action); }
 
-    if (chosenDir === requiredDir) {
+    const reqDir = (next.x > curr.x) ? 1 : 0;
+    let myNextDir;
+
+    if (action === 0) { // Jump (Same Dir)
+        myNextDir = gameState.playerDir;
+    } else { // Turn (Switch Dir)
+        myNextDir = (gameState.playerDir === 1) ? 0 : 1;
+    }
+
+    if (myNextDir === reqDir) {
+        // Success
         gameState.score++;
-        gameState.playerDir = chosenDir;
+        gameState.playerDir = myNextDir;
         scoreEl.innerText = gameState.score;
-        if (targetPos.hasCoin) {
-            gameState.coinCount += targetPos.coinVal;
-            if (coinEl) coinEl.innerText = gameState.coinCount;
-            targetPos.hasCoin = false;
-            let col = '#ffd700'; if (targetPos.coinVal === 5) col = '#00d2d3'; if (targetPos.coinVal === 10) col = '#ff6b6b';
-            particles.push({ type: 'text', val: '+' + targetPos.coinVal, x: targetPos.x, y: targetPos.y, life: 1.0, color: col, dy: -2 });
-        }
         addStair();
         gameState.timer = Math.min(MAX_TIMER, gameState.timer + TIMER_BONUS);
+
+        if (next.hasCoin) {
+            gameState.coinCount += next.coinVal;
+            coinEl.innerText = gameState.coinCount;
+            next.hasCoin = false;
+            // Better Particle
+            let col = '#ffd700';
+            if (next.coinVal === 5) col = '#00d2d3';
+            if (next.coinVal === 10) col = '#ff6b6b';
+            particles.push({ type: 'text', val: '+' + next.coinVal, x: next.x, y: next.y, life: 1.0, color: col, dy: -3 });
+        }
+        return 10;
     } else {
+        // Fail
         gameOver();
+        return -50;
     }
+}
+
+function handleInput(action) {
+    if (isTraining || isAutoPlaying) return;
+    performAction(action);
 }
 
 function gameOver() {
     gameState.running = false;
     gameState.gameOver = true;
-    statusEl.innerText = "Game Over!";
-    showButtons();
+
+    if (gameState.score > aiHighScore) {
+        aiHighScore = gameState.score;
+        highScoreEl.innerText = aiHighScore;
+    }
+
+    if (isTraining) {
+        episode++;
+        episodeCountEl.innerText = episode;
+        learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${aiHighScore}`;
+        if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
+
+        // Fast Restart
+        setTimeout(initGame, 20);
+    } else if (isAutoPlaying) {
+        statusEl.innerText = "AI Failed. Retry...";
+        setTimeout(initGame, 1000);
+    } else {
+        // Human Player Died
+        statusEl.innerText = "Game Over!";
+        menuOverlay.style.display = 'block';
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+    }
 }
 
+// --- AI Loop ---
+function getStateKey() {
+    // State: "NextRelDir" (0=Straight, 1=Turn)
+    // We observe the next step relative to current facing.
+    const idx = gameState.score;
+    const curr = gameState.stairs[idx];
+    const next = gameState.stairs[idx + 1];
+
+    // Safety check
+    if (!curr || !next) return "Straight";
+
+    const reqAbsDir = (next.x > curr.x) ? 1 : 0;
+    const myAbsDir = gameState.playerDir;
+
+    // If required is same as my facing -> Straight(0), else Turn(1)
+    return (reqAbsDir === myAbsDir) ? "Straight" : "Turn";
+}
+
+function aiTick() {
+    if (!gameState.running) return;
+
+    const state = getStateKey();
+
+    // Choose Action
+    let action;
+    if (isTraining && Math.random() < epsilon) {
+        action = Math.floor(Math.random() * 2);
+    } else {
+        // Exploitation
+        if (!qTable[state]) qTable[state] = [0, 0]; // Init if new
+
+        // If equal, prefer 0 (Jump)
+        if (qTable[state][0] === qTable[state][1]) {
+            action = Math.random() < 0.5 ? 0 : 1;
+        } else {
+            action = qTable[state][0] > qTable[state][1] ? 0 : 1;
+        }
+    }
+
+    // Act & Get Reward
+    const reward = performAction(action);
+    const nextState = gameState.running ? getStateKey() : "Dead";
+
+    // Learn (Q-Update)
+    if (isTraining) {
+        if (!qTable[state]) qTable[state] = [0, 0];
+        if (!qTable[nextState]) qTable[nextState] = [0, 0];
+
+        let maxNext = Math.max(...qTable[nextState]);
+        let oldVal = qTable[state][action];
+        qTable[state][action] = oldVal + ALPHA * (reward + GAMMA * maxNext - oldVal);
+    }
+
+    // Next Tick
+    let delay = isTraining ? 5 : 150; // Super fast training, Slow playback
+    if (gameState.running) setTimeout(aiTick, delay);
+}
+
+// --- RENDER (Original High Quality) ---
 function lerpColor(a, b, t) {
     const ah = parseInt(a.replace('#', ''), 16);
     const ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff;
@@ -224,6 +328,8 @@ function drawBackground(camX, camY) {
     const w = canvas.width;
     const h = canvas.height;
     const time = Date.now() * 0.001;
+
+    // Progression Colors
     const keys = [
         { scores: 0, top: '#ff9a9e', bot: '#fecfef' },
         { scores: 200, top: '#89f7fe', bot: '#66a6ff' },
@@ -232,102 +338,215 @@ function drawBackground(camX, camY) {
         { scores: 1000, top: '#000000', bot: '#1c1c1c' },
         { scores: 10000, top: '#ffffff', bot: '#dcdde1' }
     ];
+
     let k1 = keys[0], k2 = keys[keys.length - 1];
     for (let i = 0; i < keys.length - 1; i++) {
-        if (score >= keys[i].scores && score <= keys[i + 1].scores) { k1 = keys[i]; k2 = keys[i + 1]; break; } else if (score > keys[i].scores) { k1 = keys[i]; }
+        if (score >= keys[i].scores && score <= keys[i + 1].scores) {
+            k1 = keys[i]; k2 = keys[i + 1]; break;
+        } else if (score > keys[i].scores) { k1 = keys[i]; }
     }
     let t = (score - k1.scores) / (k2.scores - k1.scores + 0.001);
     t = Math.max(0, Math.min(1, t));
+
     const curTop = lerpColor(k1.top, k2.top, t);
     const curBot = lerpColor(k1.bot, k2.bot, t);
+
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, curTop); grad.addColorStop(1, curBot);
+    grad.addColorStop(0, curTop);
+    grad.addColorStop(1, curBot);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // (Omitted detailed background objects for reliability, just simple gradient first)
-}
-
-function loop() {
-    // Original Loop Logic
-    if (!gameState.running && !gameState.gameOver) return;
-
-    if (gameState.running) {
-        gameState.timer -= TIMER_DECAY;
-        if (gameState.timer <= 0) { gameState.timer = 0; gameOver(); }
-        timerBar.style.width = `${gameState.timer}%`;
-        if (gameState.timer < 30) timerBar.style.background = '#f44336';
-        else if (gameState.timer < 60) timerBar.style.background = '#ff9800';
-        else timerBar.style.background = 'linear-gradient(90deg, #ffeb3b, #ff9800, #f44336)';
+    // Stars
+    if (score > 300) { // Visible later
+        ctx.fillStyle = '#FFF';
+        stars.forEach(s => {
+            const sx = (camX * 0.05 + s.x) % w;
+            const sy = (camY * 0.05 + s.y) % h;
+            const size = s.size + Math.sin(time * 5 + s.phase) * 0.5;
+            ctx.beginPath(); ctx.arc(sx, sy, Math.max(0, size), 0, Math.PI * 2); ctx.fill();
+        });
     }
 
+    // Buildings
+    if (score < 800) {
+        buildings.forEach(b => {
+            const bx = (camX * 0.3 + b.x + 50000) % 3000 - 1000;
+            const by = h - b.height + (score * 3);
+            ctx.fillStyle = b.color;
+            ctx.fillRect(bx, by, b.width, b.height);
+            if (b.windows) {
+                ctx.fillStyle = 'rgba(255,255,200,0.3)';
+                for (let wy = by + 10; wy < by + b.height; wy += 20) {
+                    for (let wx = bx + 5; wx < bx + b.width - 5; wx += 15) {
+                        if (Math.random() > 0.3) ctx.fillRect(wx, wy, 8, 12);
+                    }
+                }
+            }
+        });
+    }
+
+    // Clouds
+    if (score < 500) {
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        clouds.forEach(c => {
+            const cx = (camX * 0.1 + c.x + time * c.speed * 50 + 50000) % 4000 - 1000;
+            const cy = h * 0.5 + c.y + (score * 2) - 300;
+            ctx.beginPath();
+            ctx.arc(cx, cy, c.size, 0, Math.PI * 2);
+            ctx.arc(cx + c.size * 0.7, cy - c.size * 0.5, c.size * 0.8, 0, Math.PI * 2);
+            ctx.arc(cx - c.size * 0.7, cy - c.size * 0.3, c.size * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+}
+
+function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const targetPlayerPos = gameState.stairs[gameState.score] || { x: 0, y: 0 };
-    gameState.renderPlayer.x += (targetPlayerPos.x - gameState.renderPlayer.x) * 0.2;
-    gameState.renderPlayer.y += (targetPlayerPos.y - gameState.renderPlayer.y) * 0.2;
-
+    // 1. Camera
+    const target = gameState.stairs[gameState.score] || { x: 0, y: 0 };
+    if (gameState.stairs.length > 0) {
+        gameState.renderPlayer.x += (target.x - gameState.renderPlayer.x) * 0.2;
+        gameState.renderPlayer.y += (target.y - gameState.renderPlayer.y) * 0.2;
+    }
     const camX = -gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
     const camY = gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + 100;
 
+    // 2. Background
     drawBackground(camX, camY);
 
+    // 3. Stairs
     gameState.stairs.forEach((s, i) => {
         if (i < gameState.score - 5 || i > gameState.score + 18) return;
         const sx = camX + s.x * STAIR_W;
         const sy = camY - s.y * STAIR_H;
 
+        // Gradient Stair
         const grad = ctx.createLinearGradient(sx, sy, sx, sy + STAIR_H);
+        grad.addColorStop(0, '#a29bfe'); grad.addColorStop(1, '#6c5ce7');
         if (i === gameState.score) { grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#dfe6e9'); }
-        else { grad.addColorStop(0, '#a29bfe'); grad.addColorStop(1, '#6c5ce7'); }
         ctx.fillStyle = grad;
         ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
 
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
+
         if (s.hasCoin) {
-            ctx.fillStyle = '#f1c40f';
+            let col = '#f1c40f';
+            if (s.coinVal === 5) col = '#00d2d3'; if (s.coinVal === 10) col = '#ff6b6b';
+            ctx.fillStyle = col;
             ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
         }
     });
 
+    // 4. Player
     const px = camX + gameState.renderPlayer.x * STAIR_W;
     const py = camY - gameState.renderPlayer.y * STAIR_H;
 
-    // Player
-    ctx.fillStyle = '#55efc4';
+    // Body
+    const pGrad = ctx.createRadialGradient(px - 4, py - 24, 2, px, py - 20, PLAYER_R);
+    pGrad.addColorStop(0, '#55efc4'); pGrad.addColorStop(1, '#00b894');
+    ctx.fillStyle = pGrad;
     ctx.beginPath(); ctx.arc(px, py - 20, PLAYER_R, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Eyes
+    ctx.fillStyle = '#000';
+    const lookDir = gameState.playerDir === 1 ? 1 : -1;
+    ctx.beginPath(); ctx.arc(px + lookDir * 4, py - 22, 3, 0, Math.PI * 2); ctx.fill();
 
     // Arrow
     ctx.fillStyle = '#ffeaa7';
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(gameState.playerDir === 1 ? "→" : "←", px, py - 45);
+    const bounce = Math.sin(Date.now() / 150) * 4;
+    ctx.fillText(gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
 
-    if (gameState.running) requestAnimationFrame(loop);
+    // 5. Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.life -= 0.02;
+        p.y += p.dy * p.life;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+        const ppx = camX + p.x * STAIR_W;
+        const ppy = camY - p.y * STAIR_H - 50;
+
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(p.val, ppx, ppy);
+        ctx.globalAlpha = 1.0;
+    }
 }
 
-startBtn.addEventListener('click', initGame);
+// --- Main Loop ---
+function loop() {
+    if (gameState.running) {
+        gameState.timer -= TIMER_DECAY;
+        if (gameState.timer <= 0) { gameState.timer = 0; gameOver(); }
+        timerBar.style.width = `${gameState.timer}%`;
+
+        let col = '#ffeb3b';
+        if (gameState.timer < 30) col = '#f44336'; else if (gameState.timer < 60) col = '#ff9800';
+        timerBar.style.background = col;
+    }
+
+    render();
+    requestAnimationFrame(loop);
+}
+
+// --- Event Listeners ---
+startBtn.addEventListener('click', () => {
+    isTraining = false; isAutoPlaying = false; initGame();
+});
+
+trainBtn.addEventListener('click', () => {
+    isTraining = !isTraining;
+    isAutoPlaying = false;
+    if (isTraining) {
+        trainBtn.innerText = "⏹️ 학습 중지";
+        trainBtn.style.background = "#c0392b";
+        initGame();
+    } else {
+        stopGame();
+    }
+});
+
+autoPlayBtn.addEventListener('click', () => {
+    isAutoPlaying = true;
+    isTraining = false;
+    initGame();
+});
+
+resetAiBtn.addEventListener('click', () => {
+    if (confirm("AI Reset?")) {
+        qTable = {}; episode = 0; epsilon = 1.0; aiHighScore = 0;
+        episodeCountEl.innerText = 0; highScoreEl.innerText = 0;
+    }
+});
+stopBtn.addEventListener('click', stopGame);
+
 window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyJ') handleInput(0);
     if (e.code === 'KeyF') handleInput(1);
-    if (e.code === 'Space' && !gameState.running) initGame();
+    if (e.code === 'Space' && !gameState.running && !isTraining) initGame();
 });
 
-// Mobile Controls
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
-btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(0); });
+btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
-// Force Init Call to render cover frame
+// Init
 resize();
-gameState.stairs = [];
-for (let i = 0; i < 30; i++) gameState.stairs.push({ x: 0, y: 0, hasCoin: false, coinVal: 0 });
-// Fake init game to draw at least once
-gameState.running = true; // Temporary
-gameState.renderPlayer = { x: 0, y: 0 };
-// Render ONE frame then stop
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-drawBackground(canvas.width / 2, canvas.height / 2 + 100);
-// Reset for real usage
 gameState.running = false;
+initBackgroundObjects();
+// Render once
+gameState.stairs.push({ x: 0, y: 0 }); // dummy
+gameState.renderPlayer = { x: 0, y: 0 };
+render();
+// Start Loop
+loop();
