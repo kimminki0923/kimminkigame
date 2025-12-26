@@ -20,8 +20,9 @@ function initAudio() {
  * @param {string} skinType - 'circle', 'square', 'triangle', 'diamond'
  */
 window.playStepSound = function (skinType = 'circle') {
+    console.log(`[SFX] Playing: ${skinType}`);
     if (!audioCtx) initAudio();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();

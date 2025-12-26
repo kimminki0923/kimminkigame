@@ -149,6 +149,7 @@ function performAction(action) {
         // PLAY SOUND (SFX)
         if (window.playStepSound) {
             const skinType = (typeof SKIN_DATA !== 'undefined' && SKIN_DATA[currentSkin]) ? SKIN_DATA[currentSkin].type : 'circle';
+            console.log(`[CORE] reqSound: ${skinType}`);
             window.playStepSound(skinType);
         }
 
@@ -268,7 +269,12 @@ function loop() {
 }
 
 // Event Listeners
-startBtn.addEventListener('click', () => { window.isTraining = false; window.isAutoPlaying = false; initGame(); });
+startBtn.addEventListener('click', () => {
+    if (window.resumeAudio) window.resumeAudio();
+    window.isTraining = false;
+    window.isAutoPlaying = false;
+    initGame();
+});
 trainBtn.addEventListener('click', () => {
     window.isTraining = !window.isTraining;
     window.isAutoPlaying = false;
