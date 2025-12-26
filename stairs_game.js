@@ -588,7 +588,6 @@ const SKIN_DATA = {
     skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 500 }
 };
 
-
 // Explicit Shop Logic (Separated for reliability)
 function bindShopEvents() {
     // Open Button
@@ -599,11 +598,13 @@ function bindShopEvents() {
             if (overlay) {
                 overlay.style.display = 'flex';
                 updateShopUI();
+                // Re-bind buy/equip buttons every time shop opens
+                bindBuyEquipButtons();
             }
         };
     }
 
-    // Close Button (ID based)
+    // Close Button (ID based - top)
     const closeBtn = document.getElementById('close-shop-btn');
     if (closeBtn) {
         closeBtn.onclick = () => {
@@ -611,6 +612,58 @@ function bindShopEvents() {
             if (overlay) overlay.style.display = 'none';
         };
     }
+
+    // Close Button (ID based - bottom)
+    const closeBtnBottom = document.getElementById('close-shop-btn-bottom');
+    if (closeBtnBottom) {
+        closeBtnBottom.onclick = () => {
+            const overlay = document.getElementById('shop-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+    }
+}
+
+// Separate function to bind buy/equip buttons (called when shop opens)
+function bindBuyEquipButtons() {
+    // Buy Buttons
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const skinId = this.dataset.id;
+            const price = parseInt(this.dataset.price);
+            console.log('[Shop] Buy clicked:', skinId, price);
+
+            if (ownedSkins.includes(skinId)) {
+                equipSkin(skinId);
+                return;
+            }
+
+            if (totalCoins >= price) {
+                totalCoins -= price;
+                ownedSkins.push(skinId);
+                if (coinEl) coinEl.innerText = totalCoins;
+                updateShopUI();
+                if (window.saveData) {
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+                }
+                alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
+                equipSkin(skinId);
+                bindBuyEquipButtons(); // Re-bind after class changes
+            } else {
+                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+            }
+        };
+    });
+
+    // Equip Buttons
+    document.querySelectorAll('.equip-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const skinId = this.dataset.skin || this.dataset.id;
+            console.log('[Shop] Equip clicked:', skinId);
+            equipSkin(skinId);
+        };
+    });
 }
 
 function updateShopUI() {
