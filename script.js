@@ -915,27 +915,36 @@ async function joinLiarRoom(roomId) {
     if (!roomId) roomId = document.getElementById('liar-room-id').value;
     if (!roomId) return alert("방 코드를 입력하세요.");
 
+    const docRef = db.collection('rooms').doc(roomId);
+
     try {
-        const docRef = db.collection('rooms').doc(roomId);
-        const doc = await docRef.get();
-        if (!doc.exists) return alert("존재하지 않는 방입니다.");
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) throw "존재하지 않는 방입니다.";
+
+            const data = doc.data();
+            const players = data.players || {};
+
+            // Limit check (30 players)
+            if (Object.keys(players).length >= 30 && !players[currentUser.uid]) {
+                throw "방이 꽉 찼습니다 (최대 30명).";
+            }
+
+            players[currentUser.uid] = {
+                name: currentUser.displayName,
+                photo: currentUser.photoURL,
+                joinedAt: Date.now()
+            };
+
+            const scores = data.scores || {};
+            if (scores[currentUser.uid] === undefined) {
+                scores[currentUser.uid] = 0;
+            }
+
+            transaction.update(docRef, { players: players, scores: scores });
+        });
 
         currentRoomId = roomId;
-
-        // Add self to players & Init Score if new
-        const data = doc.data();
-        const playerUpdate = {};
-        playerUpdate[`players.${currentUser.uid}`] = {
-            name: currentUser.displayName,
-            photo: currentUser.photoURL,
-            joinedAt: Date.now()
-        };
-
-        if (!data.scores || data.scores[currentUser.uid] === undefined) {
-            playerUpdate[`scores.${currentUser.uid}`] = 0;
-        }
-
-        await docRef.update(playerUpdate);
 
         // UI Transition
         document.getElementById('liar-entry').style.display = 'none';
@@ -949,7 +958,7 @@ async function joinLiarRoom(roomId) {
             if (snapshot.exists) syncLiarRoom(snapshot.data());
         });
 
-        // Chat Listener (Same as before)
+        // Chat Listener
         if (chatUnsubscribe) chatUnsubscribe();
         const chatList = document.getElementById('liar-chat-messages');
         chatList.innerHTML = '';
@@ -968,7 +977,7 @@ async function joinLiarRoom(roomId) {
 
     } catch (e) {
         console.error("Join Error:", e);
-        alert("방 참가 실패: " + e.message);
+        alert("입장 실패: " + e);
     }
 }
 
