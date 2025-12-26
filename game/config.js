@@ -43,8 +43,8 @@ const particles = [];
 // Persistent State (loaded from storage/Firebase)
 let epsilon = 1.0;
 let episode = 0;
-let aiHighScore = 0;
-let totalCoins = 0;
+let aiHighScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+let totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
 let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
 let skinRotation = 0;

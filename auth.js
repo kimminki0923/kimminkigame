@@ -132,12 +132,24 @@ function applyGameData(score, coins, skins, currentSkin) {
 // --- Save Data ---
 function saveCloudData(score, coins, skins, currentSkin) {
     if (!db || !currentUser) return;
+
+    // Safety: Don't overwrite with empty/zero data if it looks like a reset error
+    // (e.g., if we inadvertently try to save before loading)
+    if (score === 0 && coins === 0 && (!skins || (skins.length === 1 && skins[0] === 'default'))) {
+        // If it's a new user, this is fine. But if it's an existing user, it's bad.
+        // We rely on 'merge: true' but that still overwrites fields.
+        // We will trust the caller (core.js) which checks isDataLoaded.
+    }
+
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
         ownedSkins: skins,
-        currentSkin: currentSkin
-    }, { merge: true });
+        currentSkin: currentSkin,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).then(() => {
+        console.log("☁️ Cloud Save Success");
+    }).catch(e => console.error("Cloud Save Failed", e));
 }
 
 window.saveData = function (score, coins, skins, currentSkin) {

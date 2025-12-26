@@ -61,6 +61,11 @@ function initGame() {
     scoreEl.innerText = 0;
     statusEl.innerText = "";
 
+    // Initial UI Update from loaded config
+    if (highScoreEl) highScoreEl.innerText = aiHighScore;
+    if (coinEl) coinEl.innerText = totalCoins;
+    updateShopUI();
+
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
             statusEl.innerText = "Robot Playing...";
