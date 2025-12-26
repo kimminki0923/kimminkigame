@@ -36,6 +36,7 @@ let totalCoins = 0;
 let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
 let skinRotation = 0; // For animation
+let isDataLoaded = false; // Persistence Guard
 
 // Game Config
 const STAIR_W = 100;
@@ -679,46 +680,15 @@ document.getElementById('close-shop-btn')?.addEventListener('click', () => {
     if (overlay) overlay.style.display = 'none';
 });
 
-// Shop Interaction Logic (Drag-to-Scroll + Click)
-const shopScrollArea = document.getElementById('shop-scroll-area');
-let isDragging = false;
-let startY, startScrollTop;
-
+// Shop Interaction Logic (Restored to Simple & Reliable)
 function initShopInteractions() {
-    if (!shopScrollArea) return;
-
-    const startDrag = (pageY) => {
-        isDragging = true;
-        shopScrollArea.classList.add('active');
-        startY = pageY;
-        startScrollTop = shopScrollArea.scrollTop;
-    };
-
-    const moveDrag = (pageY) => {
-        if (!isDragging) return;
-        const delta = (pageY - startY) * 1.4; // Slightly faster scroll
-        shopScrollArea.scrollTop = startScrollTop - delta;
-    };
-
-    const endDrag = () => {
-        isDragging = false;
-        shopScrollArea.classList.remove('active');
-    };
-
-    // Mouse Events
-    shopScrollArea.addEventListener('mousedown', (e) => startDrag(e.pageY));
-    window.addEventListener('mousemove', (e) => moveDrag(e.pageY));
-    window.addEventListener('mouseup', endDrag);
-
-    // Touch Events
-    shopScrollArea.addEventListener('touchstart', (e) => startDrag(e.touches[0].pageY), { passive: true });
-    window.addEventListener('touchmove', (e) => {
-        if (isDragging) {
-            moveDrag(e.touches[0].pageY);
-            if (e.cancelable) e.preventDefault();
-        }
-    }, { passive: false });
-    window.addEventListener('touchend', endDrag);
+    // We let the browser handle natural scrolling for maximum reliability
+    // but ensure the container is focused.
+    const area = document.getElementById('shop-scroll-area');
+    if (area) {
+        area.style.overflowY = 'auto';
+        area.style.webkitOverflowScrolling = 'touch';
+    }
 }
 initShopInteractions();
 
@@ -1023,7 +993,7 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 
 // --- Data Bridge (Connected to auth.js) ---
 window.setGameData = function (score, coins, skins, cSkin) {
-    console.log(`Loaded Game Data: Score ${score}, Coins ${coins}, Skins ${skins?.length}`);
+    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
     aiHighScore = score;
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
 
@@ -1033,6 +1003,7 @@ window.setGameData = function (score, coins, skins, cSkin) {
     if (skins) ownedSkins = skins;
     if (cSkin) currentSkin = cSkin;
 
+    isDataLoaded = true; // Unlock saving
     updateShopUI();
 }
 
@@ -1065,8 +1036,8 @@ function gameOver() {
         highScoreEl.innerText = aiHighScore;
     }
 
-    // TRIGGER SAVE (Only for human)
-    if (window.saveData) {
+    // TRIGGER SAVE (Only for human and AFTER data is loaded)
+    if (window.saveData && isDataLoaded) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
     }
 
@@ -1080,7 +1051,7 @@ function gameOver() {
 
 // Ensure saving on tab close/refresh
 window.addEventListener('beforeunload', () => {
-    if (window.saveData && !isTraining && !isAutoPlaying) {
+    if (window.saveData && isDataLoaded && !isTraining && !isAutoPlaying) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
     }
 });
