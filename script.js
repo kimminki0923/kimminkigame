@@ -1353,7 +1353,7 @@ async function sendDescription() {
     }
 }
 
-async function voteForPlayer(targetUid) {
+async function voteForPlayer_deprecated(targetUid) {
     if (!currentRoomId || !currentUser) return;
     const docRef = db.collection('rooms').doc(currentRoomId);
 
@@ -1419,23 +1419,62 @@ async function voteForPlayer(targetUid) {
         }
     });
 
-    // Post-Transaction Score Update (Simplification)
-    // In real app, cloud functions are better. Here we rely on the LAST Voter triggers scores.
-    // Check state after vote
-    const snap = await docRef.get();
-    const data = snap.data();
-    if (data.status === 'liar_guess' && data.votes && Object.keys(data.votes).length === Object.keys(data.players).length) {
-        // Civilians found liar -> +1 to all civilians
-        const scores = data.scores || {};
-        Object.keys(data.players).forEach(uid => {
-            if (uid !== data.liarId) scores[uid] = (scores[uid] || 0) + 1;
+
+}
+
+async function voteForPlayer(targetUid) {
+    if (!currentRoomId || !currentUser) return;
+    const docRef = db.collection('rooms').doc(currentRoomId);
+
+    const buttons = document.querySelectorAll('#vote-buttons button');
+    buttons.forEach(btn => btn.disabled = true);
+    document.getElementById('vote-status').innerText = "투표 처리 중...";
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) throw "Room does not exist!";
+            const data = doc.data();
+
+            if (data.status !== 'voting') throw "Not voting time!";
+            if (data.votes && data.votes[currentUser.uid]) throw "Already voted!";
+
+            const votes = data.votes || {};
+            votes[currentUser.uid] = targetUid;
+            const players = Object.keys(data.players);
+            let updateData = { votes: votes };
+
+            if (Object.keys(votes).length === players.length) {
+                const voteCounts = {};
+                Object.values(votes).forEach(v => { voteCounts[v] = (voteCounts[v] || 0) + 1; });
+                let maxVotes = 0; let candidates = [];
+                for (const [uid, count] of Object.entries(voteCounts)) {
+                    if (count > maxVotes) { maxVotes = count; candidates = [uid]; }
+                    else if (count === maxVotes) candidates.push(uid);
+                }
+
+                if (candidates.length > 1) {
+                    updateData.status = 'discussion'; updateData.votes = {};
+                } else {
+                    const eliminatedId = candidates[0];
+                    const scores = data.scores || {};
+                    if (eliminatedId === data.liarId) {
+                        // Liar caught: Civilians +1
+                        players.forEach(uid => { if (uid !== data.liarId) scores[uid] = (scores[uid] || 0) + 1; });
+                        updateData.status = 'liar_guess'; updateData.votedOutId = eliminatedId; updateData.scores = scores;
+                    } else {
+                        // Liar win: Liar +1
+                        scores[data.liarId] = (scores[data.liarId] || 0) + 1;
+                        updateData.status = 'result'; updateData.winner = 'liar'; updateData.roundWinner = 'liar'; updateData.votedOutId = eliminatedId; updateData.scores = scores; updateData.votes = {};
+                    }
+                }
+            }
+            transaction.update(docRef, updateData);
         });
-        await docRef.update({ scores: scores, votes: {} }); // Clear votes to prevent re-run
-    } else if (data.status === 'result' && data.roundWinner === 'liar' && data.votes && Object.keys(data.votes).length > 0) {
-        // Liar won by wrong vote -> +1 to Liar
-        const scores = data.scores || {};
-        scores[data.liarId] = (scores[data.liarId] || 0) + 1;
-        await docRef.update({ scores: scores, votes: {} });
+    } catch (e) {
+        console.error("Vote Error:", e);
+        document.querySelectorAll('#vote-buttons button').forEach(btn => btn.disabled = false);
+        document.getElementById('vote-status').innerText = "투표 실패: " + e;
     }
 }
 
