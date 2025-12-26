@@ -21,7 +21,7 @@ const highScoreEl = document.getElementById('high-score');
 const btnTurn = document.getElementById('btn-turn');
 const btnJump = document.getElementById('btn-jump');
 
-// --- AI Logic (Q-Learning) ---
+// --- AI & Persistent State ---
 let qTable = {};
 let isTraining = false;
 let isAutoPlaying = false;
@@ -32,6 +32,10 @@ const ALPHA = 0.1;
 const GAMMA = 0.9;
 let episode = 0;
 let aiHighScore = 0;
+let totalCoins = 0;
+let currentSkin = localStorage.getItem('currentSkin') || 'default';
+let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+let skinRotation = 0; // For animation
 
 // Game Config
 const STAIR_W = 100;
@@ -223,6 +227,9 @@ function performAction(action) {
         addStair();
         gameState.timer = Math.min(MAX_TIMER, gameState.timer + TIMER_BONUS);
 
+        // Update Skin Rotation
+        updateSkinRotation();
+
         if (next.hasCoin) {
             gameState.coinCount += next.coinVal; // Session count
 
@@ -231,10 +238,6 @@ function performAction(action) {
                 totalCoins += next.coinVal;
                 coinEl.innerText = totalCoins;
             } else {
-                // If AI, just show data but don't commit to totalCoins logic yet (or separate them)
-                // Actually user requested "AI earnings excluded". 
-                // So we do NOT add to totalCoins if AI.
-                // But we still want to show "+coin" effect.
                 coinEl.innerText = "(AI)";
             }
 
@@ -308,31 +311,7 @@ function updateFall() {
     }
 }
 
-function gameOver() {
-    gameState.running = false;
-    gameState.gameOver = true;
-
-    if (gameState.score > aiHighScore) {
-        aiHighScore = gameState.score;
-        highScoreEl.innerText = aiHighScore;
-    }
-
-    if (isTraining) {
-        episode++;
-        episodeCountEl.innerText = episode;
-        learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${aiHighScore}`;
-        if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
-        setTimeout(initGame, 20);
-    } else if (isAutoPlaying) {
-        statusEl.innerText = "AI Failed. Retry...";
-        setTimeout(initGame, 1000);
-    } else {
-        statusEl.innerText = "Game Over!";
-        menuOverlay.style.display = 'block';
-        startBtn.style.display = 'inline-block';
-        stopBtn.style.display = 'none';
-    }
-}
+// (Duplicate gameOver at 311 removed - using improved version at 984)
 
 // --- AI Loop ---
 function getStateKey() {
@@ -581,23 +560,9 @@ function render() {
     const px = camX + gameState.renderPlayer.x * STAIR_W;
     const py = camY - gameState.renderPlayer.y * STAIR_H;
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(px, py + 5, PLAYER_R, PLAYER_R * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+    drawPlayerWithSkin(ctx, px, py, gameState.playerDir);
 
-    // Body
-    const pGrad = ctx.createRadialGradient(px - 4, py - 24, 2, px, py - 20, PLAYER_R);
-    pGrad.addColorStop(0, '#55efc4'); pGrad.addColorStop(1, '#00b894');
-    ctx.fillStyle = pGrad;
-    ctx.beginPath(); ctx.arc(px, py - 20, PLAYER_R, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-
-    // Eyes
-    ctx.fillStyle = '#000';
-    const lookDir = gameState.playerDir === 1 ? 1 : -1;
-    ctx.beginPath(); ctx.arc(px + lookDir * 4, py - 22, 3, 0, Math.PI * 2); ctx.fill();
-
-    // Arrow
+    // 5. Arrow (Moving Arrow below Player display)
     ctx.fillStyle = '#ffeaa7';
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
@@ -683,64 +648,222 @@ resetAiBtn.addEventListener('click', () => {
 });
 stopBtn.addEventListener('click', stopGame);
 
-// --- Shop Logic ---
-const shopOpenBtn = document.getElementById('shop-open-btn');
-const shopOverlay = document.getElementById('shop-overlay');
-const closeShopBtn = document.getElementById('close-shop-btn');
-const shopGoldEl = document.getElementById('shop-gold');
+// Redundant skin declarations removed (already at top)
 
-console.log("Shop elements:", { shopOpenBtn, shopOverlay, closeShopBtn, shopGoldEl });
+const SKIN_DATA = {
+    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
+    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 150 },
+    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 200 },
+    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 500 }
+};
 
-if (shopOpenBtn) {
-    shopOpenBtn.addEventListener('click', () => {
-        console.log("Opening shop...");
-        if (shopOverlay) {
-            shopOverlay.style.display = 'flex';
-            // Read from UI element which is updated by auth.js
-            const currentCoins = document.getElementById('coin-count')?.innerText || gameState.coinCount || 0;
-            if (shopGoldEl) shopGoldEl.innerText = currentCoins;
-        }
-    });
-}
-
-if (closeShopBtn) {
-    closeShopBtn.addEventListener('click', () => {
-        console.log("Closing shop...");
-        if (shopOverlay) shopOverlay.style.display = 'none';
-    });
-} else {
-    console.warn("close-shop-btn not found!");
-}
-
-// Buy Button Handlers
-document.querySelectorAll('.buy-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        const price = parseInt(e.target.dataset.price);
-        const currentCoins = parseInt(document.getElementById('coin-count')?.innerText) || gameState.coinCount || 0;
-
-        console.log(`Attempting to buy: ${id} for ${price}G (have: ${currentCoins}G)`);
-
-        if (currentCoins >= price) {
-            // Deduct coins
-            gameState.coinCount = currentCoins - price;
-            document.getElementById('coin-count').innerText = gameState.coinCount;
-            document.getElementById('shop-gold').innerText = gameState.coinCount;
-
-            // Save to cloud
-            if (window.saveData) {
-                window.saveData(aiHighScore, gameState.coinCount);
-            }
-
-            alert(`✅ ${id} 구매 완료! (남은 골드: ${gameState.coinCount}G)`);
-            e.target.innerText = '구매완료';
-            e.target.disabled = true;
-            e.target.style.background = '#7f8c8d';
-        } else {
-            alert(`골드가 부족합니다! (보유: ${currentCoins}G / 필요: ${price}G)`);
-        }
-    });
+// Open Shop
+document.getElementById('shop-open-btn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('shop-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+        updateShopUI();
+    }
 });
+
+// Close Shop
+document.getElementById('close-shop-btn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('shop-overlay');
+    if (overlay) overlay.style.display = 'none';
+});
+
+// Update Shop UI
+function updateShopUI() {
+    // Gold Display
+    const shopGold = document.getElementById('shop-gold');
+    if (shopGold) shopGold.innerText = totalCoins;
+
+    // Current Skin Display
+    const currentDisplay = document.getElementById('current-skin-display');
+    if (currentDisplay && SKIN_DATA[currentSkin]) {
+        currentDisplay.innerText = `${SKIN_DATA[currentSkin].icon} ${SKIN_DATA[currentSkin].name}`;
+    }
+
+    // Update Buy/Equip Buttons
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+        const skinId = btn.dataset.id;
+        if (ownedSkins.includes(skinId)) {
+            // Already owned - show equip button
+            btn.innerText = currentSkin === skinId ? '✓ 장착중' : '장착하기';
+            btn.style.background = currentSkin === skinId ? '#7f8c8d' : '#2ecc71';
+            btn.disabled = currentSkin === skinId;
+            btn.classList.add('equip-btn');
+            btn.classList.remove('buy-btn');
+        }
+    });
+
+    document.querySelectorAll('.equip-btn').forEach(btn => {
+        const skinId = btn.dataset.skin || btn.dataset.id;
+        if (skinId === currentSkin) {
+            btn.innerText = '✓ 장착중';
+            btn.style.background = '#7f8c8d';
+            btn.disabled = true;
+        } else if (ownedSkins.includes(skinId)) {
+            btn.innerText = '장착하기';
+            btn.style.background = '#2ecc71';
+            btn.disabled = false;
+        }
+    });
+}
+
+// Buy Skin
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('buy-btn')) {
+        const skinId = e.target.dataset.id;
+        const price = parseInt(e.target.dataset.price);
+
+        if (ownedSkins.includes(skinId)) {
+            // Already owned, equip instead
+            equipSkin(skinId);
+            return;
+        }
+
+        if (totalCoins >= price) {
+            // Purchase
+            totalCoins -= price;
+            gameState.coinCount = 0; // Reset session just in case, or keep it. Actually shop balance is totalCoins now.
+
+            ownedSkins.push(skinId);
+
+            // Save
+            localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+            document.getElementById('coin-count').innerText = totalCoins;
+            if (window.saveData) window.saveData(aiHighScore, totalCoins);
+
+            alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
+
+            // Auto-equip
+            equipSkin(skinId);
+            updateShopUI();
+        } else {
+            alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+        }
+    }
+});
+
+// Equip Skin
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('equip-btn')) {
+        const skinId = e.target.dataset.skin || e.target.dataset.id;
+        if (ownedSkins.includes(skinId) || skinId === 'default') {
+            equipSkin(skinId);
+        }
+    }
+});
+
+function equipSkin(skinId) {
+    currentSkin = skinId;
+    localStorage.setItem('currentSkin', skinId);
+    updateShopUI();
+    console.log(`Equipped skin: ${skinId}`);
+}
+
+// Draw Player with Skin
+function drawPlayerWithSkin(ctx, px, py, dir) {
+    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+
+    ctx.save();
+    ctx.translate(px, py - 20);
+
+    // Rotation animation for non-default skins
+    if (skin.type !== 'circle') {
+        ctx.rotate(skinRotation);
+    }
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, 25, PLAYER_R, PLAYER_R * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    switch (skin.type) {
+        case 'square':
+            // Rotating cube
+            const size = PLAYER_R * 1.5;
+            ctx.fillStyle = '#e67e22';
+            ctx.fillRect(-size / 2, -size / 2, size, size);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-size / 2, -size / 2, size, size);
+            // 3D effect lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.beginPath();
+            ctx.moveTo(-size / 2, -size / 2);
+            ctx.lineTo(0, -size);
+            ctx.moveTo(size / 2, -size / 2);
+            ctx.lineTo(0, -size);
+            ctx.stroke();
+            break;
+
+        case 'triangle':
+            // Rotating pyramid
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.moveTo(0, -PLAYER_R * 1.5);
+            ctx.lineTo(-PLAYER_R, PLAYER_R * 0.5);
+            ctx.lineTo(PLAYER_R, PLAYER_R * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            break;
+
+        case 'diamond':
+            // Sparkling diamond
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.moveTo(0, -PLAYER_R * 1.5);
+            ctx.lineTo(-PLAYER_R, 0);
+            ctx.lineTo(0, PLAYER_R * 0.8);
+            ctx.lineTo(PLAYER_R, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Sparkle
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.beginPath();
+            ctx.arc(-PLAYER_R * 0.3, -PLAYER_R * 0.5, 3, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+
+        default:
+            // Default circle
+            const pGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, PLAYER_R);
+            pGrad.addColorStop(0, '#55efc4');
+            pGrad.addColorStop(1, '#00b894');
+            ctx.fillStyle = pGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, PLAYER_R, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Eyes
+            ctx.fillStyle = '#000';
+            const lookDir = dir === 1 ? 1 : -1;
+            ctx.beginPath();
+            ctx.arc(lookDir * 4, -2, 3, 0, Math.PI * 2);
+            ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+// Update skin rotation on each step
+function updateSkinRotation() {
+    if (SKIN_DATA[currentSkin]?.type !== 'circle') {
+        skinRotation += Math.PI / 2; // 90 degree rotation per step
+    }
+}
+
 
 // --- File I/O (JSON "Pickle" style) ---
 const saveFileBtn = document.getElementById('save-file-btn');
@@ -824,7 +947,7 @@ btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
 // --- Data State ---
-let totalCoins = 0; // Persistent Total
+// Redirect redundant totalCoins declaration
 
 // --- Data Bridge (Connected to auth.js) ---
 window.setGameData = function (score, coins) {
