@@ -267,233 +267,234 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Liar Game Page -->
-        <div id="page-liar" class="page">
-            <div id="liar-game-container">
-                <h1>Liar Game 🕵️</h1>
+    <!-- Liar Game Page -->
+    <div id="page-liar" class="page">
+        <div id="liar-game-container">
+            <h1>Liar Game 🕵️</h1>
 
-                <!-- Entry Screen -->
-                <div id="liar-entry" class="fade-in">
-                    <div class="rules-container" style="max-width: 450px; margin: 0 auto 30px auto;">
-                        <button id="toggle-rules-btn" class="secondary-btn"
-                            style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px;">
-                            📜 게임 규칙 보기
-                        </button>
-                        <div id="game-rules"
-                            style="display:none; text-align:left; background:rgba(15, 23, 42, 0.8); padding:20px; border-radius:16px; margin-top:10px; font-size:14px; line-height:1.6; color:#cbd5e1; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-                            <strong style="color:#f59e0b; font-size:16px;">🕵️ 게임 목표</strong><br>
-                            - <strong>시민</strong>: 라이어를 찾아내고, 라이어가 제시어를 못 맞추게 하세요.<br>
-                            - <strong>라이어</strong>: 정체를 숨기거나, 들키더라도 마지막에 제시어를 맞추세요.<br><br>
+            <!-- Entry Screen -->
+            <div id="liar-entry" class="fade-in">
+                <div class="rules-container" style="max-width: 450px; margin: 0 auto 30px auto;">
+                    <button id="toggle-rules-btn" class="secondary-btn"
+                        style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px;">
+                        📜 게임 규칙 보기
+                    </button>
+                    <div id="game-rules"
+                        style="display:none; text-align:left; background:rgba(15, 23, 42, 0.8); padding:20px; border-radius:16px; margin-top:10px; font-size:14px; line-height:1.6; color:#cbd5e1; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                        <strong style="color:#f59e0b; font-size:16px;">🕵️ 게임 목표</strong><br>
+                        - <strong>시민</strong>: 라이어를 찾아내고, 라이어가 제시어를 못 맞추게 하세요.<br>
+                        - <strong>라이어</strong>: 정체를 숨기거나, 들키더라도 마지막에 제시어를 맞추세요.<br><br>
 
-                            <strong style="color:#10b981; font-size:16px;">🎮 진행 방법</strong><br>
-                            1. <strong>제시어 확인</strong>: 시민은 제시어를 보고, 라이어는 모른 채 시작합니다.<br>
-                            2. <strong>설명하기</strong>: 돌아가며 제시어에 대해 모호하게 설명합니다.<br>
-                            3. <strong>투표</strong>: 토론 후 라이어를 지목합니다.<br><br>
+                        <strong style="color:#10b981; font-size:16px;">🎮 진행 방법</strong><br>
+                        1. <strong>제시어 확인</strong>: 시민은 제시어를 보고, 라이어는 모른 채 시작합니다.<br>
+                        2. <strong>설명하기</strong>: 돌아가며 제시어에 대해 모호하게 설명합니다.<br>
+                        3. <strong>투표</strong>: 토론 후 라이어를 지목합니다.<br><br>
 
-                            <strong style="color:#f43f5e; font-size:16px;">🏆 승리 조건</strong><br>
-                            - <strong>시민 승리</strong>: 라이어를 지목했으나 라이어가 제시어를 틀렸을 때.<br>
-                            - <strong>라이어 승리</strong>: 투표에서 살아남거나, 지목되어도 제시어를 맞췄을 때.
-                        </div>
-                    </div>
-
-                    <div id="liar-auth-request"
-                        style="display:none; padding:40px; text-align:center; background:rgba(255,255,255,0.03); border-radius:24px; border: 1px dashed rgba(255,255,255,0.1);">
-                        <p style="color:#94a3b8; font-size:15px; margin-bottom:25px;">로그인 후 친구들과 라이어 게임을 즐겨보세요!</p>
-                        <button id="liar-login-btn" class="primary-btn"
-                            style="display:inline-flex; align-items:center; gap:12px;">
-                            <svg width="20" height="20" viewBox="0 0 18 18">
-                                <path
-                                    d="M17.64 9.2c0-.637-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
-                                    fill="#fff"></path>
-                                <path
-                                    d="M9 18c2.43 0 4.467-.806 5.956-2.185l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.715H.957v2.332A8.997 8.997 0 0 0 9 18z"
-                                    fill="#34A853"></path>
-                                <path
-                                    d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
-                                    fill="#FBBC05"></path>
-                                <path
-                                    d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.272C4.672 5.141 6.656 3.58 9 3.58z"
-                                    fill="#EA4335"></path>
-                            </svg>
-                            Google 계정으로 시작하기
-                        </button>
-                    </div>
-
-                    <div id="liar-game-controls" style="margin-top:20px;">
-                        <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 (직접 입력 또는 랜덤)"
-                            style="width:80%; margin-bottom:15px;">
-
-                        <div
-                            style="margin: 20px 0; padding: 20px; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
-                            <label
-                                style="display:block; color:#94a3b8; font-size:14px; margin-bottom:12px; font-weight:600;">🏆
-                                우승 달성 점수</label>
-                            <input type="number" id="liar-max-score" class="room-input" value="3"
-                                style="width:80px; text-align:center; font-weight:800; font-size:20px; color:#f59e0b;"
-                                min="1" max="10">
-                        </div>
-
-                        <div style="display:flex; gap:12px; justify-content:center;">
-                            <button id="liar-create-btn" class="primary-btn" style="flex:1;">방 만들기</button>
-                            <button id="liar-join-btn" class="secondary-btn" style="flex:1;">참가하기</button>
-                        </div>
+                        <strong style="color:#f43f5e; font-size:16px;">🏆 승리 조건</strong><br>
+                        - <strong>시민 승리</strong>: 라이어를 지목했으나 라이어가 제시어를 틀렸을 때.<br>
+                        - <strong>라이어 승리</strong>: 투표에서 살아남거나, 지목되어도 제시어를 맞췄을 때.
                     </div>
                 </div>
 
-                <!-- Lobby -->
-                <div id="liar-lobby" style="display:none;" class="fade-in">
-                    <h2 style="font-size:20px; color:#94a3b8; margin-bottom:10px;">플레이어 대기 중...</h2>
-                    <h3 id="display-room-id"
-                        style="font-size:36px; color: #f1f5f9; letter-spacing: 4px; margin:0 0 20px 0;"></h3>
+                <div id="liar-auth-request"
+                    style="display:none; padding:40px; text-align:center; background:rgba(255,255,255,0.03); border-radius:24px; border: 1px dashed rgba(255,255,255,0.1);">
+                    <p style="color:#94a3b8; font-size:15px; margin-bottom:25px;">로그인 후 친구들과 라이어 게임을 즐겨보세요!</p>
+                    <button id="liar-login-btn" class="primary-btn"
+                        style="display:inline-flex; align-items:center; gap:12px;">
+                        <svg width="20" height="20" viewBox="0 0 18 18">
+                            <path
+                                d="M17.64 9.2c0-.637-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
+                                fill="#fff"></path>
+                            <path
+                                d="M9 18c2.43 0 4.467-.806 5.956-2.185l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.715H.957v2.332A8.997 8.997 0 0 0 9 18z"
+                                fill="#34A853"></path>
+                            <path
+                                d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
+                                fill="#FBBC05"></path>
+                            <path
+                                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.272C4.672 5.141 6.656 3.58 9 3.58z"
+                                fill="#EA4335"></path>
+                        </svg>
+                        Google 계정으로 시작하기
+                    </button>
+                </div>
 
-                    <div id="max-score-display"
-                        style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 12px 24px; border-radius: 12px; display: inline-block; margin-bottom: 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
-                        🏆 <span id="display-max-score">3</span>점 선취 승리!
-                    </div>
+                <div id="liar-game-controls" style="margin-top:20px;">
+                    <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 (직접 입력 또는 랜덤)"
+                        style="width:80%; margin-bottom:15px;">
 
                     <div
-                        style="background:rgba(0,0,0,0.2); border-radius:24px; padding:20px; border:1px solid rgba(255,255,255,0.05);">
-                        <ul id="player-list"></ul>
-                        <p id="waiting-msg" class="blink" style="color:#6366f1; font-weight:600;">새로운 참가자를 기다리고 있습니다...
-                        </p>
+                        style="margin: 20px 0; padding: 20px; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label
+                            style="display:block; color:#94a3b8; font-size:14px; margin-bottom:12px; font-weight:600;">🏆
+                            우승 달성 점수</label>
+                        <input type="number" id="liar-max-score" class="room-input" value="3"
+                            style="width:80px; text-align:center; font-weight:800; font-size:20px; color:#f59e0b;"
+                            min="1" max="10">
                     </div>
 
-                    <div id="room-settings"
-                        style="display:none; margin: 30px 0; padding:20px; background:rgba(30, 41, 59, 0.4); border-radius:16px; border:1px solid rgba(255,255,255,0.05);">
-                        <label style="color:#94a3b8; font-weight:600; margin-right:15px;">게임 주제:</label>
-                        <select id="liar-topic-select" class="room-input" style="width:auto; padding:8px 15px;">
-                            <option value="random">🎲 랜덤</option>
-                            <option value="food">🍎 음식</option>
-                            <option value="animal">🐘 동물</option>
-                            <option value="object">🪑 사물</option>
-                            <option value="sports">⚽ 스포츠</option>
-                            <option value="place">🏔️ 장소</option>
-                        </select>
-                    </div>
-
-                    <div id="liar-host-controls"
-                        style="display:none; margin-top:30px; display:flex; flex-direction:column; gap:12px;">
-                        <button id="liar-start-multi-btn" class="primary-btn" style="padding:18px;">🚀 게임 시작</button>
-                        <div style="display:flex; gap:10px;">
-                            <button id="liar-add-bots-btn" class="secondary-btn"
-                                style="flex:1; background:rgba(139, 92, 246, 0.2); border-color:rgba(139, 92, 246, 0.3); color:#a78bfa;">🤖
-                                봇 추가</button>
-                            <button id="liar-leave-btn" class="secondary-btn"
-                                style="flex:1; background:rgba(244, 63, 94, 0.1); color:#f43f5e; border-color:rgba(244, 63, 94, 0.2);">나가기</button>
-                        </div>
-                    </div>
-                    <button id="liar-leave-guest-btn" class="secondary-btn"
-                        style="display:none; width:100%; margin-top:30px; background:rgba(244, 63, 94, 0.1); color:#f43f5e; border-color:rgba(244, 63, 94, 0.2);">나가기</button>
-                </div>
-
-                <!-- Game Play -->
-                <div id="liar-game-play" style="display:none;" class="fade-in">
-                    <div id="liar-card-container">
-                        <div id="liar-card" class="card-back">
-                            <span id="liar-card-topic"
-                                style="font-size: 14px; opacity: 0.7; font-weight: 400; margin-bottom:10px;"></span>
-                            <span id="liar-card-word">클릭하여 확인</span>
-                        </div>
-                    </div>
-
-                    <div id="my-turn-input"
-                        style="display:none; margin:25px 0; padding:20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius:20px; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);">
-                        <h4 style="margin:0 0 15px 0; color:#fff; font-size:18px;">🎤 당신의 차례입니다!</h4>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="description-input" class="room-input" placeholder="설명을 풍부하게 입력하세요..."
-                                style="flex: 1; background:rgba(0,0,0,0.2); border:none;">
-                            <button id="description-send-btn" class="primary-btn"
-                                style="background:#fff; color:#059669; padding: 10px 20px;">전송</button>
-                        </div>
-                    </div>
-
-                    <div id="liar-current-turn-msg"
-                        style="margin: 20px 0; font-size: 18px; color: #6366f1; min-height: 27px; font-weight:600;">
-                    </div>
-                    <h4 id="liar-discussion-msg"
-                        style="display:none; color: #f43f5e; margin: 25px 0; font-size:22px; font-weight:800;"
-                        class="blink">🔥 자유 토론 시간!</h4>
-
-                    <div id="liar-host-controls-play" style="margin-top:20px;"></div>
-                    <button id="liar-reveal-multi-btn" class="primary-btn"
-                        style="display:none; width:100%; background:#f59e0b;">🗳️ 투표 시작하기</button>
-
-                    <div id="liar-chat-section">
-                        <h4
-                            style="margin:0 0 12px 0; color:#94a3b8; font-size:13px; text-transform:uppercase; letter-spacing:1px;">
-                            💬 실시간 채팅</h4>
-                        <div id="liar-chat-messages"></div>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="liar-chat-input" class="room-input" placeholder="메시지를 입력하세요..."
-                                style="flex: 1;">
-                            <button id="liar-chat-send-btn" class="primary-btn" style="padding: 10px 20px;">전송</button>
-                        </div>
-                    </div>
-
-                    <div id="description-log"
-                        style="display:none; margin-top:25px; background: rgba(0,0,0,0.3); padding:20px; border-radius:20px; text-align:left; border:1px solid rgba(255,255,255,0.05);">
-                        <h4
-                            style="margin:0 0 15px 0; color:#f59e0b; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
-                            📝 설명 히스토리</h4>
-                        <div id="description-list"></div>
-                    </div>
-                </div>
-
-                <!-- Voting Section -->
-                <div id="liar-vote-section" style="display:none;" class="fade-in">
-                    <h3 style="font-size:24px; margin-bottom:10px;">🗳️ 범인 지목 투표</h3>
-                    <p style="color:#94a3b8; margin-bottom:25px;">라이어라고 의심되는 플레이어를 선택해 주세요.</p>
-                    <div id="vote-buttons"></div>
-                    <p id="vote-status" style="margin-top:20px; font-weight:600; color:#6366f1;"></p>
-                </div>
-
-                <!-- Liar Guess Section -->
-                <div id="liar-guess-section"
-                    style="display:none; padding:40px; background:rgba(30, 41, 59, 0.6); border-radius:32px; border: 2px solid #f43f5e;"
-                    class="fade-in">
-                    <h3 style="color:#f43f5e; font-size:28px; margin-bottom:15px;">🕵️ 정체가 탄로 났습니다!</h3>
-                    <p style="color:#f1f5f9; margin-bottom:30px; font-size:16px;">하지만 아직 기회가 있습니다. 제시어가 무엇이었나요?</p>
-                    <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
-                        <input type="text" id="liar-word-input" class="room-input" placeholder="정답을 입력하세요"
-                            style="width:100%; text-align:center; font-size:20px;">
-                        <button id="liar-guess-btn" class="primary-btn" style="width:100%; background:#f43f5e;">정답
-                            확인</button>
-                    </div>
-                </div>
-
-                <!-- Result Section -->
-                <div id="liar-result" style="display:none; padding:40px;" class="fade-in">
-                    <h2 id="liar-winner"></h2>
-                    <p id="liar-identity-reveal"></p>
-                    <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
-
-                    <div id="liar-post-game-btns" style="margin-top: 20px;">
-                        <button id="liar-next-round-btn" class="primary-btn" style="display:none;">다음 라운드</button>
-                        <button id="liar-restart-multi-btn" class="secondary-btn" style="display:none;">게임 종료 (새
-                            게임)</button>
+                    <div style="display:flex; gap:12px; justify-content:center;">
+                        <button id="liar-create-btn" class="primary-btn" style="flex:1;">방 만들기</button>
+                        <button id="liar-join-btn" class="secondary-btn" style="flex:1;">참가하기</button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- UI Overlays -->
-        <div id="turn-overlay"
-            style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
-            <span id="overlay-msg"></span>
-        </div>
+            <!-- Lobby -->
+            <div id="liar-lobby" style="display:none;" class="fade-in">
+                <h2 style="font-size:20px; color:#94a3b8; margin-bottom:10px;">플레이어 대기 중...</h2>
+                <h3 id="display-room-id"
+                    style="font-size:36px; color: #f1f5f9; letter-spacing: 4px; margin:0 0 20px 0;"></h3>
 
-        <div id="scoreboard"
-            style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
-            <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small
-                    id="score-limit" style="color:#aaa; font-size:12px;"></small></h4>
-            <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+                <div id="max-score-display"
+                    style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 12px 24px; border-radius: 12px; display: inline-block; margin-bottom: 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                    🏆 <span id="display-max-score">3</span>점 선취 승리!
+                </div>
+
+                <div
+                    style="background:rgba(0,0,0,0.2); border-radius:24px; padding:20px; border:1px solid rgba(255,255,255,0.05);">
+                    <ul id="player-list"></ul>
+                    <p id="waiting-msg" class="blink" style="color:#6366f1; font-weight:600;">새로운 참가자를 기다리고 있습니다...
+                    </p>
+                </div>
+
+                <div id="room-settings"
+                    style="display:none; margin: 30px 0; padding:20px; background:rgba(30, 41, 59, 0.4); border-radius:16px; border:1px solid rgba(255,255,255,0.05);">
+                    <label style="color:#94a3b8; font-weight:600; margin-right:15px;">게임 주제:</label>
+                    <select id="liar-topic-select" class="room-input" style="width:auto; padding:8px 15px;">
+                        <option value="random">🎲 랜덤</option>
+                        <option value="food">🍎 음식</option>
+                        <option value="animal">🐘 동물</option>
+                        <option value="object">🪑 사물</option>
+                        <option value="sports">⚽ 스포츠</option>
+                        <option value="place">🏔️ 장소</option>
+                    </select>
+                </div>
+
+                <div id="liar-host-controls"
+                    style="display:none; margin-top:30px; display:flex; flex-direction:column; gap:12px;">
+                    <button id="liar-start-multi-btn" class="primary-btn" style="padding:18px;">🚀 게임 시작</button>
+                    <div style="display:flex; gap:10px;">
+                        <button id="liar-add-bots-btn" class="secondary-btn"
+                            style="flex:1; background:rgba(139, 92, 246, 0.2); border-color:rgba(139, 92, 246, 0.3); color:#a78bfa;">🤖
+                            봇 추가</button>
+                        <button id="liar-leave-btn" class="secondary-btn"
+                            style="flex:1; background:rgba(244, 63, 94, 0.1); color:#f43f5e; border-color:rgba(244, 63, 94, 0.2);">나가기</button>
+                    </div>
+                </div>
+                <button id="liar-leave-guest-btn" class="secondary-btn"
+                    style="display:none; width:100%; margin-top:30px; background:rgba(244, 63, 94, 0.1); color:#f43f5e; border-color:rgba(244, 63, 94, 0.2);">나가기</button>
+            </div>
+
+            <!-- Game Play -->
+            <div id="liar-game-play" style="display:none;" class="fade-in">
+                <div id="liar-card-container">
+                    <div id="liar-card" class="card-back">
+                        <span id="liar-card-topic"
+                            style="font-size: 14px; opacity: 0.7; font-weight: 400; margin-bottom:10px;"></span>
+                        <span id="liar-card-word">클릭하여 확인</span>
+                    </div>
+                </div>
+
+                <div id="my-turn-input"
+                    style="display:none; margin:25px 0; padding:20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius:20px; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);">
+                    <h4 style="margin:0 0 15px 0; color:#fff; font-size:18px;">🎤 당신의 차례입니다!</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="description-input" class="room-input" placeholder="설명을 풍부하게 입력하세요..."
+                            style="flex: 1; background:rgba(0,0,0,0.2); border:none;">
+                        <button id="description-send-btn" class="primary-btn"
+                            style="background:#fff; color:#059669; padding: 10px 20px;">전송</button>
+                    </div>
+                </div>
+
+                <div id="liar-current-turn-msg"
+                    style="margin: 20px 0; font-size: 18px; color: #6366f1; min-height: 27px; font-weight:600;">
+                </div>
+                <h4 id="liar-discussion-msg"
+                    style="display:none; color: #f43f5e; margin: 25px 0; font-size:22px; font-weight:800;"
+                    class="blink">🔥 자유 토론 시간!</h4>
+
+                <div id="liar-host-controls-play" style="margin-top:20px;"></div>
+                <button id="liar-reveal-multi-btn" class="primary-btn"
+                    style="display:none; width:100%; background:#f59e0b;">🗳️ 투표 시작하기</button>
+
+                <div id="liar-chat-section">
+                    <h4
+                        style="margin:0 0 12px 0; color:#94a3b8; font-size:13px; text-transform:uppercase; letter-spacing:1px;">
+                        💬 실시간 채팅</h4>
+                    <div id="liar-chat-messages"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="liar-chat-input" class="room-input" placeholder="메시지를 입력하세요..."
+                            style="flex: 1;">
+                        <button id="liar-chat-send-btn" class="primary-btn" style="padding: 10px 20px;">전송</button>
+                    </div>
+                </div>
+
+                <div id="description-log"
+                    style="display:none; margin-top:25px; background: rgba(0,0,0,0.3); padding:20px; border-radius:20px; text-align:left; border:1px solid rgba(255,255,255,0.05);">
+                    <h4
+                        style="margin:0 0 15px 0; color:#f59e0b; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
+                        📝 설명 히스토리</h4>
+                    <div id="description-list"></div>
+                </div>
+            </div>
+
+            <!-- Voting Section -->
+            <div id="liar-vote-section" style="display:none;" class="fade-in">
+                <h3 style="font-size:24px; margin-bottom:10px;">🗳️ 범인 지목 투표</h3>
+                <p style="color:#94a3b8; margin-bottom:25px;">라이어라고 의심되는 플레이어를 선택해 주세요.</p>
+                <div id="vote-buttons"></div>
+                <p id="vote-status" style="margin-top:20px; font-weight:600; color:#6366f1;"></p>
+            </div>
+
+            <!-- Liar Guess Section -->
+            <div id="liar-guess-section"
+                style="display:none; padding:40px; background:rgba(30, 41, 59, 0.6); border-radius:32px; border: 2px solid #f43f5e;"
+                class="fade-in">
+                <h3 style="color:#f43f5e; font-size:28px; margin-bottom:15px;">🕵️ 정체가 탄로 났습니다!</h3>
+                <p style="color:#f1f5f9; margin-bottom:30px; font-size:16px;">하지만 아직 기회가 있습니다. 제시어가 무엇이었나요?</p>
+                <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
+                    <input type="text" id="liar-word-input" class="room-input" placeholder="정답을 입력하세요"
+                        style="width:100%; text-align:center; font-size:20px;">
+                    <button id="liar-guess-btn" class="primary-btn" style="width:100%; background:#f43f5e;">정답
+                        확인</button>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div id="liar-result" style="display:none; padding:40px;" class="fade-in">
+                <h2 id="liar-winner"></h2>
+                <p id="liar-identity-reveal"></p>
+                <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
+
+                <div id="liar-post-game-btns" style="margin-top: 20px;">
+                    <button id="liar-next-round-btn" class="primary-btn" style="display:none;">다음 라운드</button>
+                    <button id="liar-restart-multi-btn" class="secondary-btn" style="display:none;">게임 종료 (새
+                        게임)</button>
+                </div>
+            </div>
         </div>
-        <div style="margin-top: 10px; font-size: 12px; color: #888;">
-            (ONNX Model Check: AI buttons available)
-        </div>
-        <script src="auth.js"></script>
-        <script src="script.js?v=chat_fix_v2"></script>
+    </div>
+
+    <!-- UI Overlays -->
+    <div id="turn-overlay"
+        style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
+        <span id="overlay-msg"></span>
+    </div>
+
+    <div id="scoreboard"
+        style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+        <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small id="score-limit"
+                style="color:#aaa; font-size:12px;"></small></h4>
+        <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+    </div>
+    <div style="margin-top: 10px; font-size: 12px; color: #888;">
+        (ONNX Model Check: AI buttons available)
+    </div>
+    <script src="auth.js"></script>
+    <script src="script.js?v=chat_fix_v2"></script>
 </body>
 
 </html>
