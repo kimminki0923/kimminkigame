@@ -17,24 +17,24 @@ let currentUser = null;
 
 // --- Initialize ---
 function initAuth() {
-    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-        console.log("🔥 Firebase Config not found. Using LocalStorage mode.");
-        loadLocalData();
-        updateUI_LoggedOut();
-        return;
-    }
-
     try {
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase SDK not loaded");
+            loadLocalData();
+            return;
+        }
+
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         auth = firebase.auth();
         db = firebase.firestore();
 
-        // Suppress warning about overriding host
+        // Settings to avoid warnings
         db.settings({ experimentalForceLongPolling: true, merge: true });
 
         isCloudEnabled = true;
+        console.log("🔥 Firebase Initialized");
 
         auth.onAuthStateChanged((user) => {
             if (user) {
@@ -43,8 +43,10 @@ function initAuth() {
                 updateUI_LoggedIn(user);
                 loadCloudData(user.uid);
 
+                // Save user info
                 db.collection('users').doc(user.uid).set({
-                    displayName: user.displayName || 'Anonymous'
+                    displayName: user.displayName || 'Anonymous',
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
             } else {
                 currentUser = null;
@@ -71,6 +73,7 @@ function updateUI_LoggedIn(user) {
     if (userNameEl) userNameEl.innerText = user.displayName;
     if (userImgEl) userImgEl.src = user.photoURL;
 
+    // Liar Game UI updates
     const liarAuth = document.getElementById('liar-auth-request');
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'none';
@@ -87,6 +90,7 @@ function updateUI_LoggedOut() {
     if (userImgEl) userImgEl.src = "";
     if (userNameEl) userNameEl.innerText = "";
 
+    // Liar Game UI updates
     const liarAuth = document.getElementById('liar-auth-request');
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'block';
@@ -98,17 +102,16 @@ function updateUI_LoggedOut() {
 
 // --- Actions ---
 function loginWithGoogle() {
-    if (!isCloudEnabled) return alert("⚠️ Firebase 설정 필요");
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-        auth.signInWithRedirect(provider);
-    } else {
-        auth.signInWithPopup(provider).catch((error) => {
-            if (error.code === 'auth/popup-blocked') auth.signInWithRedirect(provider);
-            else alert("로그인 실패: " + error.message);
-        });
+    if (!auth) {
+        alert("⚠️ Firebase가 아직 초기화되지 않았거나 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        initAuth(); // Try initializing again
+        return;
     }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch((error) => {
+        console.error("Login Error:", error);
+        alert("로그인 실패: " + error.message);
+    });
 }
 
 function logout() {
@@ -116,43 +119,25 @@ function logout() {
 }
 
 // --- Data Management ---
-async function loadData() {
-    if (currentUser && isCloudEnabled) return await loadCloudData(currentUser.uid);
-    else return loadLocalData();
-}
-
 async function loadCloudData(uid) {
+    if (!db) return;
     try {
         const doc = await db.collection('users').doc(uid).get();
         if (doc.exists) {
             const data = doc.data();
-            const savedScore = data.highScore || 0;
-            const savedCoins = data.coinCount || 0;
-            const savedSkins = data.ownedSkins || ['default'];
-            const savedCurrentSkin = data.currentSkin || 'default';
-
-            // Retry mechanism for setGameData if stairs_game.js isn't loaded yet
-            attemptUpdateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin, 0);
-            console.log("☁️ Cloud Data Loaded:", data);
+            applyGameData(
+                data.highScore || 0,
+                data.coinCount || 0,
+                data.ownedSkins || ['default'],
+                data.currentSkin || 'default'
+            );
+            console.log("☁️ Cloud Data Loaded");
         } else {
-            console.log("☁️ New User, init data.");
+            console.log("☁️ New User");
             saveCloudData(0, 0, ['default'], 'default');
         }
     } catch (e) {
         console.error("Cloud Load Error:", e);
-    }
-}
-
-function attemptUpdateGameData(score, coins, skins, currentSkin, attempts) {
-    if (window.setGameData) {
-        window.setGameData(score, coins, skins, currentSkin);
-    } else {
-        // Retry for up to 10 seconds (50 * 200ms)
-        if (attempts < 50) {
-            setTimeout(() => attemptUpdateGameData(score, coins, skins, currentSkin, attempts + 1), 200);
-        } else {
-            console.error("Failed to sync data to game: setGameData not found after 10 seconds");
-        }
     }
 }
 
@@ -162,7 +147,16 @@ function loadLocalData() {
     const savedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
     const savedCurrentSkin = localStorage.getItem('currentSkin') || 'default';
 
-    updateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
+    applyGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
+}
+
+function applyGameData(score, coins, skins, currentSkin) {
+    // Retry to set data if game script is not ready
+    if (window.setGameData) {
+        window.setGameData(score, coins, skins, currentSkin);
+    } else {
+        setTimeout(() => applyGameData(score, coins, skins, currentSkin), 500);
+    }
 }
 
 function saveCloudData(score, coins, skins, currentSkin) {
@@ -172,17 +166,11 @@ function saveCloudData(score, coins, skins, currentSkin) {
         coinCount: coins,
         ownedSkins: skins,
         currentSkin: currentSkin,
-        displayName: currentUser.displayName || 'Anonymous',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).catch(console.error);
 }
 
-function updateGameData(score, coins, skins, currentSkin) {
-    if (window.setGameData) {
-        window.setGameData(score, coins, skins, currentSkin);
-    }
-}
-
+// Global Save Hook
 window.saveData = function (score, coins, skins, currentSkin) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
@@ -190,39 +178,40 @@ window.saveData = function (score, coins, skins, currentSkin) {
     if (currentSkin) localStorage.setItem('currentSkin', currentSkin);
 
     if (currentUser && isCloudEnabled) {
-        saveCloudData(score, coins, skins || [], currentSkin || 'default');
+        saveCloudData(score, coins, skins, currentSkin);
     }
 }
 
+// Listeners
 if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
-document.getElementById('logout-btn').addEventListener('click', logout);
-const liarLoginBtn = document.getElementById('liar-login-btn');
-if (liarLoginBtn) liarLoginBtn.addEventListener('click', loginWithGoogle);
+document.getElementById('logout-btn')?.addEventListener('click', logout);
+document.getElementById('liar-login-btn')?.addEventListener('click', loginWithGoogle);
 
+// Leaderboard
 async function loadLeaderboard() {
-    if (!db || !isCloudEnabled) return;
+    if (!db) return;
     const listEl = document.getElementById('leaderboard-list');
     if (!listEl) return;
-
     try {
         const snapshot = await db.collection('users').orderBy('highScore', 'desc').limit(10).get();
         listEl.innerHTML = '';
         if (snapshot.empty) {
-            listEl.innerHTML = '<li style="color:#aaa;">아직 기록이 없습니다</li>';
+            listEl.innerHTML = '<li>기록 없음</li>';
             return;
         }
         let rank = 1;
         snapshot.forEach(doc => {
-            const data = doc.data();
-            const name = data.displayName || data.email?.split('@')[0] || 'Anonymous';
-            const score = data.highScore || 0;
+            const d = doc.data();
             const li = document.createElement('li');
-            li.style.color = rank === 1 ? '#f1c40f' : rank === 2 ? '#bdc3c7' : rank === 3 ? '#cd6133' : '#fff';
-            li.innerHTML = `<span style="font-weight:${rank <= 3 ? 'bold' : 'normal'}">${name.substring(0, 8)}</span> <span style="float:right; color:#3498db;">${score}</span>`;
+            li.innerHTML = `<span>${rank}. ${d.displayName || 'Anon'}</span> <span style="float:right">${d.highScore || 0}</span>`;
             listEl.appendChild(li);
             rank++;
         });
-    } catch (e) {
-        listEl.innerHTML = '<li style="color:#e74c3c;">로드 실패</li>';
+    } catch {
+        listEl.innerHTML = '<li>로드 실패</li>';
     }
 }
+
+// Initialize immediately
+initAuth();
+window.initAuth = initAuth; // Expose for external calls if needed
