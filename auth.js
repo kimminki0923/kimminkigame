@@ -29,6 +29,11 @@ function initAuth() {
         firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
         db = firebase.firestore();
+
+        // [Fix] Firestore Listen channel 404/400 bug fix
+        // Force long-polling to bypass potential proxy/server stream issues
+        db.settings({ experimentalForceLongPolling: true });
+
         isCloudEnabled = true;
 
         // Auth State Listener
