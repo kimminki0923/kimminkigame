@@ -656,14 +656,16 @@ bindShopEvents();
 
 // Global Click Handler regarding Shop (Dynamic elements like Buy/Equip)
 document.addEventListener('click', (e) => {
+    console.log('[Shop Click] Target:', e.target.id, e.target.className, e.target.tagName);
+
     // Overlay outside click close
     if (e.target.id === 'shop-overlay') {
         e.target.style.display = 'none';
         return;
     }
 
-    // Top-right close button (if it exists as pure HTML onclick, we leave it, or handle here)
-    if (e.target.closest('.close-btn-x')) {
+    // Any close button (top or bottom)
+    if (e.target.id === 'close-shop-btn' || e.target.id === 'close-shop-btn-bottom' || e.target.closest('.close-btn-x')) {
         const overlay = document.getElementById('shop-overlay');
         if (overlay) overlay.style.display = 'none';
         return;
@@ -672,6 +674,7 @@ document.addEventListener('click', (e) => {
     // Buy Button
     const buyBtn = e.target.closest('.buy-btn');
     if (buyBtn) {
+        console.log('[Shop] Buy button clicked:', buyBtn.dataset.id, buyBtn.dataset.price);
         const skinId = buyBtn.dataset.id;
         const price = parseInt(buyBtn.dataset.price);
 
@@ -704,6 +707,7 @@ document.addEventListener('click', (e) => {
     // Equip Button
     const equipBtn = e.target.closest('.equip-btn');
     if (equipBtn) {
+        console.log('[Shop] Equip button clicked:', equipBtn.dataset.skin || equipBtn.dataset.id);
         const skinId = equipBtn.dataset.skin || equipBtn.dataset.id;
         equipSkin(skinId);
         return;
