@@ -237,6 +237,13 @@ function performAction(action) {
             if (!isTraining && !isAutoPlaying) {
                 totalCoins += next.coinVal;
                 coinEl.innerText = totalCoins;
+
+                // SAVE to Local immediately for crash protection
+                localStorage.setItem('infinite_stairs_coins', totalCoins);
+
+                // Sync Shop UI Gold if shop is open or about to open
+                const shopGold = document.getElementById('shop-gold');
+                if (shopGold) shopGold.innerText = totalCoins;
             } else {
                 coinEl.innerText = "(AI)";
             }
@@ -672,34 +679,48 @@ document.getElementById('close-shop-btn')?.addEventListener('click', () => {
     if (overlay) overlay.style.display = 'none';
 });
 
-// Update Shop UI
-// Shop Drag-to-Scroll Logic
+// Shop Interaction Logic (Drag-to-Scroll + Click)
 const shopScrollArea = document.getElementById('shop-scroll-area');
-let isDown = false;
-let startY;
-let scrollTop;
+let isDragging = false;
+let startY, startScrollTop;
 
-if (shopScrollArea) {
-    shopScrollArea.addEventListener('mousedown', (e) => {
-        isDown = true;
+function initShopInteractions() {
+    if (!shopScrollArea) return;
+
+    const startDrag = (pageY) => {
+        isDragging = true;
         shopScrollArea.classList.add('active');
-        startY = e.pageY - shopScrollArea.offsetTop;
-        scrollTop = shopScrollArea.scrollTop;
-    });
-    shopScrollArea.addEventListener('mouseleave', () => {
-        isDown = false;
-    });
-    shopScrollArea.addEventListener('mouseup', () => {
-        isDown = false;
-    });
-    shopScrollArea.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const y = e.pageY - shopScrollArea.offsetTop;
-        const walk = (y - startY) * 2; // Scroll speed multiplier
-        shopScrollArea.scrollTop = scrollTop - walk;
-    });
+        startY = pageY;
+        startScrollTop = shopScrollArea.scrollTop;
+    };
+
+    const moveDrag = (pageY) => {
+        if (!isDragging) return;
+        const delta = (pageY - startY) * 1.4; // Slightly faster scroll
+        shopScrollArea.scrollTop = startScrollTop - delta;
+    };
+
+    const endDrag = () => {
+        isDragging = false;
+        shopScrollArea.classList.remove('active');
+    };
+
+    // Mouse Events
+    shopScrollArea.addEventListener('mousedown', (e) => startDrag(e.pageY));
+    window.addEventListener('mousemove', (e) => moveDrag(e.pageY));
+    window.addEventListener('mouseup', endDrag);
+
+    // Touch Events
+    shopScrollArea.addEventListener('touchstart', (e) => startDrag(e.touches[0].pageY), { passive: true });
+    window.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+            moveDrag(e.touches[0].pageY);
+            if (e.cancelable) e.preventDefault();
+        }
+    }, { passive: false });
+    window.addEventListener('touchend', endDrag);
 }
+initShopInteractions();
 
 function updateShopUI() {
     // Gold Display
@@ -739,12 +760,19 @@ function updateShopUI() {
     });
 }
 
-// Buy Skin (Updated to trigger global save)
+// Global Shop Click Handler (Combined)
 document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('buy-btn')) {
-        const btn = e.target;
-        const skinId = btn.dataset.id;
-        const price = parseInt(btn.dataset.price);
+    // 1. Close Button
+    if (e.target.closest('#close-shop-btn') || e.target.closest('[onclick*="shop-overlay"]')) {
+        document.getElementById('shop-overlay').style.display = 'none';
+        return;
+    }
+
+    // 2. Buy Button
+    const buyBtn = e.target.closest('.buy-btn');
+    if (buyBtn) {
+        const skinId = buyBtn.dataset.id;
+        const price = parseInt(buyBtn.dataset.price);
 
         if (ownedSkins.includes(skinId)) {
             equipSkin(skinId);
@@ -755,40 +783,34 @@ document.addEventListener('click', (e) => {
             totalCoins -= price;
             ownedSkins.push(skinId);
 
+            // UI Update
+            if (coinEl) coinEl.innerText = totalCoins;
+
             // SAVE ALL
             if (window.saveData) {
                 window.saveData(aiHighScore, totalCoins, ownedSkins, skinId);
             }
 
             alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
-
-            // Auto-equip
             equipSkin(skinId);
             updateShopUI();
         } else {
             alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
         }
+        return;
     }
-});
 
-// Shop Close Button
-document.addEventListener('click', (e) => {
-    if (e.target.id === 'close-shop-btn') {
-        document.getElementById('shop-overlay').style.display = 'none';
-    }
-});
-
-// Equip Skin
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('equip-btn')) {
-        const skinId = e.target.dataset.skin || e.target.dataset.id;
+    // 3. Equip Button
+    const equipBtn = e.target.closest('.equip-btn');
+    if (equipBtn) {
+        const skinId = equipBtn.dataset.skin || equipBtn.dataset.id;
         if (ownedSkins.includes(skinId) || skinId === 'default') {
             equipSkin(skinId);
-            // Save current skin selection
             if (window.saveData) {
                 window.saveData(aiHighScore, totalCoins, ownedSkins, skinId);
             }
         }
+        return;
     }
 });
 
@@ -797,6 +819,20 @@ function equipSkin(skinId) {
     localStorage.setItem('currentSkin', skinId);
     updateShopUI();
     console.log(`Equipped skin: ${skinId}`);
+
+    // Save immediately on equip
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+    }
+}
+
+function updateSkinRotation() {
+    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+    if (skin.type !== 'circle') {
+        skinRotation += Math.PI / 4; // 45 degrees per move
+    } else {
+        skinRotation = 0;
+    }
 }
 
 // Draw Player with Skin
@@ -1041,6 +1077,13 @@ function gameOver() {
 
     document.getElementById('high-score').innerText = aiHighScore;
 }
+
+// Ensure saving on tab close/refresh
+window.addEventListener('beforeunload', () => {
+    if (window.saveData && !isTraining && !isAutoPlaying) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+    }
+});
 
 // In performAction: Handle totalCoins update
 // We need to inject this Logic into performAction function, wait...
