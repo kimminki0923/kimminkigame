@@ -88,7 +88,8 @@ function bindSettingsEvents() {
     // Open Button
     const openBtn = document.getElementById('settings-open-btn');
     if (openBtn) {
-        openBtn.onclick = () => {
+        openBtn.onclick = (e) => {
+            e.stopPropagation();
             const overlay = document.getElementById('settings-overlay');
             if (overlay) {
                 overlay.style.display = 'flex';
@@ -102,7 +103,9 @@ function bindSettingsEvents() {
     closeBtns.forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
-            btn.onclick = () => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 document.getElementById('settings-overlay').style.display = 'none';
             };
         }
@@ -110,14 +113,24 @@ function bindSettingsEvents() {
 
     // Rebind buttons
     const jumpBtn = document.getElementById('rebind-jump-btn');
-    if (jumpBtn) jumpBtn.onclick = () => startKeyListen('jump');
+    if (jumpBtn) jumpBtn.onclick = (e) => {
+        e.stopPropagation();
+        startKeyListen('jump');
+    };
 
     const turnBtn = document.getElementById('rebind-turn-btn');
-    if (turnBtn) turnBtn.onclick = () => startKeyListen('turn');
+    if (turnBtn) turnBtn.onclick = (e) => {
+        e.stopPropagation();
+        startKeyListen('turn');
+    };
 
     // Reset button
     const resetBtn = document.getElementById('reset-keys-btn');
-    if (resetBtn) resetBtn.onclick = resetKeyBindings;
+    if (resetBtn) resetBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetKeyBindings();
+        alert('키 설정이 초기화되었습니다.');
+    };
 
     // Key capture listener
     document.addEventListener('keydown', handleKeyCapture, true);
