@@ -8,6 +8,28 @@ body {
     color: #f1f5f9;
 }
 
+/* Shop Overlay Pointer Events and Touch Fix */
+#shop-overlay {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+}
+
+#shop-overlay * {
+    pointer-events: auto !important;
+}
+
+#shop-modal {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+}
+
+#shop-scroll-area {
+    pointer-events: auto !important;
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain;
+}
+
 #game-container {
     position: relative;
     width: 100%;
