@@ -1087,10 +1087,12 @@ function syncLiarRoom(data) {
 
         if (data.liarId === currentUser.uid) {
             card.dataset.role = 'liar';
+            card.dataset.word = '당신은 라이어입니다!'; // Store for click reveal
             cardTopic.innerText = topicTxt; // Show Topic to Liar too
             cardWord.innerText = card.classList.contains('revealed') ? '당신은 라이어입니다!' : '클릭하여 확인';
         } else {
             card.dataset.role = 'player';
+            card.dataset.word = `제시어: ${data.word}`; // Store for click reveal
             cardTopic.innerText = topicTxt;
             cardWord.innerText = card.classList.contains('revealed') ? `제시어: ${data.word}` : '클릭하여 확인';
         }
