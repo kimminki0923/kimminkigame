@@ -1511,23 +1511,11 @@ async function submitLiarGuess() {
 
 // UI Event Listeners
 document.getElementById('liar-card').addEventListener('click', function () {
-    this.classList.add('revealed');
-    // Text update handled by sync
-    const startTxt = this.querySelector('#liar-card-word').innerText;
-    if (startTxt === '클릭하여 확인') {
-        // Trigger sync update force or wait? Sync handles it.
-        // But instant feedback:
-        // docRef.get ...
-        // We rely on sync function to set text, but we set revealed class.
-        // To show text immediately we need data. We can just wait for sync or simple toggle.
-        // Actually syncLiarRoom handles text based on class presence!
-        // So we trigger a re-render or just wait for next snapshot? 
-        // Snapshot won't fire on class change.
-        // So:
-        const topic = this.querySelector('#liar-card-topic').innerText;
-        // Hacky: we need the data to show it.
-        // Better: store word in dataset.
+    this.classList.toggle('revealed');
+    if (this.classList.contains('revealed')) {
         this.querySelector('#liar-card-word').innerText = this.dataset.word;
+    } else {
+        this.querySelector('#liar-card-word').innerText = '클릭하여 확인';
     }
 });
 
