@@ -213,13 +213,13 @@ h1 {
 .vote-btn:hover {
     background: rgba(244, 63, 94, 0.2);
     border-color: #f43f5e;
-    transform: translateY(-2px);
+    background: #f43f5e;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-.vote-btn.selected {
-    background: #f43f5e;
-    border-color: #f43f5e;
-    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
+#shop-scroll-area {
+    touch-action: pan-y;
 }
 
 /* Transitions & Animations */

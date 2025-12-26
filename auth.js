@@ -17,7 +17,6 @@ let currentUser = null;
 
 // --- Initialize ---
 function initAuth() {
-    // Check if config is filled (Primitive check)
     if (firebaseConfig.apiKey === "YOUR_API_KEY") {
         console.log("🔥 Firebase Config not found. Using LocalStorage mode.");
         loadLocalData();
@@ -26,40 +25,36 @@ function initAuth() {
     }
 
     try {
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         auth = firebase.auth();
         db = firebase.firestore();
 
-        // [Fix] Firestore Listen channel 404/400 bug fix
-        // Force long-polling to bypass potential proxy/server stream issues
-        db.settings({ experimentalForceLongPolling: true });
+        // Suppress warning about overriding host
+        db.settings({ experimentalForceLongPolling: true, merge: true });
 
         isCloudEnabled = true;
 
-        // Auth State Listener
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // Logged In
                 currentUser = user;
                 console.log("✅ Logged in as:", user.displayName);
                 updateUI_LoggedIn(user);
                 loadCloudData(user.uid);
 
-                // Update displayName in Firestore for leaderboard
                 db.collection('users').doc(user.uid).set({
                     displayName: user.displayName || 'Anonymous'
                 }, { merge: true });
             } else {
-                // Logged Out
                 currentUser = null;
                 console.log("👋 Logged out");
                 updateUI_LoggedOut();
-                loadLocalData(); // Fallback
+                loadLocalData();
             }
         });
     } catch (e) {
         console.error("Firebase Init Error:", e);
-        alert("Firebase 설정 오류! 콘솔을 확인하세요.");
         loadLocalData();
     }
 }
@@ -76,13 +71,11 @@ function updateUI_LoggedIn(user) {
     if (userNameEl) userNameEl.innerText = user.displayName;
     if (userImgEl) userImgEl.src = user.photoURL;
 
-    // Liar Game UI
     const liarAuth = document.getElementById('liar-auth-request');
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'none';
     if (liarControls) liarControls.style.display = 'block';
 
-    // Leaderboard
     const leaderboard = document.getElementById('leaderboard');
     if (leaderboard) leaderboard.style.display = 'block';
     loadLeaderboard();
@@ -94,42 +87,26 @@ function updateUI_LoggedOut() {
     if (userImgEl) userImgEl.src = "";
     if (userNameEl) userNameEl.innerText = "";
 
-    // Liar Game UI
     const liarAuth = document.getElementById('liar-auth-request');
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'block';
     if (liarControls) liarControls.style.display = 'none';
 
-    // Leaderboard
     const leaderboard = document.getElementById('leaderboard');
     if (leaderboard) leaderboard.style.display = 'none';
 }
 
 // --- Actions ---
 function loginWithGoogle() {
-    if (!isCloudEnabled) {
-        alert("⚠️ Firebase 설정이 필요합니다!\nFIREBASE_SETUP.md 파일을 확인해서 설정 코드(apiKey 등)를 붙여넣어 주세요.");
-        return;
-    }
+    if (!isCloudEnabled) return alert("⚠️ Firebase 설정 필요");
     const provider = new firebase.auth.GoogleAuthProvider();
-
-    // 모바일 브라우저는 팝업을 차단하는 경우가 많으므로 Redirect 방식을 권장합니다.
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
     if (isMobile) {
-        console.log("📱 Mobile detected, using signInWithRedirect");
         auth.signInWithRedirect(provider);
     } else {
         auth.signInWithPopup(provider).catch((error) => {
-            console.error("Login Failed:", error);
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                console.log("🔄 Popup blocked, switching to Redirect...");
-                auth.signInWithRedirect(provider);
-            } else if (error.code === 'auth/unauthorized-domain') {
-                alert("❌ 승인되지 않은 도메인입니다!\nFirebase 콘솔 -> Authentication -> 설정 -> 승인된 도메인에 현재 접속한 주소(IP)를 추가해야 합니다.");
-            } else {
-                alert("로그인 실패: " + error.message);
-            }
+            if (error.code === 'auth/popup-blocked') auth.signInWithRedirect(provider);
+            else alert("로그인 실패: " + error.message);
         });
     }
 }
@@ -138,15 +115,10 @@ function logout() {
     if (auth) auth.signOut();
 }
 
-// --- Data Management (Refined) ---
-
-// 1. Load
+// --- Data Management ---
 async function loadData() {
-    if (currentUser && isCloudEnabled) {
-        return await loadCloudData(currentUser.uid);
-    } else {
-        return loadLocalData();
-    }
+    if (currentUser && isCloudEnabled) return await loadCloudData(currentUser.uid);
+    else return loadLocalData();
 }
 
 async function loadCloudData(uid) {
@@ -154,13 +126,13 @@ async function loadCloudData(uid) {
         const doc = await db.collection('users').doc(uid).get();
         if (doc.exists) {
             const data = doc.data();
-            // Pass loaded data to game
             const savedScore = data.highScore || 0;
             const savedCoins = data.coinCount || 0;
             const savedSkins = data.ownedSkins || ['default'];
             const savedCurrentSkin = data.currentSkin || 'default';
 
-            updateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
+            // Retry mechanism for setGameData if stairs_game.js isn't loaded yet
+            attemptUpdateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin, 0);
             console.log("☁️ Cloud Data Loaded:", data);
         } else {
             console.log("☁️ New User, init data.");
@@ -171,18 +143,30 @@ async function loadCloudData(uid) {
     }
 }
 
+function attemptUpdateGameData(score, coins, skins, currentSkin, attempts) {
+    if (window.setGameData) {
+        window.setGameData(score, coins, skins, currentSkin);
+    } else {
+        // Retry for up to 10 seconds (50 * 200ms)
+        if (attempts < 50) {
+            setTimeout(() => attemptUpdateGameData(score, coins, skins, currentSkin, attempts + 1), 200);
+        } else {
+            console.error("Failed to sync data to game: setGameData not found after 10 seconds");
+        }
+    }
+}
+
 function loadLocalData() {
     const savedScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
     const savedCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
-    updateGameData(savedScore, savedCoins);
+    const savedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+    const savedCurrentSkin = localStorage.getItem('currentSkin') || 'default';
+
+    updateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
 }
 
-// 2. Save (Called from script.js)
-// script.js determines WHAT to save (e.g. cumulative coins)
-// auth.js just executes the save to backend
 function saveCloudData(score, coins, skins, currentSkin) {
     if (!db || !currentUser) return;
-
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
@@ -190,67 +174,48 @@ function saveCloudData(score, coins, skins, currentSkin) {
         currentSkin: currentSkin,
         displayName: currentUser.displayName || 'Anonymous',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).then(() => {
-        console.log("☁️ Saved to Cloud: Score", score, "Coins", coins, "Skins", skins.length);
-    }).catch((e) => {
-        console.error("Cloud Save Failed:", e);
-    });
+    }, { merge: true }).catch(console.error);
 }
 
-// Bridge to script.js
 function updateGameData(score, coins, skins, currentSkin) {
     if (window.setGameData) {
         window.setGameData(score, coins, skins, currentSkin);
     }
 }
 
-// Global Save Bridge
 window.saveData = function (score, coins, skins, currentSkin) {
-    // Local Save
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
     if (skins) localStorage.setItem('ownedSkins', JSON.stringify(skins));
     if (currentSkin) localStorage.setItem('currentSkin', currentSkin);
 
-    // Cloud Save
     if (currentUser && isCloudEnabled) {
         saveCloudData(score, coins, skins || [], currentSkin || 'default');
     }
 }
 
-// Bind Events
-// Bind Events
 if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
 document.getElementById('logout-btn').addEventListener('click', logout);
 const liarLoginBtn = document.getElementById('liar-login-btn');
 if (liarLoginBtn) liarLoginBtn.addEventListener('click', loginWithGoogle);
 
-// --- Leaderboard ---
 async function loadLeaderboard() {
     if (!db || !isCloudEnabled) return;
-
     const listEl = document.getElementById('leaderboard-list');
     if (!listEl) return;
 
     try {
-        const snapshot = await db.collection('users')
-            .orderBy('highScore', 'desc')
-            .limit(10)
-            .get();
-
+        const snapshot = await db.collection('users').orderBy('highScore', 'desc').limit(10).get();
         listEl.innerHTML = '';
-
         if (snapshot.empty) {
             listEl.innerHTML = '<li style="color:#aaa;">아직 기록이 없습니다</li>';
             return;
         }
-
         let rank = 1;
         snapshot.forEach(doc => {
             const data = doc.data();
             const name = data.displayName || data.email?.split('@')[0] || 'Anonymous';
             const score = data.highScore || 0;
-
             const li = document.createElement('li');
             li.style.color = rank === 1 ? '#f1c40f' : rank === 2 ? '#bdc3c7' : rank === 3 ? '#cd6133' : '#fff';
             li.innerHTML = `<span style="font-weight:${rank <= 3 ? 'bold' : 'normal'}">${name.substring(0, 8)}</span> <span style="float:right; color:#3498db;">${score}</span>`;
@@ -258,7 +223,6 @@ async function loadLeaderboard() {
             rank++;
         });
     } catch (e) {
-        console.error("Leaderboard error:", e);
         listEl.innerHTML = '<li style="color:#e74c3c;">로드 실패</li>';
     }
 }
