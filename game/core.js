@@ -146,6 +146,12 @@ function performAction(action) {
         updateSkinRotation();
         if (window.playerFlash !== undefined) window.playerFlash = Math.min(window.playerFlash + 0.3, 1.5);
 
+        // PLAY SOUND (SFX)
+        if (window.playStepSound) {
+            const skinType = (typeof SKIN_DATA !== 'undefined' && SKIN_DATA[currentSkin]) ? SKIN_DATA[currentSkin].type : 'circle';
+            window.playStepSound(skinType);
+        }
+
         if (next.hasCoin) {
             window.gameState.coinCount += next.coinVal;
             if (!window.isTraining && !window.isAutoPlaying) {

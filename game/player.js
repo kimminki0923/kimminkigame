@@ -5,9 +5,9 @@
 
 const SKIN_DATA = {
     default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
-    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 150 },
-    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 200 },
-    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 500 }
+    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
+    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
+    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 }
 };
 
 // Animation state for smooth rolling
