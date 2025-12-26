@@ -144,6 +144,7 @@ function performAction(action) {
         addStair();
         window.gameState.timer = Math.min(MAX_TIMER, window.gameState.timer + TIMER_BONUS);
         updateSkinRotation();
+        if (window.playerFlash !== undefined) window.playerFlash = Math.min(window.playerFlash + 0.3, 1.5);
 
         if (next.hasCoin) {
             window.gameState.coinCount += next.coinVal;
@@ -283,8 +284,12 @@ resetAiBtn.addEventListener('click', () => {
 stopBtn.addEventListener('click', stopGame);
 
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'KeyJ') handleInput(0);
-    if (e.code === 'KeyF') handleInput(1);
+    // Use custom key bindings from settings
+    const jumpKey = window.getKeyBinding ? window.getKeyBinding('jump') : 'KeyJ';
+    const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
+
+    if (e.code === jumpKey) handleInput(0);
+    if (e.code === turnKey) handleInput(1);
     if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
 });
 
@@ -318,6 +323,9 @@ loop();
 
 // Bind shop events
 bindShopEvents();
+
+// Bind settings events
+if (typeof bindSettingsEvents === 'function') bindSettingsEvents();
 
 // Init Auth
 if (window.initAuth) window.initAuth();

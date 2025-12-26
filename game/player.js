@@ -25,8 +25,8 @@ function updateSkinRotation() {
         // 120 degree rotation for triangle (3 sides)
         targetSkinRotation += Math.PI * 2 / 3;
     } else if (skin.type === 'diamond') {
-        // 90 degree rotation for diamond
-        targetSkinRotation += Math.PI / 2;
+        // Diamond floats, no rolling rotation
+        targetSkinRotation = 0;
     }
 }
 
@@ -43,6 +43,9 @@ function equipSkin(skinId) {
     }
 }
 
+// Flash/Glow Intensity for "Speed = Brightness" effect
+window.playerFlash = 0;
+
 function drawPlayerWithSkin(ctx, px, py, dir) {
     const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
     const time = Date.now() * 0.001;
@@ -51,14 +54,27 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
     const rotationSpeed = 0.25;
     currentSkinRotation += (targetSkinRotation - currentSkinRotation) * rotationSpeed;
 
+    // Decay flash
+    window.playerFlash *= 0.9;
+    if (window.playerFlash < 0.01) window.playerFlash = 0;
+
+    const flash = window.playerFlash;
+
     ctx.save();
 
     // Position ON the stair (not floating) - move down to touch stair
     const groundOffset = skin.type === 'circle' ? 5 : 0;
-    ctx.translate(px, py - groundOffset);
 
-    // Apply rotation for non-circle skins
-    if (skin.type !== 'circle') {
+    // Special Floating Logic for Diamond
+    let floatY = 0;
+    if (skin.type === 'diamond') {
+        floatY = Math.sin(time * 3) * 5; // Bobbing up and down
+    }
+
+    ctx.translate(px, py - groundOffset + floatY);
+
+    // Apply rotation for non-circle skins (except Diamond which floats upright)
+    if (skin.type !== 'circle' && skin.type !== 'diamond') {
         ctx.rotate(currentSkinRotation);
     }
 
@@ -77,9 +93,9 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             cubeGrad.addColorStop(0.5, '#e67e22');
             cubeGrad.addColorStop(1, '#d35400');
 
-            // Glow
+            // Glow + Flash
             ctx.shadowColor = '#f39c12';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 20 + (flash * 30);
 
             ctx.fillStyle = cubeGrad;
             ctx.fillRect(-size / 2, -size / 2, size, size);
@@ -99,7 +115,7 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             ctx.lineWidth = 4;
             ctx.strokeRect(-size / 2, -size / 2, size, size);
 
-            // Face icon (like Geometry Dash)
+            // Face
             ctx.fillStyle = '#fff';
             ctx.beginPath();
             ctx.arc(-5, -2, 4, 0, Math.PI * 2);
@@ -127,9 +143,9 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             triGrad.addColorStop(0.5, '#ee5253');
             triGrad.addColorStop(1, '#b33939');
 
-            // Glow
+            // Glow + Flash
             ctx.shadowColor = '#ff6b6b';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 20 + (flash * 30);
 
             ctx.fillStyle = triGrad;
             ctx.beginPath();
@@ -167,14 +183,21 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             break;
 
         case 'diamond':
-            // BIG sparkling diamond - grounded
+            // BIG sparkling diamond - Floating with Pulse & Flash
             const diaSize = 38;
+            const pulse = 1 + Math.sin(time * 5) * 0.05 + (flash * 0.1); // Flash adds size pulse
 
-            // Ground shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.scale(pulse, pulse);
+
+            // Floating Ground shadow
+            ctx.save();
+            ctx.translate(0, -floatY);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            const shadowScale = 1 - (floatY + 5) * 0.05;
             ctx.beginPath();
-            ctx.ellipse(0, diaSize * 0.6, diaSize * 0.6, 6, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, diaSize * 0.6 + 10, diaSize * 0.6 * shadowScale, 6 * shadowScale, 0, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
 
             const diaGrad = ctx.createLinearGradient(0, -diaSize, 0, diaSize * 0.5);
             diaGrad.addColorStop(0, '#74b9ff');
@@ -182,9 +205,9 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             diaGrad.addColorStop(0.7, '#6c5ce7');
             diaGrad.addColorStop(1, '#a29bfe');
 
-            // Multi-color glow
-            ctx.shadowColor = '#74b9ff';
-            ctx.shadowBlur = 25;
+            // Magic Glow + Speed Flash
+            ctx.shadowColor = '#00d2d3';
+            ctx.shadowBlur = 30 + Math.sin(time * 8) * 10 + (flash * 50); // Huge glow on flash
 
             ctx.fillStyle = diaGrad;
             ctx.beginPath();
@@ -195,13 +218,21 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             ctx.closePath();
             ctx.fill();
 
+            // Flash Overlay (White-out effect)
+            if (flash > 0.1) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${flash * 0.6})`;
+                ctx.fill();
+            }
+
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = 4;
+
+            // Outline brightens with flash
+            ctx.strokeStyle = `rgba(255,255,255,${0.9 + flash * 0.1})`;
+            ctx.lineWidth = 4 + flash * 2;
             ctx.stroke();
 
             // Inner facets
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(0, -diaSize);
@@ -210,17 +241,17 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             ctx.lineTo(diaSize * 0.7, 0);
             ctx.stroke();
 
-            // Sparkle effects (more prominent)
-            for (let i = 0; i < 5; i++) {
-                const angle = time * 3 + (i * Math.PI * 2 / 5);
-                const radius = diaSize * 0.4 + Math.sin(time * 2 + i) * 5;
-                const sparkX = Math.cos(angle) * radius * 0.8;
-                const sparkY = Math.sin(angle) * radius * 0.4 - 10;
-                const sparkSize = 3 + Math.sin(time * 6 + i * 2) * 2;
+            // Magical Particles (Orbiting)
+            for (let i = 0; i < 3; i++) {
+                const angle = time * 4 + (i * Math.PI * 2 / 3) + (flash * 2); // Spin faster with flash
+                const rx = diaSize * 0.8;
+                const ry = diaSize * 0.3;
+                const ox = Math.cos(angle) * rx;
+                const oy = Math.sin(angle) * ry;
 
-                ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                ctx.fillStyle = `hsl(${time * 100 + i * 60}, 100%, 70%)`;
                 ctx.beginPath();
-                ctx.arc(sparkX, sparkY, Math.max(1, sparkSize), 0, Math.PI * 2);
+                ctx.arc(ox, oy, 4 + flash * 2, 0, Math.PI * 2);
                 ctx.fill();
             }
             break;
@@ -240,14 +271,20 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             pGrad.addColorStop(0.5, '#00cec9');
             pGrad.addColorStop(1, '#00b894');
 
-            // Glow
+            // Glow + Flash
             ctx.shadowColor = '#00cec9';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 15 + (flash * 30);
 
             ctx.fillStyle = pGrad;
             ctx.beginPath();
             ctx.arc(0, 0, circleSize, 0, Math.PI * 2);
             ctx.fill();
+
+            // Flash Overlay
+            if (flash > 0.1) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${flash * 0.5})`;
+                ctx.fill();
+            }
 
             ctx.shadowBlur = 0;
             ctx.strokeStyle = '#fff';
@@ -256,25 +293,19 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
 
             // Big expressive eyes
             const lookDir = dir === 1 ? 1 : -1;
-
-            // Eye whites
+            // Eyes
             ctx.fillStyle = '#fff';
             ctx.beginPath();
             ctx.ellipse(lookDir * 6, -3, 6, 7, 0, 0, Math.PI * 2);
             ctx.fill();
-
-            // Pupils
             ctx.fillStyle = '#2d3436';
             ctx.beginPath();
             ctx.arc(lookDir * 7, -2, 4, 0, Math.PI * 2);
             ctx.fill();
-
-            // Eye shine
             ctx.fillStyle = '#fff';
             ctx.beginPath();
             ctx.arc(lookDir * 8, -4, 2, 0, Math.PI * 2);
             ctx.fill();
-
             // Smile
             ctx.strokeStyle = '#2d3436';
             ctx.lineWidth = 2;

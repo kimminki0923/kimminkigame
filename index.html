@@ -151,9 +151,14 @@
                 <div id="menu-overlay">
                     <h1 style="color:white; text-shadow:2px 2px 4px #000;">INFINITE STAIRS</h1>
                     <button id="start-btn">START GAME</button>
-                    <button id="shop-open-btn"
-                        style="background:#9b59b6; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; margin-top:15px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #8e44ad; transition:transform 0.1s;">🛒
-                        아이템 상점</button>
+                    <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+                        <button id="shop-open-btn"
+                            style="background:#9b59b6; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #8e44ad; transition:transform 0.1s;">🛒
+                            아이템 상점</button>
+                        <button id="settings-open-btn"
+                            style="background:#3498db; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #2980b9; transition:transform 0.1s;">⚙️
+                            설정</button>
+                    </div>
                     <div style="margin-top:20px;">
                         <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
                         <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI
@@ -263,6 +268,65 @@
                                     ✕ 닫기
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Overlay (Modal Style) -->
+                <div id="settings-overlay"
+                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+                    <div id="settings-modal"
+                        style="width:95%; max-width:450px; background:#1a1a1a; border-radius:30px; border:3px solid #3498db; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 50px rgba(0,0,0,1);">
+
+                        <!-- Header -->
+                        <div
+                            style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; background:#222;">
+                            <h2 style="font-size:24px; color:#3498db; margin:0;">⚙️ 설정</h2>
+                            <button id="close-settings-btn"
+                                style="background:#e74c3c; border:none; color:white; width:35px; height:35px; border-radius:50%; cursor:pointer; font-weight:bold;">✕</button>
+                        </div>
+
+                        <!-- Content -->
+                        <div style="padding:30px;">
+                            <h3 style="color:#f1c40f; margin:0 0 20px 0; font-size:18px;">🎮 키 설정</h3>
+                            <p style="color:#aaa; font-size:13px; margin-bottom:25px;">게임 조작키를 원하는 키로 변경할 수 있습니다.</p>
+
+                            <!-- Jump Key -->
+                            <div
+                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; margin-bottom:15px; display:flex; align-items:center; justify-content:space-between;">
+                                <div>
+                                    <div style="color:#fff; font-weight:bold; font-size:16px;">🪜 올라가기 (Jump)</div>
+                                    <div style="color:#aaa; font-size:12px; margin-top:5px;">현재: <span
+                                            id="current-jump-key" style="color:#2ecc71; font-weight:bold;">J</span>
+                                    </div>
+                                </div>
+                                <button id="rebind-jump-btn"
+                                    style="background:#9b59b6; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">변경하기</button>
+                            </div>
+
+                            <!-- Turn Key -->
+                            <div
+                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; margin-bottom:25px; display:flex; align-items:center; justify-content:space-between;">
+                                <div>
+                                    <div style="color:#fff; font-weight:bold; font-size:16px;">↩️ 방향 바꾸기 (Turn)</div>
+                                    <div style="color:#aaa; font-size:12px; margin-top:5px;">현재: <span
+                                            id="current-turn-key" style="color:#2ecc71; font-weight:bold;">F</span>
+                                    </div>
+                                </div>
+                                <button id="rebind-turn-btn"
+                                    style="background:#9b59b6; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">변경하기</button>
+                            </div>
+
+                            <!-- Reset Button -->
+                            <button id="reset-keys-btn"
+                                style="width:100%; background:rgba(255,255,255,0.1); color:#aaa; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:10px; cursor:pointer; margin-bottom:20px;">🔄
+                                기본값으로 초기화</button>
+
+                            <!-- Close Button -->
+                            <button id="close-settings-btn-bottom"
+                                style="width:100%; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold;">
+                                ✕ 닫기
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -507,6 +571,7 @@
     <script src="game/player.js"></script>
     <script src="game/ai.js"></script>
     <script src="game/shop.js"></script>
+    <script src="game/settings.js"></script>
     <script src="game/core.js"></script>
     <script src="liar_game.js"></script>
 </body>

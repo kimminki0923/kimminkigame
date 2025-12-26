@@ -196,6 +196,8 @@ function saveCloudData(score, coins, skins, currentSkin) {
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
         console.log("☁️ Cloud Save Success");
+        // Trigger leaderboard refresh immediately after saving a score
+        loadLeaderboard();
     }).catch(e => console.error("Cloud Save Failed", e));
 }
 
