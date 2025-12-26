@@ -148,6 +148,10 @@ function performAction(action) {
                 localStorage.setItem('infinite_stairs_coins', totalCoins);
                 const shopGold = document.getElementById('shop-gold');
                 if (shopGold) shopGold.innerText = totalCoins;
+                // Immediate cloud save for coins
+                if (window.saveData && isDataLoaded) {
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+                }
             } else {
                 coinEl.innerText = "(AI)";
             }
@@ -312,3 +316,17 @@ bindShopEvents();
 
 // Init Auth
 if (window.initAuth) window.initAuth();
+
+// Save data when page closes/refreshes
+window.addEventListener('beforeunload', () => {
+    if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+    }
+});
+
+// Periodic save (every 30 seconds)
+setInterval(() => {
+    if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+    }
+}, 30000);
