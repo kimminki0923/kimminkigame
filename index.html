@@ -138,6 +138,9 @@
                 <div id="menu-overlay">
                     <h1 style="color:white; text-shadow:2px 2px 4px #000;">INFINITE STAIRS</h1>
                     <button id="start-btn">START GAME</button>
+                    <button id="shop-open-btn"
+                        style="background:#9b59b6; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; margin-top:15px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #8e44ad; transition:transform 0.1s;">🛒
+                        아이템 상점</button>
                     <div style="margin-top:20px;">
                         <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
                         <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI
@@ -155,6 +158,47 @@
 
                 <button id="stop-btn"
                     style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
+
+                <!-- Shop Overlay -->
+                <div id="shop-overlay"
+                    style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:100; flex-direction:column; align-items:center; justify-content:center; color:white;">
+                    <h2 style="font-size:32px; margin-bottom:10px; text-shadow:0 0 10px #f1c40f;">🛒 아이템 상점</h2>
+                    <div id="shop-balance"
+                        style="font-size:20px; color:#f1c40f; margin-bottom:30px; background:rgba(255,255,255,0.1); padding:10px 25px; border-radius:30px; border:1px solid rgba(255,255,255,0.2);">
+                        🪙 <span id="shop-gold">0</span> Gold
+                    </div>
+
+                    <div id="shop-items"
+                        style="display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; width:90%; max-width:500px;">
+                        <!-- Item 1 -->
+                        <div class="shop-item"
+                            style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; text-align:center; border:1px solid rgba(255,255,255,0.1); transition:transform 0.2s;">
+                            <div style="font-size:40px; margin-bottom:10px;">🔴</div>
+                            <h3 style="margin:0 0 5px 0; color:#e74c3c;">레드 스킨</h3>
+                            <p style="color:#aaa; font-size:12px; margin:0 0 15px 0;">정열의 빨간색으로 변신!</p>
+                            <button class="buy-btn" data-id="skin_red" data-price="100"
+                                style="background:#f1c40f; border:none; padding:10px 25px; border-radius:25px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                100 G
+                            </button>
+                        </div>
+                        <!-- Item 2 -->
+                        <div class="shop-item"
+                            style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; text-align:center; border:1px solid rgba(255,255,255,0.1); transition:transform 0.2s;">
+                            <div style="font-size:40px; margin-bottom:10px;">🔵</div>
+                            <h3 style="margin:0 0 5px 0; color:#3498db;">블루 스킨</h3>
+                            <p style="color:#aaa; font-size:12px; margin:0 0 15px 0;">시원한 파란색으로 변신!</p>
+                            <button class="buy-btn" data-id="skin_blue" data-price="200"
+                                style="background:#f1c40f; border:none; padding:10px 25px; border-radius:25px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                200 G
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="close-shop-btn"
+                        style="margin-top:40px; padding:12px 40px; background:transparent; border:2px solid rgba(255,255,255,0.5); color:white; border-radius:30px; font-size:16px; cursor:pointer; transition:all 0.2s;">
+                        닫기
+                    </button>
+                </div>
             </div>
 
             <div id="mobile-controls">

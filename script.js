@@ -683,6 +683,44 @@ resetAiBtn.addEventListener('click', () => {
 });
 stopBtn.addEventListener('click', stopGame);
 
+// --- Shop Logic ---
+const shopOpenBtn = document.getElementById('shop-open-btn');
+const shopOverlay = document.getElementById('shop-overlay');
+const closeShopBtn = document.getElementById('close-shop-btn');
+const shopGoldEl = document.getElementById('shop-gold');
+
+if (shopOpenBtn) {
+    shopOpenBtn.addEventListener('click', () => {
+        if (shopOverlay) {
+            shopOverlay.style.display = 'flex';
+            if (shopGoldEl) shopGoldEl.innerText = gameState.coinCount;
+        }
+    });
+}
+
+if (closeShopBtn) {
+    closeShopBtn.addEventListener('click', () => {
+        if (shopOverlay) shopOverlay.style.display = 'none';
+    });
+}
+
+// Buy Button Handlers
+document.querySelectorAll('.buy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const id = e.target.dataset.id;
+        const price = parseInt(e.target.dataset.price);
+
+        console.log(`Attempting to buy: ${id} for ${price}G`);
+
+        if (gameState.coinCount >= price) {
+            alert(`구매 기능은 다음 업데이트에서! (${id} - ${price}G)`);
+            // TODO: Deduct coins, save purchase, apply skin
+        } else {
+            alert(`골드가 부족합니다! (보유: ${gameState.coinCount}G / 필요: ${price}G)`);
+        }
+    });
+});
+
 // --- File I/O (JSON "Pickle" style) ---
 const saveFileBtn = document.getElementById('save-file-btn');
 const loadFileBtn = document.getElementById('load-file-btn');
