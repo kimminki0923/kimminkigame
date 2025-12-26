@@ -1562,3 +1562,15 @@ document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendLiarMessage();
 });
 document.getElementById('liar-guess-btn').addEventListener('click', submitLiarGuess);
+
+// Toggle Game Rules
+document.getElementById('toggle-rules-btn')?.addEventListener('click', function () {
+    const rules = document.getElementById('game-rules');
+    if (rules.style.display === 'none') {
+        rules.style.display = 'block';
+        this.innerHTML = '🔼 규칙 접기';
+    } else {
+        rules.style.display = 'none';
+        this.innerHTML = '📜 게임 규칙 보기';
+    }
+});
