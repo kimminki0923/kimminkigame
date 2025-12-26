@@ -613,6 +613,44 @@ function bindShopEvents() {
     }
 }
 
+function updateShopUI() {
+    // Gold Display
+    const shopGold = document.getElementById('shop-gold');
+    if (shopGold) shopGold.innerText = totalCoins;
+
+    // Current Skin Display
+    const currentDisplay = document.getElementById('current-skin-display');
+    if (currentDisplay && SKIN_DATA[currentSkin]) {
+        currentDisplay.innerText = `${SKIN_DATA[currentSkin].icon} ${SKIN_DATA[currentSkin].name}`;
+    }
+
+    // Update Buy/Equip Buttons
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+        const skinId = btn.dataset.id;
+        if (ownedSkins.includes(skinId)) {
+            // Already owned - show equip button
+            btn.innerText = currentSkin === skinId ? '✓ 장착중' : '장착하기';
+            btn.style.background = currentSkin === skinId ? '#7f8c8d' : '#2ecc71';
+            btn.disabled = currentSkin === skinId;
+            btn.classList.add('equip-btn');
+            btn.classList.remove('buy-btn');
+        }
+    });
+
+    document.querySelectorAll('.equip-btn').forEach(btn => {
+        const skinId = btn.dataset.skin || btn.dataset.id;
+        if (skinId === currentSkin) {
+            btn.innerText = '✓ 장착중';
+            btn.style.background = '#7f8c8d';
+            btn.disabled = true;
+        } else if (ownedSkins.includes(skinId)) {
+            btn.innerText = '장착하기';
+            btn.style.background = '#2ecc71';
+            btn.disabled = false;
+        }
+    });
+}
+
 // Call initially
 bindShopEvents();
 

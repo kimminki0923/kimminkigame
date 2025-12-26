@@ -9,168 +9,137 @@ const firebaseConfig = {
     measurementId: "G-P6H7Z574G7"
 };
 
-// --- System State ---
+// --- Global State ---
 let isCloudEnabled = false;
 let db = null;
 let auth = null;
 let currentUser = null;
 
-// --- Initialize ---
+// --- Initialize Firebase ---
 function initAuth() {
-    try {
-        if (typeof firebase === 'undefined') {
-            console.error("Firebase SDK not loaded");
-            loadLocalData();
-            return;
-        }
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        auth = firebase.auth();
-        db = firebase.firestore();
-
-        // Settings to avoid warnings
-        db.settings({ experimentalForceLongPolling: true, merge: true });
-
-        isCloudEnabled = true;
-        console.log("🔥 Firebase Initialized");
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                console.log("✅ Logged in as:", user.displayName);
-                updateUI_LoggedIn(user);
-                loadCloudData(user.uid);
-
-                // Save user info
-                db.collection('users').doc(user.uid).set({
-                    displayName: user.displayName || 'Anonymous',
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            } else {
-                currentUser = null;
-                console.log("👋 Logged out");
-                updateUI_LoggedOut();
-                loadLocalData();
-            }
-        });
-    } catch (e) {
-        console.error("Firebase Init Error:", e);
-        loadLocalData();
-    }
-}
-
-// --- UI Functions ---
-const loginBtn = document.getElementById('login-btn');
-const userInfoEl = document.getElementById('user-info');
-const userNameEl = document.getElementById('user-name');
-const userImgEl = document.getElementById('user-img');
-
-function updateUI_LoggedIn(user) {
-    if (loginBtn) loginBtn.style.display = 'none';
-    if (userInfoEl) userInfoEl.style.display = 'flex';
-    if (userNameEl) userNameEl.innerText = user.displayName;
-    if (userImgEl) userImgEl.src = user.photoURL;
-
-    // Liar Game UI updates
-    const liarAuth = document.getElementById('liar-auth-request');
-    const liarControls = document.getElementById('liar-game-controls');
-    if (liarAuth) liarAuth.style.display = 'none';
-    if (liarControls) liarControls.style.display = 'block';
-
-    const leaderboard = document.getElementById('leaderboard');
-    if (leaderboard) leaderboard.style.display = 'block';
-    loadLeaderboard();
-}
-
-function updateUI_LoggedOut() {
-    if (loginBtn) loginBtn.style.display = 'inline-block';
-    if (userInfoEl) userInfoEl.style.display = 'none';
-    if (userImgEl) userImgEl.src = "";
-    if (userNameEl) userNameEl.innerText = "";
-
-    // Liar Game UI updates
-    const liarAuth = document.getElementById('liar-auth-request');
-    const liarControls = document.getElementById('liar-game-controls');
-    if (liarAuth) liarAuth.style.display = 'block';
-    if (liarControls) liarControls.style.display = 'none';
-
-    const leaderboard = document.getElementById('leaderboard');
-    if (leaderboard) leaderboard.style.display = 'none';
-}
-
-// --- Actions ---
-function loginWithGoogle() {
-    if (!auth) {
-        alert("⚠️ Firebase가 아직 초기화되지 않았거나 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
-        initAuth(); // Try initializing again
+    if (typeof firebase === 'undefined') {
+        console.error("Firebase SDK not loaded yet.");
         return;
     }
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch((error) => {
-        console.error("Login Error:", error);
-        alert("로그인 실패: " + error.message);
+
+    if (firebase.apps.length === 0) {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("🔥 Firebase Initialized");
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            return;
+        }
+    }
+
+    auth = firebase.auth();
+    db = firebase.firestore();
+
+    db.settings({ merge: true });
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+            isCloudEnabled = true;
+        })
+        .catch((error) => {
+            console.error("Persistence Error:", error);
+        });
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            console.log("✅ Logged in:", user.displayName);
+            updateUI_LoggedIn(user);
+            loadCloudData(user.uid);
+
+            db.collection('users').doc(user.uid).set({
+                displayName: user.displayName || 'Anonymous',
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        } else {
+            currentUser = null;
+            console.log("👋 Logged out");
+            updateUI_LoggedOut();
+            loadLocalData();
+        }
     });
+}
+
+// --- Login Action ---
+function loginWithGoogle() {
+    if (!auth) {
+        initAuth();
+        if (!auth) return alert("Firebase 연결 실패. 페이지를 새로고침 해주세요.");
+    }
+
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            console.log("Login Success");
+        })
+        .catch((error) => {
+            console.error("Login CMD Error:", error);
+            if (error.code === 'auth/popup-closed-by-user') return;
+            if (error.code === 'auth/unauthorized-domain') {
+                alert("⚠️ 도메인 승인 오류\nFirebase 콘솔 > Authentication > Settings > Authorized Domains에 현재 도메인을 추가해야 합니다.");
+                return;
+            }
+            alert("로그인 에러: " + error.message);
+        });
 }
 
 function logout() {
     if (auth) auth.signOut();
 }
 
-// --- Data Management ---
+// --- Data Sync (Cloud) ---
 async function loadCloudData(uid) {
     if (!db) return;
     try {
         const doc = await db.collection('users').doc(uid).get();
         if (doc.exists) {
             const data = doc.data();
-            applyGameData(
-                data.highScore || 0,
-                data.coinCount || 0,
-                data.ownedSkins || ['default'],
-                data.currentSkin || 'default'
-            );
-            console.log("☁️ Cloud Data Loaded");
+            applyGameData(data.highScore, data.coinCount, data.ownedSkins, data.currentSkin);
         } else {
-            console.log("☁️ New User");
             saveCloudData(0, 0, ['default'], 'default');
         }
     } catch (e) {
-        console.error("Cloud Load Error:", e);
+        console.error("Load Cloud Error:", e);
     }
 }
 
+// --- Data Sync (Local) ---
 function loadLocalData() {
-    const savedScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
-    const savedCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
-    const savedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
-    const savedCurrentSkin = localStorage.getItem('currentSkin') || 'default';
-
-    applyGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
+    const s = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+    const c = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
+    const skins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+    const skin = localStorage.getItem('currentSkin') || 'default';
+    applyGameData(s, c, skins, skin);
 }
 
+// --- Apply to Game (Bridge) ---
 function applyGameData(score, coins, skins, currentSkin) {
-    // Retry to set data if game script is not ready
-    if (window.setGameData) {
-        window.setGameData(score, coins, skins, currentSkin);
-    } else {
-        setTimeout(() => applyGameData(score, coins, skins, currentSkin), 500);
-    }
+    const trySet = (attempts = 0) => {
+        if (window.setGameData) {
+            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default');
+        } else if (attempts < 20) {
+            setTimeout(() => trySet(attempts + 1), 200);
+        }
+    };
+    trySet();
 }
 
+// --- Save Data ---
 function saveCloudData(score, coins, skins, currentSkin) {
     if (!db || !currentUser) return;
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
         ownedSkins: skins,
-        currentSkin: currentSkin,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(console.error);
+        currentSkin: currentSkin
+    }, { merge: true });
 }
 
-// Global Save Hook
 window.saveData = function (score, coins, skins, currentSkin) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
@@ -182,36 +151,60 @@ window.saveData = function (score, coins, skins, currentSkin) {
     }
 }
 
-// Listeners
-if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
-document.getElementById('logout-btn')?.addEventListener('click', logout);
-document.getElementById('liar-login-btn')?.addEventListener('click', loginWithGoogle);
+// --- UI Helpers ---
+function updateUI_LoggedIn(user) {
+    const login = document.getElementById('login-btn');
+    const info = document.getElementById('user-info');
+    const name = document.getElementById('user-name');
+    const img = document.getElementById('user-img');
 
-// Leaderboard
-async function loadLeaderboard() {
-    if (!db) return;
-    const listEl = document.getElementById('leaderboard-list');
-    if (!listEl) return;
-    try {
-        const snapshot = await db.collection('users').orderBy('highScore', 'desc').limit(10).get();
-        listEl.innerHTML = '';
-        if (snapshot.empty) {
-            listEl.innerHTML = '<li>기록 없음</li>';
-            return;
-        }
-        let rank = 1;
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const li = document.createElement('li');
-            li.innerHTML = `<span>${rank}. ${d.displayName || 'Anon'}</span> <span style="float:right">${d.highScore || 0}</span>`;
-            listEl.appendChild(li);
-            rank++;
-        });
-    } catch {
-        listEl.innerHTML = '<li>로드 실패</li>';
-    }
+    if (login) login.style.display = 'none';
+    if (info) info.style.display = 'flex';
+    if (name) name.innerText = user.displayName;
+    if (img) img.src = user.photoURL;
+
+    document.getElementById('liar-auth-request')?.setAttribute('style', 'display:none !important');
+    document.getElementById('liar-game-controls')?.setAttribute('style', 'display:block !important');
+    loadLeaderboard();
 }
 
-// Initialize immediately
-initAuth();
-window.initAuth = initAuth; // Expose for external calls if needed
+function updateUI_LoggedOut() {
+    const login = document.getElementById('login-btn');
+    const info = document.getElementById('user-info');
+
+    if (login) login.style.display = 'inline-block';
+    if (info) info.style.display = 'none';
+
+    document.getElementById('liar-auth-request')?.setAttribute('style', 'display:block !important');
+    document.getElementById('liar-game-controls')?.setAttribute('style', 'display:none !important');
+}
+
+async function loadLeaderboard() {
+    if (!db) return;
+    try {
+        const snap = await db.collection('users').orderBy('highScore', 'desc').limit(10).get();
+        const list = document.getElementById('leaderboard-list');
+        if (list) {
+            list.innerHTML = '';
+            let rank = 1;
+            snap.forEach(doc => {
+                const d = doc.data();
+                const li = document.createElement('li');
+                li.innerText = `${rank}. ${d.displayName}: ${d.highScore}`;
+                list.appendChild(li);
+                rank++;
+            });
+        }
+    } catch (e) { }
+}
+
+// --- Listeners ---
+document.addEventListener('DOMContentLoaded', () => {
+    initAuth();
+    document.getElementById('login-btn')?.addEventListener('click', loginWithGoogle);
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+    document.getElementById('liar-login-btn')?.addEventListener('click', loginWithGoogle);
+});
+
+if (document.readyState === 'complete') initAuth();
+window.initAuth = initAuth;
