@@ -1115,15 +1115,16 @@ function syncLiarRoom(data) {
 
         const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
         const currentTurnPlayer = data.players[currentTurnPlayerId];
+        const myTurnInput = document.getElementById('my-turn-input');
 
         overlay.style.display = 'block';
         if (currentTurnPlayerId === currentUser.uid) {
             document.getElementById('overlay-msg').innerText = "🎤 당신의 차례입니다!";
-            document.getElementById('liar-chat-input').placeholder = "제시어에 대한 한 문장 설명...";
-            document.getElementById('liar-chat-input').focus();
+            myTurnInput.style.display = 'block';
+            document.getElementById('description-input').focus();
         } else {
             document.getElementById('overlay-msg').innerText = `👂 ${currentTurnPlayer.name} 님의 차례`;
-            document.getElementById('liar-chat-input').placeholder = "다른 사람의 설명을 듣는 중...";
+            myTurnInput.style.display = 'none';
         }
 
     } else if (data.status === 'discussion') {
@@ -1276,53 +1277,14 @@ async function sendLiarMessage() {
     const text = input.value.trim();
     if (!text) return;
 
-    const docRef = db.collection('rooms').doc(currentRoomId);
-    const snap = await docRef.get();
-    const data = snap.data();
-
-    // Check if in turn-based mode
-    if (data.status === 'turn_based') {
-        const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
-        if (currentTurnPlayerId !== currentUser.uid) {
-            alert("지금은 당신의 차례가 아닙니다!");
-            return;
-        }
-
-        // Save description
-        const newDesc = {
-            uid: currentUser.uid,
-            name: currentUser.displayName,
-            text: text
-        };
-        const updatedDescriptions = [...(data.descriptions || []), newDesc];
-
-        // Advance Turn
-        let nextIndex = data.currentTurnIndex + 1;
-        let nextStatus = 'turn_based';
-        if (nextIndex >= data.turnOrder.length) {
-            nextStatus = 'discussion'; // All turns done
-        }
-
-        await docRef.update({
-            descriptions: updatedDescriptions,
-            currentTurnIndex: nextIndex,
-            status: nextStatus
-        });
-
-        input.value = ''; // Clear only if successfully sent as description
-        return;
-    }
-
-    // Normal Chat (Lobby, Discussion, End)
-    if (data.status === 'lobby' || data.status === 'playing' || data.status === 'discussion' || data.status === 'result') {
-        await db.collection('rooms').doc(currentRoomId).collection('messages').add({
-            uid: currentUser.uid,
-            name: currentUser.displayName,
-            text: text,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        input.value = '';
-    }
+    // Normal Chat - always allowed
+    await db.collection('rooms').doc(currentRoomId).collection('messages').add({
+        uid: currentUser.uid,
+        name: currentUser.displayName,
+        text: text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    input.value = '';
 }
 
 async function voteForPlayer(targetUid) {
@@ -1490,8 +1452,60 @@ document.getElementById('liar-restart-multi-btn').addEventListener('click', () =
         liarId: null, word: "", revealed: false, descriptions: [], votes: {}
     });
 });
+
+// Description Input (자기 차례 설명용)
+document.getElementById('description-send-btn').addEventListener('click', sendDescription);
+document.getElementById('description-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendDescription();
+});
+
+// Chat Input (일반 채팅용)
 document.getElementById('liar-chat-send-btn').addEventListener('click', sendLiarMessage);
 document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendLiarMessage();
 });
 document.getElementById('liar-guess-btn').addEventListener('click', submitLiarGuess);
+
+// 설명 전송 함수 (차례일 때만)
+async function sendDescription() {
+    if (!currentRoomId || !currentUser) return;
+    const input = document.getElementById('description-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const docRef = db.collection('rooms').doc(currentRoomId);
+    const snap = await docRef.get();
+    const data = snap.data();
+
+    if (data.status !== 'turn_based') return;
+
+    const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
+    if (currentTurnPlayerId !== currentUser.uid) {
+        alert("지금은 당신의 차례가 아닙니다!");
+        return;
+    }
+
+    // Save description
+    const newDesc = {
+        uid: currentUser.uid,
+        name: currentUser.displayName,
+        text: text
+    };
+    const updatedDescriptions = [...(data.descriptions || []), newDesc];
+
+    // Advance Turn
+    let nextIndex = data.currentTurnIndex + 1;
+    let nextStatus = 'turn_based';
+    if (nextIndex >= data.turnOrder.length) {
+        nextStatus = 'discussion'; // All turns done
+    }
+
+    await docRef.update({
+        descriptions: updatedDescriptions,
+        currentTurnIndex: nextIndex,
+        status: nextStatus
+    });
+
+    input.value = '';
+    document.getElementById('my-turn-input').style.display = 'none';
+}
