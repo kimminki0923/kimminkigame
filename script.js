@@ -1138,6 +1138,8 @@ async function joinLiarRoom(roomId) {
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = docRef.onSnapshot(snapshot => {
             if (snapshot.exists) syncLiarRoom(snapshot.data());
+        }, error => {
+            console.error("Room Sync Error:", error);
         });
 
         // Chat Listener
@@ -1148,13 +1150,22 @@ async function joinLiarRoom(roomId) {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
                     const msg = change.doc.data();
+                    const name = (msg.name || "Anonymous").substring(0, 10);
+                    const isMine = msg.uid === currentUser.uid;
                     const div = document.createElement('div');
-                    div.className = 'chat-msg';
-                    div.innerHTML = `<span class="chat-name">${msg.name}:</span><span class="chat-content">${msg.text}</span>`;
+                    div.className = 'chat-wrapper' + (isMine ? ' mine' : '');
+                    div.innerHTML = `
+                        <div class="chat-msg ${isMine ? 'mine' : ''}">
+                            <div class="chat-name">${name}</div>
+                            <div class="chat-text">${msg.text}</div>
+                        </div>
+                    `;
                     chatList.appendChild(div);
                     chatList.scrollTop = chatList.scrollHeight;
                 }
             });
+        }, error => {
+            console.error("Chat Sync Error:", error);
         });
 
     } catch (e) {
