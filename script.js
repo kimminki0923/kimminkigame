@@ -1272,63 +1272,81 @@ function leaveLiarRoom() {
 }
 
 async function sendLiarMessage() {
-    if (!currentRoomId || !currentUser) return;
+    console.log("Sending chat message...");
+    if (!currentRoomId) { console.error("No Room ID"); return; }
+    if (!currentUser) { console.error("No User"); return; }
+
     const input = document.getElementById('liar-chat-input');
     const text = input.value.trim();
     if (!text) return;
 
-    // Normal Chat - always allowed
-    await db.collection('rooms').doc(currentRoomId).collection('messages').add({
-        uid: currentUser.uid,
-        name: currentUser.displayName,
-        text: text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = '';
+    try {
+        await db.collection('rooms').doc(currentRoomId).collection('messages').add({
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            text: text,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = '';
+        console.log("Chat sent successfully");
+    } catch (e) {
+        console.error("Chat Error:", e);
+        alert("채팅 전송 실패: " + e.message);
+    }
 }
 
 // 설명 전송 함수 (차례일 때만)
 async function sendDescription() {
+    console.log("Sending description...");
     if (!currentRoomId || !currentUser) return;
     const input = document.getElementById('description-input');
     const text = input.value.trim();
     if (!text) return;
 
-    const docRef = db.collection('rooms').doc(currentRoomId);
-    const snap = await docRef.get();
-    const data = snap.data();
+    try {
+        const docRef = db.collection('rooms').doc(currentRoomId);
+        const snap = await docRef.get();
+        const data = snap.data();
 
-    if (data.status !== 'turn_based') return;
+        if (data.status !== 'turn_based') {
+            console.warn("Not turn based");
+            return;
+        }
 
-    const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
-    if (currentTurnPlayerId !== currentUser.uid) {
-        alert("지금은 당신의 차례가 아닙니다!");
-        return;
+        const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
+        if (currentTurnPlayerId !== currentUser.uid) {
+            alert("지금은 당신의 차례가 아닙니다!");
+            return;
+        }
+
+        // Save description
+        const newDesc = {
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            text: text
+        };
+        const updatedDescriptions = [...(data.descriptions || []), newDesc];
+
+        // Advance Turn
+        let nextIndex = data.currentTurnIndex + 1;
+        let nextStatus = 'turn_based';
+        if (nextIndex >= data.turnOrder.length) {
+            nextStatus = 'discussion'; // All turns done
+        }
+
+        await docRef.update({
+            descriptions: updatedDescriptions,
+            currentTurnIndex: nextIndex,
+            status: nextStatus
+        });
+
+        input.value = '';
+        document.getElementById('my-turn-input').style.display = 'none';
+        console.log("Description saved");
+    } catch (e) {
+        console.error("Description Error:", e);
+        alert("설명 전송 실패: " + e.message);
     }
-
-    // Save description
-    const newDesc = {
-        uid: currentUser.uid,
-        name: currentUser.displayName,
-        text: text
-    };
-    const updatedDescriptions = [...(data.descriptions || []), newDesc];
-
-    // Advance Turn
-    let nextIndex = data.currentTurnIndex + 1;
-    let nextStatus = 'turn_based';
-    if (nextIndex >= data.turnOrder.length) {
-        nextStatus = 'discussion'; // All turns done
-    }
-
-    await docRef.update({
-        descriptions: updatedDescriptions,
-        currentTurnIndex: nextIndex,
-        status: nextStatus
-    });
-
-    input.value = '';
-    document.getElementById('my-turn-input').style.display = 'none';
 }
 
 async function voteForPlayer(targetUid) {
