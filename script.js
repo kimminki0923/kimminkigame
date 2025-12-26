@@ -893,6 +893,8 @@ async function createLiarRoom() {
             liarId: null,
             word: "",
             revealed: false,
+            turnOrder: [],
+            currentTurnIndex: 0,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         joinLiarRoom(roomId);
@@ -989,16 +991,21 @@ function syncLiarRoom(data) {
     document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
 
     // 2. Game State Transition Logic
-    // Reset all views first
     const lobbyDiv = document.getElementById('liar-lobby');
     const gameDiv = document.getElementById('liar-game-play');
     const resultDiv = document.getElementById('liar-result');
+    const turnMsg = document.getElementById('liar-current-turn-msg');
+
+    // Reset defaults
+    document.getElementById('liar-host-controls').style.display = 'none';
+    document.getElementById('liar-discussion-msg').style.display = 'none';
+    document.getElementById('liar-reveal-multi-btn').style.display = 'none';
 
     if (data.status === 'lobby') {
         lobbyDiv.style.display = 'block';
         gameDiv.style.display = 'none';
         resultDiv.style.display = 'none';
-        // Reset card state
+
         const card = document.getElementById('liar-card');
         card.classList.remove('revealed');
         card.classList.remove('card-back');
@@ -1011,8 +1018,6 @@ function syncLiarRoom(data) {
         resultDiv.style.display = 'none';
 
         const card = document.getElementById('liar-card');
-        const turnMsg = document.getElementById('liar-current-turn-msg');
-
         if (data.liarId === currentUser.uid) {
             card.dataset.role = 'liar';
             card.dataset.word = '당신은 라이어입니다!';
@@ -1022,14 +1027,28 @@ function syncLiarRoom(data) {
         }
 
         if (!card.classList.contains('revealed')) {
-            turnMsg.innerText = "당신의 카드를 확인하세요.";
+            turnMsg.innerText = "카드를 확인하고 순서를 기다리세요.";
         } else {
-            turnMsg.innerText = "제시어를 확인했습니다. 대기하세요.";
+            turnMsg.innerText = "카드를 확인했습니다. 곧 시작됩니다.";
         }
 
         document.getElementById('liar-host-controls').style.display = isHost ? 'block' : 'none';
-        document.getElementById('liar-discussion-msg').style.display = 'none';
-        document.getElementById('liar-reveal-multi-btn').style.display = 'none';
+
+    } else if (data.status === 'turn_based') {
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+
+        const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
+        const currentTurnPlayer = data.players[currentTurnPlayerId];
+
+        if (currentTurnPlayerId === currentUser.uid) {
+            turnMsg.innerText = "당신의 차례입니다! 채팅창에 한 마디 설명을 입력하세요.";
+            turnMsg.style.color = "#2ecc71";
+        } else {
+            turnMsg.innerText = `[${currentTurnPlayer.name}] 님의 차례입니다... 설명하는 중`;
+            turnMsg.style.color = "#fff";
+        }
 
     } else if (data.status === 'discussion') {
         lobbyDiv.style.display = 'none';
@@ -1038,10 +1057,8 @@ function syncLiarRoom(data) {
 
         document.getElementById('liar-discussion-msg').style.display = 'block';
         document.getElementById('liar-reveal-multi-btn').style.display = isHost ? 'inline-block' : 'none';
-        document.getElementById('liar-current-turn-msg').innerText = "토론 중...";
-
-        // Hide card if discussion phase (optional, but good for focus)
-        // document.getElementById('liar-card-container').style.display = 'none';
+        turnMsg.innerText = "자유 토론 시간입니다! 라이어를 찾아내세요.";
+        turnMsg.style.color = "#f1c40f";
 
     } else if (data.status === 'result') {
         lobbyDiv.style.display = 'none';
@@ -1061,7 +1078,7 @@ async function startLiarGame() {
     const snap = await docRef.get();
     const data = snap.data();
     const players = Object.keys(data.players);
-    if (players.length < 3) return alert("최소 3명 이상의 플레이어가 필요합니다.");
+    if (players.length < 1) return alert("플레이어가 부족합니다."); // Min players reduced for testing
 
     let selectedTopic = data.topic || 'random';
     if (selectedTopic === 'random') {
@@ -1074,11 +1091,19 @@ async function startLiarGame() {
     const liarId = players[Math.floor(Math.random() * players.length)];
     const topicNames = { food: '음식', animal: '동물', object: '사물', sports: '스포츠', place: '장소' };
 
+    // Shuffle turn order
+    for (let i = players.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [players[i], players[j]] = [players[j], players[i]];
+    }
+
     await docRef.update({
         status: 'playing',
         liarId: liarId,
         word: word,
         topicName: topicNames[selectedTopic],
+        turnOrder: players,
+        currentTurnIndex: 0,
         revealed: false
     });
 }
@@ -1086,7 +1111,6 @@ async function startLiarGame() {
 function leaveLiarRoom() {
     if (roomUnsubscribe) roomUnsubscribe();
     if (chatUnsubscribe) chatUnsubscribe();
-
     if (currentRoomId && currentUser) {
         const update = {};
         update[`players.${currentUser.uid}`] = firebase.firestore.FieldValue.delete();
@@ -1100,13 +1124,39 @@ function leaveLiarRoom() {
     document.getElementById('liar-chat-section').style.display = 'none';
 }
 
-function sendLiarMessage() {
+async function sendLiarMessage() {
     if (!currentRoomId || !currentUser) return;
     const input = document.getElementById('liar-chat-input');
     const text = input.value.trim();
     if (!text) return;
 
-    db.collection('rooms').doc(currentRoomId).collection('messages').add({
+    const docRef = db.collection('rooms').doc(currentRoomId);
+    const snap = await docRef.get();
+    const data = snap.data();
+
+    // Check if in turn-based mode
+    if (data.status === 'turn_based') {
+        const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
+        if (currentTurnPlayerId !== currentUser.uid) {
+            alert("지금은 당신의 차례가 아닙니다!");
+            return;
+        }
+
+        // Advance Turn
+        let nextIndex = data.currentTurnIndex + 1;
+        let nextStatus = 'turn_based';
+        if (nextIndex >= data.turnOrder.length) {
+            nextStatus = 'discussion'; // All turns done
+        }
+
+        await docRef.update({
+            currentTurnIndex: nextIndex,
+            status: nextStatus
+        });
+    }
+
+    // Send Message always
+    await db.collection('rooms').doc(currentRoomId).collection('messages').add({
         uid: currentUser.uid,
         name: currentUser.displayName,
         text: text,
@@ -1129,18 +1179,22 @@ document.getElementById('liar-topic-select').addEventListener('change', (e) => {
     if (currentRoomId) db.collection('rooms').doc(currentRoomId).update({ topic: e.target.value });
 });
 document.getElementById('liar-next-state-btn').addEventListener('click', () => {
-    db.collection('rooms').doc(currentRoomId).update({ status: 'discussion' });
+    // Host manually moves from card reveal to turn-based speaking
+    db.collection('rooms').doc(currentRoomId).update({ status: 'turn_based' });
 });
 document.getElementById('liar-reveal-multi-btn').addEventListener('click', () => {
     db.collection('rooms').doc(currentRoomId).update({ status: 'result' });
 });
 document.getElementById('liar-restart-multi-btn').addEventListener('click', () => {
+    if (!currentRoomId) return; // Safety check
     db.collection('rooms').doc(currentRoomId).update({
         status: 'lobby',
-        liarId: null, // Reset state
+        liarId: null,
         word: "",
-        revealed: false
-    });
+        revealed: false,
+        turnOrder: [],
+        currentTurnIndex: 0
+    }).catch(err => console.error("Restart Error:", err));
 });
 document.getElementById('liar-chat-send-btn').addEventListener('click', sendLiarMessage);
 document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
