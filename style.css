@@ -451,3 +451,41 @@ button:active {
     border-color: #c0392b;
     box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
 }
+
+/* New Enhancements */
+#turn-overlay {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%) scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+#scoreboard {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s;
+    background: rgba(0, 0, 0, 0.6);
+    /* Ensure background */
+}
+
+#scoreboard:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+}
+
+.room-input {
+    background: white;
+    color: black;
+    border: 1px solid #ccc;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 16px;
+}

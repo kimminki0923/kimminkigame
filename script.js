@@ -878,9 +878,15 @@ let currentRoomId = null;
 let roomUnsubscribe = null;
 let chatUnsubscribe = null;
 
+// Helper to check if it's my turn
+function isMyTurn(data) {
+    return data.status === 'turn_based' && data.turnOrder[data.currentTurnIndex] === currentUser.uid;
+}
+
 async function createLiarRoom() {
     if (!currentUser) return alert("로그인이 필요합니다. G Google 로그인을 먼저 해주세요.");
     const roomId = document.getElementById('liar-room-id').value || Math.floor(1000 + Math.random() * 9000).toString();
+    const maxScore = parseInt(document.getElementById('liar-max-score').value) || 3;
 
     try {
         await db.collection('rooms').doc(roomId).set({
@@ -889,12 +895,12 @@ async function createLiarRoom() {
             players: {
                 [currentUser.uid]: { name: currentUser.displayName, photo: currentUser.photoURL, joinedAt: Date.now() }
             },
+            scores: { [currentUser.uid]: 0 }, // Init Score
+            maxScore: maxScore,
             topic: 'random',
             liarId: null,
             word: "",
             revealed: false,
-            turnOrder: [],
-            currentTurnIndex: 0,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         joinLiarRoom(roomId);
@@ -916,20 +922,26 @@ async function joinLiarRoom(roomId) {
 
         currentRoomId = roomId;
 
-        // Add self to players
+        // Add self to players & Init Score if new
+        const data = doc.data();
         const playerUpdate = {};
         playerUpdate[`players.${currentUser.uid}`] = {
             name: currentUser.displayName,
             photo: currentUser.photoURL,
             joinedAt: Date.now()
         };
+
+        if (!data.scores || data.scores[currentUser.uid] === undefined) {
+            playerUpdate[`scores.${currentUser.uid}`] = 0;
+        }
+
         await docRef.update(playerUpdate);
 
         // UI Transition
         document.getElementById('liar-entry').style.display = 'none';
         document.getElementById('liar-lobby').style.display = 'block';
         document.getElementById('display-room-id').innerText = roomId;
-        document.getElementById('liar-chat-section').style.display = 'block'; // Show Chat
+        document.getElementById('liar-chat-section').style.display = 'block';
 
         // Sync Listener
         if (roomUnsubscribe) roomUnsubscribe();
@@ -937,10 +949,10 @@ async function joinLiarRoom(roomId) {
             if (snapshot.exists) syncLiarRoom(snapshot.data());
         });
 
-        // Chat Listener
+        // Chat Listener (Same as before)
         if (chatUnsubscribe) chatUnsubscribe();
         const chatList = document.getElementById('liar-chat-messages');
-        chatList.innerHTML = ''; // Clear old messages
+        chatList.innerHTML = '';
         chatUnsubscribe = docRef.collection('messages').orderBy('timestamp').onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -960,16 +972,33 @@ async function joinLiarRoom(roomId) {
     }
 }
 
-// Helper to check if it's my turn
-function isMyTurn(data) {
-    return data.status === 'turn_based' && data.turnOrder[data.currentTurnIndex] === currentUser.uid;
-}
-
 function syncLiarRoom(data) {
     const isHost = data.host === currentUser.uid;
     const players = Object.entries(data.players || {}).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
 
-    // 1. Lobby Update
+    // --- 1. Scoreboard Update ---
+    const scoreList = document.getElementById('score-list');
+    scoreList.innerHTML = '';
+    const scores = data.scores || {};
+    let maxScoreReached = false;
+    let grandWinnerName = "";
+
+    players.forEach(([uid, p]) => {
+        const score = scores[uid] || 0;
+        const li = document.createElement('li');
+        li.innerText = `${p.name}: ${score}점`;
+        if (score >= data.maxScore) {
+            li.style.color = '#f1c40f';
+            li.style.fontWeight = 'bold';
+            maxScoreReached = true;
+            grandWinnerName = p.name;
+        }
+        scoreList.appendChild(li);
+    });
+    document.getElementById('score-limit').innerText = `(목표: ${data.maxScore}점)`;
+    document.getElementById('scoreboard').style.display = 'block';
+
+    // --- 2. Lobby & Settings ---
     const playerList = document.getElementById('player-list');
     playerList.innerHTML = '';
     players.forEach(([uid, p]) => {
@@ -992,28 +1021,35 @@ function syncLiarRoom(data) {
     }
 
     document.getElementById('liar-start-multi-btn').style.display = (isHost && data.status === 'lobby') ? 'inline-block' : 'none';
+    document.getElementById('liar-host-controls').style.display = (isHost && data.status === 'lobby') ? 'block' : 'none';
     document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
 
+    // Update max score display in lobby
+    document.getElementById('display-max-score').innerText = data.maxScore || 3;
 
-    // 2. Game State Views
+    // --- 3. View Management ---
     const lobbyDiv = document.getElementById('liar-lobby');
     const gameDiv = document.getElementById('liar-game-play');
     const resultDiv = document.getElementById('liar-result');
     const chatSection = document.getElementById('liar-chat-section');
-    const turnMsg = document.getElementById('liar-current-turn-msg');
     const descLog = document.getElementById('description-log');
     const descList = document.getElementById('description-list');
     const voteSection = document.getElementById('liar-vote-section');
     const voteBtns = document.getElementById('vote-buttons');
     const guessSection = document.getElementById('liar-guess-section');
+    const overlay = document.getElementById('turn-overlay');
 
     // Default Hidden
-    document.getElementById('liar-host-controls').style.display = 'none';
+    document.getElementById('liar-host-controls-play').style.display = 'none'; // Replaced old ID
     document.getElementById('liar-discussion-msg').style.display = 'none';
     document.getElementById('liar-reveal-multi-btn').style.display = 'none';
     voteSection.style.display = 'none';
     guessSection.style.display = 'none';
     descLog.style.display = 'none';
+    overlay.style.display = 'none';
+
+    // Keep Chat visible unless Voting/Guessing
+    chatSection.style.display = (data.status === 'voting' || data.status === 'liar_guess') ? 'none' : 'block';
 
     // Render Description Log
     if (data.descriptions && data.descriptions.length > 0) {
@@ -1031,52 +1067,60 @@ function syncLiarRoom(data) {
         lobbyDiv.style.display = 'block';
         gameDiv.style.display = 'none';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'block';
 
         const card = document.getElementById('liar-card');
         card.className = 'card-back';
-        card.innerText = "클릭하여 확인";
+        document.getElementById('liar-card-topic').innerText = "";
+        document.getElementById('liar-card-word').innerText = "클릭하여 확인";
 
     } else if (data.status === 'playing') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'block';
 
         const card = document.getElementById('liar-card');
+        const cardTopic = document.getElementById('liar-card-topic');
+        const cardWord = document.getElementById('liar-card-word');
+
+        // Topic Help for Liar
+        const topicTxt = data.topicName ? `주제: ${data.topicName}` : "";
+
         if (data.liarId === currentUser.uid) {
             card.dataset.role = 'liar';
-            card.dataset.word = '당신은 라이어입니다!';
+            cardTopic.innerText = topicTxt; // Show Topic to Liar too
+            cardWord.innerText = card.classList.contains('revealed') ? '당신은 라이어입니다!' : '클릭하여 확인';
         } else {
             card.dataset.role = 'player';
-            card.dataset.word = (data.topicName ? `[${data.topicName}]\n` : "") + `제시어: ${data.word}`;
+            cardTopic.innerText = topicTxt;
+            cardWord.innerText = card.classList.contains('revealed') ? `제시어: ${data.word}` : '클릭하여 확인';
         }
 
-        if (!card.classList.contains('revealed')) {
-            turnMsg.innerText = "카드를 확인하고 순서를 기다리세요.";
-        } else {
-            turnMsg.innerText = "카드를 확인했습니다. 곧 시작됩니다.";
+        document.getElementById('liar-host-controls-play').style.display = isHost ? 'block' : 'none';
+        // Add button if missing
+        if (isHost && !document.getElementById('liar-next-state-turn')) {
+            const btn = document.createElement('button');
+            btn.id = 'liar-next-state-turn';
+            btn.className = 'primary-btn';
+            btn.innerText = "모두 확인 완료 (설명 시작)";
+            btn.onclick = () => db.collection('rooms').doc(currentRoomId).update({ status: 'turn_based' });
+            document.getElementById('liar-host-controls-play').appendChild(btn);
         }
-
-        document.getElementById('liar-host-controls').style.display = isHost ? 'block' : 'none';
 
     } else if (data.status === 'turn_based') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'block';
 
         const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
         const currentTurnPlayer = data.players[currentTurnPlayerId];
 
+        overlay.style.display = 'block';
         if (currentTurnPlayerId === currentUser.uid) {
-            turnMsg.innerText = "🎤 당신의 차례입니다! 제시어에 대한 설명을 입력하세요.";
-            turnMsg.style.color = "#2ecc71";
+            document.getElementById('overlay-msg').innerText = "🎤 당신의 차례입니다!";
             document.getElementById('liar-chat-input').placeholder = "제시어에 대한 한 문장 설명...";
             document.getElementById('liar-chat-input').focus();
         } else {
-            turnMsg.innerText = `👂 [${currentTurnPlayer.name}] 님이 설명하는 중입니다...`;
-            turnMsg.style.color = "#fff";
+            document.getElementById('overlay-msg').innerText = `👂 ${currentTurnPlayer.name} 님의 차례`;
             document.getElementById('liar-chat-input').placeholder = "다른 사람의 설명을 듣는 중...";
         }
 
@@ -1084,21 +1128,16 @@ function syncLiarRoom(data) {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'block';
 
         document.getElementById('liar-discussion-msg').style.display = 'block';
         document.getElementById('liar-reveal-multi-btn').style.display = isHost ? 'inline-block' : 'none';
-        document.getElementById('liar-reveal-multi-btn').innerText = "투표 시작"; // Change text
-        turnMsg.innerText = "🗣️ 자유 토론 시간입니다! 라이어를 찾아내세요.";
-        turnMsg.style.color = "#f1c40f";
+        document.getElementById('liar-reveal-multi-btn').innerText = "투표 시작";
 
     } else if (data.status === 'voting') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'none'; // Hide chat during voting
         voteSection.style.display = 'block';
-        turnMsg.innerText = "🤔 신중하게 투표하세요!";
 
         voteBtns.innerHTML = '';
         players.forEach(([uid, p]) => {
@@ -1120,41 +1159,58 @@ function syncLiarRoom(data) {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
-        chatSection.style.display = 'none';
         guessSection.style.display = 'block';
-        turnMsg.innerText = "🛑 라이어 최후의 변론!";
 
-        // Show who was voted out
         const votedName = data.players[data.votedOutId].name;
-        document.querySelector('#liar-guess-section h3').innerText = `🕵️ [${votedName}] 님이 지목되었습니다!`;
+        document.querySelector('#liar-guess-section h3').innerText = `🕵️ ${votedName} (라이어) 지목!`;
 
-        if (data.liarId === currentUser.uid && data.votedOutId === currentUser.uid) {
+        if (data.liarId === currentUser.uid) {
             document.getElementById('liar-word-input').style.display = 'inline-block';
             document.getElementById('liar-guess-btn').style.display = 'inline-block';
         } else {
             document.getElementById('liar-word-input').style.display = 'none';
             document.getElementById('liar-guess-btn').style.display = 'none';
-            document.querySelector('#liar-guess-section p').innerText = "라이어가 제시어를 맞추고 있습니다...";
+            document.querySelector('#liar-guess-section p').innerText = "라이어가 역전 기회를 노리고 있습니다...";
         }
 
     } else if (data.status === 'result') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'none';
         resultDiv.style.display = 'block';
-        chatSection.style.display = 'block';
 
         const liarName = data.players[data.liarId]?.name || "알 수 없음";
-        const winnerText = data.winner === 'liar' ? "👿 라이어 승리!" : "😇 시민 승리!";
-        document.getElementById('liar-winner').innerText = winnerText;
-        document.getElementById('liar-winner').style.color = data.winner === 'liar' ? '#e74c3c' : '#2ecc71';
+        let title = "";
+        let color = "";
+
+        if (data.roundWinner === 'liar') {
+            title = "👿 라이어 승리!";
+            color = "#e74c3c";
+        } else {
+            title = "😇 시민 승리!";
+            color = "#2ecc71";
+        }
+
+        if (maxScoreReached) {
+            title = `🏆 최종 우승: ${grandWinnerName}!`;
+            color = "#f1c40f";
+            document.getElementById('liar-next-round-btn').style.display = 'none';
+            document.getElementById('liar-restart-multi-btn').style.display = isHost ? 'inline-block' : 'none';
+        } else {
+            document.getElementById('liar-next-round-btn').style.display = isHost ? 'inline-block' : 'none';
+            document.getElementById('liar-next-round-btn').innerText = "다음 라운드 시작";
+            document.getElementById('liar-restart-multi-btn').style.display = 'none';
+        }
+
+        document.getElementById('liar-winner').innerText = title;
+        document.getElementById('liar-winner').style.color = color;
 
         document.getElementById('liar-identity-reveal').innerText = `라이어는 [${liarName}] 이었습니다!`;
         document.getElementById('liar-word-reveal').innerText = `주제: ${data.topicName}\n제시어: ${data.word}`;
-        document.getElementById('liar-restart-multi-btn').style.display = isHost ? 'inline-block' : 'none';
     }
 }
 
 async function startLiarGame() {
+    // This is now "Start Round"
     if (!currentRoomId) return;
     const docRef = db.collection('rooms').doc(currentRoomId);
     const snap = await docRef.get();
@@ -1188,7 +1244,9 @@ async function startLiarGame() {
         currentTurnIndex: 0,
         revealed: false,
         descriptions: [],
-        votes: {}
+        votes: {},
+        votedOutId: null,
+        roundWinner: null
     });
 }
 
@@ -1198,6 +1256,7 @@ function leaveLiarRoom() {
     if (currentRoomId && currentUser) {
         const update = {};
         update[`players.${currentUser.uid}`] = firebase.firestore.FieldValue.delete();
+        update[`votes.${currentUser.uid}`] = firebase.firestore.FieldValue.delete();
         db.collection('rooms').doc(currentRoomId).update(update);
     }
     currentRoomId = null;
@@ -1206,6 +1265,7 @@ function leaveLiarRoom() {
     document.getElementById('liar-game-play').style.display = 'none';
     document.getElementById('liar-result').style.display = 'none';
     document.getElementById('liar-chat-section').style.display = 'none';
+    document.getElementById('scoreboard').style.display = 'none';
 }
 
 async function sendLiarMessage() {
@@ -1267,62 +1327,85 @@ async function voteForPlayer(targetUid) {
     if (!currentRoomId || !currentUser) return;
     const docRef = db.collection('rooms').doc(currentRoomId);
 
-    // Optimistic UI update handled by sync
-    const update = {};
-    update[`votes.${currentUser.uid}`] = targetUid;
-    await docRef.update(update);
+    // Save locally to prevent early trigger
+    await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(docRef);
+        if (!doc.exists) return;
 
-    // Check if everyone voted (Client side check, but triggered by last voter)
+        const data = doc.data();
+        const players = Object.keys(data.players);
+        const votes = data.votes || {};
+
+        // Add my vote
+        votes[currentUser.uid] = targetUid;
+        transaction.update(docRef, { votes: votes });
+
+        // Check completion
+        if (Object.keys(votes).length === players.length) {
+            const voteCounts = {};
+            Object.values(votes).forEach(v => {
+                voteCounts[v] = (voteCounts[v] || 0) + 1;
+            });
+
+            let maxVotes = 0;
+            let candidates = [];
+            for (const [uid, count] of Object.entries(voteCounts)) {
+                if (count > maxVotes) {
+                    maxVotes = count;
+                    candidates = [uid];
+                } else if (count === maxVotes) {
+                    candidates.push(uid);
+                }
+            }
+
+            if (candidates.length > 1) {
+                // Tie: Back to discussion
+                transaction.update(docRef, { status: 'discussion', votes: {} });
+            } else {
+                const eliminatedId = candidates[0];
+                if (eliminatedId === data.liarId) {
+                    // Liar Caught -> Liar Guess Phase
+                    transaction.update(docRef, {
+                        status: 'liar_guess',
+                        votedOutId: eliminatedId,
+                        // Update Score: Civilians +1
+                    });
+
+                    // Increment Civilians Score
+                    // We can't do complex logic inside atomic update easily for all, so we do it in next step or here.
+                    // Doing separate update for simplicity as transaction limit is strict.
+                } else {
+                    // Liar Win (Immediate)
+                    transaction.update(docRef, {
+                        status: 'result',
+                        winner: 'liar',
+                        roundWinner: 'liar',
+                        votedOutId: eliminatedId
+                    });
+                    // Liar +1
+                    // scores[data.liarId] += 1;
+                }
+            }
+        }
+    });
+
+    // Post-Transaction Score Update (Simplification)
+    // In real app, cloud functions are better. Here we rely on the LAST Voter triggers scores.
+    // Check state after vote
     const snap = await docRef.get();
     const data = snap.data();
-    const players = Object.keys(data.players);
-    const votes = data.votes || {};
-
-    if (Object.keys(votes).length === players.length) {
-        // Tally votes
-        const voteCounts = {};
-        Object.values(votes).forEach(v => {
-            voteCounts[v] = (voteCounts[v] || 0) + 1;
+    if (data.status === 'liar_guess' && data.votes && Object.keys(data.votes).length === Object.keys(data.players).length) {
+        // Civilians found liar -> +1 to all civilians
+        const scores = data.scores || {};
+        Object.keys(data.players).forEach(uid => {
+            if (uid !== data.liarId) scores[uid] = (scores[uid] || 0) + 1;
         });
-
-        // Find max
-        let maxVotes = 0;
-        let candidates = [];
-        for (const [uid, count] of Object.entries(voteCounts)) {
-            if (count > maxVotes) {
-                maxVotes = count;
-                candidates = [uid];
-            } else if (count === maxVotes) {
-                candidates.push(uid);
-            }
-        }
-
-        // Tie?
-        if (candidates.length > 1) {
-            alert("동점입니다! 재투표를 위해 토론으로 돌아갑니다.");
-            await docRef.update({
-                status: 'discussion',
-                votes: {} // Reset votes
-            });
-        } else {
-            // Eliminated
-            const eliminatedId = candidates[0];
-
-            // If Liar is caught -> Liar gets chance to guess
-            if (eliminatedId === data.liarId) {
-                await docRef.update({
-                    status: 'liar_guess',
-                    votedOutId: eliminatedId
-                });
-            } else {
-                // Liar Wins immediately (Civilians killed wrong person)
-                await docRef.update({
-                    status: 'result',
-                    winner: 'liar',
-                    votedOutId: eliminatedId
-                });
-            }
-        }
+        await docRef.update({ scores: scores, votes: {} }); // Clear votes to prevent re-run
+    } else if (data.status === 'result' && data.roundWinner === 'liar' && data.votes && Object.keys(data.votes).length > 0) {
+        // Liar won by wrong vote -> +1 to Liar
+        const scores = data.scores || {};
+        scores[data.liarId] = (scores[data.liarId] || 0) + 1;
+        await docRef.update({ scores: scores, votes: {} });
     }
 }
 
@@ -1338,21 +1421,45 @@ async function submitLiarGuess() {
 
     if (data.status !== 'liar_guess') return;
 
-    // Simple exact match check (ignore whitespace/case)
     const correct = data.word.trim();
+    const scores = data.scores || {};
+    let winner = 'civilian'; // Default if fail
+
     if (guess === correct) {
-        // Liar Wins
-        await docRef.update({ status: 'result', winner: 'liar' });
-    } else {
-        // Civilians Win
-        await docRef.update({ status: 'result', winner: 'civilian' });
+        // Liar guessed right -> Liar +1 (Total 2 possible if they won earlier, but here they lost vote)
+        // Rule: If Liar caught but guesses, Liar gets 1 pt. Civilians alrdy got 1 pt.
+        scores[data.liarId] = (scores[data.liarId] || 0) + 1;
+        winner = 'liar'; // Symbolically Liar "won" the guess
     }
+
+    await docRef.update({
+        status: 'result',
+        winner: winner,
+        roundWinner: winner, // Just for display
+        scores: scores
+    });
 }
 
 // UI Event Listeners
 document.getElementById('liar-card').addEventListener('click', function () {
     this.classList.add('revealed');
-    this.innerText = this.dataset.word;
+    // Text update handled by sync
+    const startTxt = this.querySelector('#liar-card-word').innerText;
+    if (startTxt === '클릭하여 확인') {
+        // Trigger sync update force or wait? Sync handles it.
+        // But instant feedback:
+        // docRef.get ...
+        // We rely on sync function to set text, but we set revealed class.
+        // To show text immediately we need data. We can just wait for sync or simple toggle.
+        // Actually syncLiarRoom handles text based on class presence!
+        // So we trigger a re-render or just wait for next snapshot? 
+        // Snapshot won't fire on class change.
+        // So:
+        const topic = this.querySelector('#liar-card-topic').innerText;
+        // Hacky: we need the data to show it.
+        // Better: store word in dataset.
+        this.querySelector('#liar-card-word').innerText = this.dataset.word;
+    }
 });
 
 document.getElementById('liar-create-btn').addEventListener('click', createLiarRoom);
@@ -1362,25 +1469,24 @@ document.getElementById('liar-leave-btn').addEventListener('click', leaveLiarRoo
 document.getElementById('liar-topic-select').addEventListener('change', (e) => {
     if (currentRoomId) db.collection('rooms').doc(currentRoomId).update({ topic: e.target.value });
 });
-document.getElementById('liar-next-state-btn').addEventListener('click', () => {
-    // Host manually moves from card reveal to turn-based speaking
-    db.collection('rooms').doc(currentRoomId).update({ status: 'turn_based' });
-});
+// Host manually moves from card reveal to turn-based speaking
+// This button is dynamically added in syncLiarRoom now.
+// document.getElementById('liar-next-state-btn').addEventListener('click', () => {
+//     db.collection('rooms').doc(currentRoomId).update({ status: 'turn_based' });
+// });
 document.getElementById('liar-reveal-multi-btn').addEventListener('click', () => {
     // Check status to decide next step
     // If status is discussion, move to 'voting'
     db.collection('rooms').doc(currentRoomId).update({ status: 'voting' });
 });
+document.getElementById('liar-next-round-btn').addEventListener('click', startLiarGame);
 document.getElementById('liar-restart-multi-btn').addEventListener('click', () => {
-    if (!currentRoomId) return; // Safety check
+    // Full Reset
     db.collection('rooms').doc(currentRoomId).update({
         status: 'lobby',
-        liarId: null,
-        word: "",
-        revealed: false,
-        turnOrder: [],
-        currentTurnIndex: 0
-    }).catch(err => console.error("Restart Error:", err));
+        scores: {}, // Reset Scores
+        liarId: null, word: "", revealed: false, descriptions: [], votes: {}
+    });
 });
 document.getElementById('liar-chat-send-btn').addEventListener('click', sendLiarMessage);
 document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {

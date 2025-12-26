@@ -165,61 +165,78 @@
     </div>
 
     <!-- Liar Game Page -->
-    <!-- Liar Game Page -->
     <div id="page-liar" class="page">
         <div id="liar-game-container">
             <h1>Liar Game 🕵️</h1>
 
+            <!-- Entry Screen -->
             <div id="liar-entry">
-                <div class="room-controls">
-                    <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 (예: 1234)">
-                    <div class="room-input-group">
-                        <button id="liar-create-btn" class="primary-btn">방 만들기</button>
-                        <button id="liar-join-btn" class="secondary-btn">방 참가하기</button>
-                    </div>
+                <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 입력 (선택)">
+                <div style="margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                    <label style="color:#fff; font-size:16px; font-weight:bold; margin-right: 10px;">🏆 최대 점수
+                        설정:</label>
+                    <input type="number" id="liar-max-score" class="room-input" value="3"
+                        style="width:60px; text-align:center; font-weight:bold;" min="1" max="10">
+                </div>
+                <div class="liar-btn-group">
+                    <button id="liar-create-btn" class="primary-btn">방 만들기</button>
+                    <button id="liar-join-btn" class="secondary-btn">참가하기</button>
                 </div>
             </div>
 
+            <!-- Lobby -->
             <div id="liar-lobby" style="display:none;">
-                <div id="liar-room-info">
-                    <h3>방 코드: <span id="display-room-id" style="color:#00d2d3;">-</span></h3>
+                <h2>참가자 대기 중...</h2>
+                <h3 id="display-room-id" style="color: #f1c40f; letter-spacing: 2px;"></h3>
 
-                    <!-- Room Settings (Host Only) -->
-                    <div id="room-settings"
-                        style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 12px; display: none;">
-                        <label style="display: block; margin-bottom: 10px; font-weight: bold;">🏮 주제 설정</label>
-                        <select id="liar-topic-select" class="room-input" style="width: 100%;">
-                            <option value="random">랜덤</option>
-                            <option value="food">음식</option>
-                            <option value="animal">동물</option>
-                            <option value="object">사물</option>
-                            <option value="sports">스포츠</option>
-                            <option value="place">장소</option>
-                        </select>
-                    </div>
-
-                    <p>누적 참가자:</p>
-                    <ul id="player-list"></ul>
+                <!-- Max Score Display -->
+                <div id="max-score-display"
+                    style="background: linear-gradient(135deg, #f1c40f, #e67e22); color: #000; padding: 10px 20px; border-radius: 10px; display: inline-block; margin: 10px 0; font-weight: bold;">
+                    🏆 <span id="display-max-score">3</span>점 먼저 달성하면 우승!
                 </div>
-                <button id="liar-start-multi-btn" class="primary-btn" style="display:none;">게임 시작 (방장전용)</button>
-                <div id="waiting-msg" style="color: #888; margin-top: 10px;">방장이 게임을 시작하기를 기다리는 중...</div>
-                <button id="liar-leave-btn" class="secondary-btn" style="margin-top: 20px;">방 나가기</button>
+
+                <ul id="player-list" class="player-list"></ul>
+                <p id="waiting-msg" class="blink">플레이어를 기다리고 있습니다...</p>
+
+                <div id="room-settings"
+                    style="display:none; margin: 20px 0; padding:15px; border:1px solid rgba(255,255,255,0.1); border-radius:10px;">
+                    <label style="color:#aaa; margin-right:10px;">주제:</label>
+                    <select id="liar-topic-select" class="room-input" style="width:auto;">
+                        <option value="random">랜덤</option>
+                        <option value="food">음식</option>
+                        <option value="animal">동물</option>
+                        <option value="object">사물</option>
+                        <option value="sports">스포츠</option>
+                        <option value="place">장소</option>
+                    </select>
+                </div>
+
+                <div id="liar-host-controls" style="display:none; margin-top:20px;">
+                    <button id="liar-start-multi-btn" class="primary-btn">게임 시작</button>
+                </div>
             </div>
 
+            <!-- Game Play -->
             <div id="liar-game-play" style="display:none;">
-                <h3 id="liar-current-turn-msg">당신의 차례를 기다리세요.</h3>
                 <div id="liar-card-container">
-                    <div id="liar-card" class="card-back">클릭하여 확인</div>
+                    <div id="liar-card" class="card-back">
+                        <span id="liar-card-topic" style="font-size: 14px; color: #ccc;"></span>
+                        <span id="liar-card-word"
+                            style="font-size: 24px; font-weight: bold; margin-top: 5px; display: block;">클릭하여 확인</span>
+                    </div>
                 </div>
-                <div id="liar-host-controls" style="display:none; margin-top:20px;">
-                    <button id="liar-next-state-btn" class="primary-btn">모두 확인 완료 (토론 시작)</button>
+                <p id="liar-current-turn-msg"
+                    style="margin-top: 20px; font-size: 18px; font-weight: bold; min-height: 27px; transition: color 0.3s;">
+                </p>
+
+                <h4 id="liar-discussion-msg" style="display:none; color: #e74c3c; margin-top: 20px;">자유 토론 시간!</h4>
+
+                <div id="liar-host-controls-play" style="margin-top:20px;">
+                    <!-- Host buttons injected by JS -->
                 </div>
-                <div id="liar-discussion-msg" style="display:none;">
-                    <h3>🗣️ 토론 시간!</h3>
-                    <p>라이어를 찾아내세요.</p>
-                </div>
-                <button id="liar-reveal-multi-btn" class="primary-btn" style="display:none; margin-top:10px;">결과
-                    공개</button>
+                <!-- Host Next Step Button will be dynamically managed -->
+                <button id="liar-reveal-multi-btn" class="secondary-btn" style="display:none; margin-top: 10px;">투표
+                    시작</button>
             </div>
 
             <!-- Turn/Chat Section -->
@@ -234,7 +251,7 @@
                 </div>
             </div>
 
-            <!-- Description Log (Bottom Left) -->
+            <!-- Description Log -->
             <div id="description-log"
                 style="display:none; margin-top:15px; background: rgba(0,0,0,0.5); padding:10px; border-radius:8px; text-align:left; font-size:13px;">
                 <h4 style="margin:0 0 5px 0; color:#f1c40f;">📝 설명 기록</h4>
@@ -257,14 +274,32 @@
                 <button id="liar-guess-btn" class="primary-btn">정답 확인</button>
             </div>
 
+            <!-- Result Section -->
             <div id="liar-result" style="display:none;">
                 <h2 id="liar-winner"></h2>
                 <p id="liar-identity-reveal"></p>
                 <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
-                <button id="liar-restart-multi-btn" class="primary-btn" style="display:none; margin-top: 20px;">새
-                    게임</button>
+
+                <div id="liar-post-game-btns" style="margin-top: 20px;">
+                    <button id="liar-next-round-btn" class="primary-btn" style="display:none;">다음 라운드</button>
+                    <button id="liar-restart-multi-btn" class="secondary-btn" style="display:none;">게임 종료 (새
+                        게임)</button>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- UI Overlays -->
+    <div id="turn-overlay"
+        style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
+        <span id="overlay-msg"></span>
+    </div>
+
+    <div id="scoreboard"
+        style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+        <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small id="score-limit"
+                style="color:#aaa; font-size:12px;"></small></h4>
+        <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
     </div>
     <div style="margin-top: 10px; font-size: 12px; color: #888;">
         (ONNX Model Check: AI buttons available)
