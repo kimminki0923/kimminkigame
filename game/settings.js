@@ -93,6 +93,7 @@ function bindSettingsEvents() {
             const overlay = document.getElementById('settings-overlay');
             if (overlay) {
                 overlay.style.display = 'flex';
+                overlay.style.pointerEvents = 'auto';
                 updateSettingsUI();
             }
         };
