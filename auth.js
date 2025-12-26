@@ -45,6 +45,16 @@ function initAuth() {
             console.error("Persistence Error:", error);
         });
 
+    // Handle Redirect Result (Mobile Login)
+    auth.getRedirectResult()
+        .then((result) => {
+            if (result.user) {
+                console.log("✅ Redirect Login Success:", result.user.displayName);
+            }
+        }).catch((error) => {
+            console.error("Redirect Login Error:", error);
+        });
+
     auth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
@@ -73,19 +83,27 @@ function loginWithGoogle() {
     }
 
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-        .then((result) => {
-            console.log("Login Success");
-        })
-        .catch((error) => {
-            console.error("Login CMD Error:", error);
-            if (error.code === 'auth/popup-closed-by-user') return;
-            if (error.code === 'auth/unauthorized-domain') {
-                alert("⚠️ 도메인 승인 오류\nFirebase 콘솔 > Authentication > Settings > Authorized Domains에 현재 도메인을 추가해야 합니다.");
-                return;
-            }
-            alert("로그인 에러: " + error.message);
-        });
+
+    // Check if mobile/tablet
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        auth.signInWithRedirect(provider);
+    } else {
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                console.log("Login Success");
+            })
+            .catch((error) => {
+                console.error("Login CMD Error:", error);
+                if (error.code === 'auth/popup-closed-by-user') return;
+                if (error.code === 'auth/unauthorized-domain') {
+                    alert("⚠️ 도메인 승인 오류\nFirebase 콘솔 > Authentication > Settings > Authorized Domains에 현재 도메인을 추가해야 합니다.");
+                    return;
+                }
+                alert("로그인 에러: " + error.message);
+            });
+    }
 }
 
 function logout() {

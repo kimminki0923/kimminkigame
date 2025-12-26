@@ -59,9 +59,10 @@ body {
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    width: auto;
-    min-width: 300px;
-    height: 50px;
+    width: 90%;
+    max-width: 400px;
+    min-width: 250px;
+    height: 45px;
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     display: flex;
@@ -76,8 +77,8 @@ body {
 }
 
 .nav-btn {
-    padding: 8px 20px;
-    font-size: 14px;
+    padding: 6px 12px;
+    font-size: 13px;
     background: transparent;
     color: #94a3b8;
     border-radius: 20px;
@@ -611,9 +612,77 @@ button:active {
     color: #eee;
 }
 
-@media (max-width: 768px) {
+/* Mobile/Tablet Controls & UI Scaling */
+@media (max-width: 1024px),
+(pointer: coarse) {
     #mobile-controls {
         display: flex;
+    }
+
+    #score {
+        font-size: 60px;
+        top: 60px;
+    }
+
+    #coin-container {
+        font-size: 20px;
+        padding: 4px 12px;
+    }
+
+    #user-container {
+        top: 15px;
+        left: 15px;
+    }
+
+    #menu-overlay {
+        padding: 25px 30px;
+        width: 85%;
+        max-width: 320px;
+    }
+
+    #menu-overlay h2 {
+        font-size: 28px;
+    }
+
+    .high-score-label {
+        font-size: 16px;
+    }
+
+    #high-score {
+        font-size: 28px;
+    }
+
+    button {
+        font-size: 16px;
+        padding: 8px 16px;
+    }
+
+    #start-btn {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    #mobile-controls button {
+        width: 80px;
+        height: 80px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    #score {
+        font-size: 48px;
+        top: 50px;
+    }
+
+    #timer-container {
+        width: 150px;
+        top: 85px;
+    }
+
+    #mobile-controls button {
+        width: 70px;
+        height: 70px;
     }
 }
 
