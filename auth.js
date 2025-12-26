@@ -79,14 +79,30 @@ function updateUI_LoggedOut() {
 // --- Actions ---
 function loginWithGoogle() {
     if (!isCloudEnabled) {
-        alert("⚠️ Firebase 설정이 필요합니다!\n코드를 열어 'firebaseConfig' 부분을 채워주세요.");
+        alert("⚠️ Firebase 설정이 필요합니다!\nFIREBASE_SETUP.md 파일을 확인해서 설정 코드(apiKey 등)를 붙여넣어 주세요.");
         return;
     }
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch((error) => {
-        console.error("Login Failed:", error);
-        alert("로그인 실패: " + error.message);
-    });
+
+    // 모바일 브라우저는 팝업을 차단하는 경우가 많으므로 Redirect 방식을 권장합니다.
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        console.log("📱 Mobile detected, using signInWithRedirect");
+        auth.signInWithRedirect(provider);
+    } else {
+        auth.signInWithPopup(provider).catch((error) => {
+            console.error("Login Failed:", error);
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                console.log("🔄 Popup blocked, switching to Redirect...");
+                auth.signInWithRedirect(provider);
+            } else if (error.code === 'auth/unauthorized-domain') {
+                alert("❌ 승인되지 않은 도메인입니다!\nFirebase 콘솔 -> Authentication -> 설정 -> 승인된 도메인에 현재 접속한 주소(IP)를 추가해야 합니다.");
+            } else {
+                alert("로그인 실패: " + error.message);
+            }
+        });
+    }
 }
 
 function logout() {

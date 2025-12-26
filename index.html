@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinite Stairs</title>
+    <title>MultiGame Center | Infinite Stairs & Liar Game</title>
+    <meta name="description"
+        content="Enjoy multiple games in one place! Play the addictive Infinite Stairs and the social Liar Game directly in your browser.">
     <link rel="stylesheet" href="style.css">
     <!-- Firebase SDKs (Compat version for simplicity) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -102,55 +104,130 @@
 </head>
 
 <body>
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div id="ui-layer">
-            <!-- User Login UI -->
-            <div id="user-container">
-                <button id="login-btn">G Google 로그인</button>
-                <div id="user-info">
-                    <img id="user-img" src="" alt="User">
-                    <span id="user-name"></span>
-                    <button id="logout-btn">로그아웃</button>
-                </div>
-            </div>
+    <nav id="nav-bar">
+        <button onclick="showPage('page-stairs')" class="nav-btn active" id="nav-stairs">Infinite Stairs</button>
+        <button onclick="showPage('page-liar')" class="nav-btn" id="nav-liar">Liar Game</button>
+    </nav>
 
-            <div id="score">0</div>
-
-            <div id="timer-container">
-                <div id="timer-bar"></div>
-            </div>
-
-            <div id="status">Infinite Stairs</div>
-            <div id="coin-container">
-                <span id="coin-icon">🪙</span>
-                <span id="coin-count">0</span>
-            </div>
-
-            <div id="menu-overlay">
-                <h1 style="color:white; text-shadow:2px 2px 4px #000;">INFINITE STAIRS</h1>
-                <button id="start-btn">START GAME</button>
-                <div style="margin-top:20px;">
-                    <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
-                    <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI 실행</button>
-                    <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
+    <div id="page-stairs" class="page active">
+        <div id="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="ui-layer">
+                <!-- User Login UI -->
+                <div id="user-container">
+                    <button id="login-btn">G Google 로그인</button>
+                    <div id="user-info">
+                        <img id="user-img" src="" alt="User">
+                        <span id="user-name"></span>
+                        <button id="logout-btn">로그아웃</button>
+                    </div>
                 </div>
 
-                <!-- Clean UI: No File Buttons -->
+                <div id="score">0</div>
 
-                <div style="color:#eee; margin-top:10px; font-size:14px;">
-                    <span id="learning-status">Ready to Learn</span><br>
-                    Episode: <span id="episode-count">0</span> | High Score: <span id="high-score">0</span>
+                <div id="timer-container">
+                    <div id="timer-bar"></div>
                 </div>
+
+                <div id="status">Infinite Stairs</div>
+                <div id="coin-container">
+                    <span id="coin-icon">🪙</span>
+                    <span id="coin-count">0</span>
+                </div>
+
+                <div id="menu-overlay">
+                    <h1 style="color:white; text-shadow:2px 2px 4px #000;">INFINITE STAIRS</h1>
+                    <button id="start-btn">START GAME</button>
+                    <div style="margin-top:20px;">
+                        <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
+                        <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI
+                            실행</button>
+                        <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
+                    </div>
+
+                    <!-- Clean UI: No File Buttons -->
+
+                    <div style="color:#eee; margin-top:10px; font-size:14px;">
+                        <span id="learning-status">Ready to Learn</span><br>
+                        Episode: <span id="episode-count">0</span> | High Score: <span id="high-score">0</span>
+                    </div>
+                </div>
+
+                <button id="stop-btn"
+                    style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
             </div>
 
-            <button id="stop-btn"
-                style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
+            <div id="mobile-controls">
+                <button id="btn-turn">↩️<br>TURN</button>
+                <button id="btn-jump">🪜<br>CLIMB</button>
+            </div>
         </div>
+    </div>
 
-        <div id="mobile-controls">
-            <button id="btn-turn">↩️<br>TURN</button>
-            <button id="btn-jump">🪜<br>CLIMB</button>
+    <!-- Liar Game Page -->
+    <!-- Liar Game Page -->
+    <div id="page-liar" class="page">
+        <div id="liar-game-container">
+            <h1>Liar Game 🕵️</h1>
+
+            <div id="liar-entry">
+                <div class="room-controls">
+                    <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 (예: 1234)">
+                    <div class="room-input-group">
+                        <button id="liar-create-btn" class="primary-btn">방 만들기</button>
+                        <button id="liar-join-btn" class="secondary-btn">방 참가하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="liar-lobby" style="display:none;">
+                <div id="liar-room-info">
+                    <h3>방 코드: <span id="display-room-id" style="color:#00d2d3;">-</span></h3>
+
+                    <!-- Room Settings (Host Only) -->
+                    <div id="room-settings"
+                        style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 12px; display: none;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: bold;">🏮 주제 설정</label>
+                        <select id="liar-topic-select" class="room-input" style="width: 100%;">
+                            <option value="random">랜덤</option>
+                            <option value="food">음식</option>
+                            <option value="animal">동물</option>
+                            <option value="object">사물</option>
+                            <option value="sports">스포츠</option>
+                            <option value="place">장소</option>
+                        </select>
+                    </div>
+
+                    <p>누적 참가자:</p>
+                    <ul id="player-list"></ul>
+                </div>
+                <button id="liar-start-multi-btn" class="primary-btn" style="display:none;">게임 시작 (방장전용)</button>
+                <div id="waiting-msg" style="color: #888; margin-top: 10px;">방장이 게임을 시작하기를 기다리는 중...</div>
+                <button id="liar-leave-btn" class="secondary-btn" style="margin-top: 20px;">방 나가기</button>
+            </div>
+
+            <div id="liar-game-play" style="display:none;">
+                <h3 id="liar-current-turn-msg">당신의 차례를 기다리세요.</h3>
+                <div id="liar-card-container">
+                    <div id="liar-card" class="card-back">클릭하여 확인</div>
+                </div>
+                <div id="liar-host-controls" style="display:none; margin-top:20px;">
+                    <button id="liar-next-state-btn" class="primary-btn">모두 확인 완료 (토론 시작)</button>
+                </div>
+                <div id="liar-discussion-msg" style="display:none;">
+                    <h3>🗣️ 토론 시간!</h3>
+                    <p>라이어를 찾아내세요.</p>
+                </div>
+                <button id="liar-reveal-multi-btn" class="primary-btn" style="display:none; margin-top:10px;">결과
+                    공개</button>
+            </div>
+
+            <div id="liar-result" style="display:none;">
+                <h2 id="liar-winner"></h2>
+                <p id="liar-word-reveal"></p>
+                <button id="liar-restart-multi-btn" class="primary-btn" style="display:none; margin-top: 20px;">새
+                    게임</button>
+            </div>
         </div>
     </div>
     <div style="margin-top: 10px; font-size: 12px; color: #888;">

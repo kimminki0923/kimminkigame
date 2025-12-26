@@ -9,9 +9,209 @@ body {
 
 #game-container {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: #000;
+}
+
+/* Page Switching - Fixed Layout */
+.page {
+    display: none;
+    position: fixed;
+    top: 60px;
+    /* Below Nav Bar */
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+    z-index: 50;
+}
+
+.page.active {
+    display: block;
+}
+
+#nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 2px solid #555;
+    z-index: 10000;
+    /* Highest Priority */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #333;
+    color: #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #444;
+    font-weight: bold;
+    pointer-events: auto;
+}
+
+.nav-btn:hover {
+    background: #444;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.nav-btn.active {
+    background: #2ecc71;
+    color: white;
+    border-color: #27ae60;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+
+/* Liar Game Styling Refined */
+#page-liar {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: white;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+}
+
+#page-liar.active {
+    display: flex;
+}
+
+#liar-game-container {
+    max-width: 600px;
+    width: 90%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 50px;
+    /* Scroll buffer */
+}
+
+.room-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.room-input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.room-input {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1px solid #444;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 16px;
+    width: 150px;
+}
+
+.primary-btn {
+    background: #00d2d3;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.primary-btn:hover {
+    background: #01a3a4;
+    transform: scale(1.05);
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#liar-room-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+}
+
+#player-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.player-tag {
+    background: rgba(46, 204, 113, 0.2);
+    border: 1px solid #2ecc71;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.player-tag.is-host::after {
+    content: " 👑";
+}
+
+#liar-card {
+    width: 200px;
+    height: 300px;
+    background: #f1c40f;
+    margin: 20px auto;
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+}
+
+#liar-card.revealed {
+    background: #fff;
+    transform: rotateY(360deg);
+}
+
+.card-back {
+    border: 5px solid #fff;
 }
 
 canvas {

@@ -839,3 +839,237 @@ loop();
 
 // Call Init Auth
 if (window.initAuth) window.initAuth();
+
+// --- Page Switching Logic ---
+window.showPage = function (pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) targetPage.classList.add('active');
+
+    const navBtn = document.getElementById('nav-' + pageId.replace('page-', ''));
+    if (navBtn) navBtn.classList.add('active');
+
+    // Pause Infinite Stairs if not on its page
+    if (pageId !== 'page-stairs') {
+        gameState.running = false;
+        if (isTraining || isAutoPlaying) stopGame();
+        // Hide mobile controls on other pages
+        document.getElementById('mobile-controls').style.display = 'none';
+    } else {
+        // Show mobile controls if on mobile and on stairs page
+        if (window.innerWidth <= 768) {
+            document.getElementById('mobile-controls').style.display = 'flex';
+        }
+    }
+}
+
+// --- Liar Game Logic (Multiplayer with Firebase) ---
+const liarTopics = {
+    food: ["사과", "바나나", "포도", "피자", "치킨", "햄버거", "초밥", "라면", "파스타", "도넛", "삼겹살", "떡볶이", "마라탕"],
+    animal: ["코끼리", "기린", "펭귄", "호랑이", "사자", "토끼", "강아지", "고양이", "햄스터", "판다", "악어", "독수리", "공룡"],
+    object: ["컴퓨터", "스마트폰", "텔레비전", "냉장고", "세탁기", "의자", "책상", "연필", "지우개", "안경", "시계", "침대", "거울"],
+    sports: ["축구", "농구", "야구", "배구", "수영", "테니스", "골프", "볼링", "양궁", "태권도", "마라톤", "스케이트", "펜싱"],
+    place: ["학교", "병원", "경찰서", "공원", "바다", "산", "서울", "미국", "공항", "도서관", "영화관", "백화점", "박물관"]
+};
+
+let currentRoomId = null;
+let roomUnsubscribe = null;
+
+async function createLiarRoom() {
+    if (!currentUser) return alert("로그인이 필요합니다. G Google 로그인을 먼저 해주세요.");
+    const roomId = document.getElementById('liar-room-id').value || Math.floor(1000 + Math.random() * 9000).toString();
+
+    try {
+        await db.collection('rooms').doc(roomId).set({
+            host: currentUser.uid,
+            status: 'lobby',
+            players: {
+                [currentUser.uid]: { name: currentUser.displayName, photo: currentUser.photoURL, joinedAt: Date.now() }
+            },
+            topic: 'random',
+            liarId: null,
+            word: "",
+            revealed: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        joinLiarRoom(roomId);
+    } catch (e) {
+        console.error("Room Create Error:", e);
+        alert("방 생성 실패: " + e.message);
+    }
+}
+
+async function joinLiarRoom(roomId) {
+    if (!currentUser) return alert("로그인이 필요합니다.");
+    if (!roomId) roomId = document.getElementById('liar-room-id').value;
+    if (!roomId) return alert("방 코드를 입력하세요.");
+
+    try {
+        const docRef = db.collection('rooms').doc(roomId);
+        const doc = await docRef.get();
+        if (!doc.exists) return alert("존재하지 않는 방입니다.");
+
+        currentRoomId = roomId;
+
+        // Add self to players
+        const playerUpdate = {};
+        playerUpdate[`players.${currentUser.uid}`] = {
+            name: currentUser.displayName,
+            photo: currentUser.photoURL,
+            joinedAt: Date.now()
+        };
+        await docRef.update(playerUpdate);
+
+        // UI Transition
+        document.getElementById('liar-entry').style.display = 'none';
+        document.getElementById('liar-lobby').style.display = 'block';
+        document.getElementById('display-room-id').innerText = roomId;
+
+        // Sync Listener
+        if (roomUnsubscribe) roomUnsubscribe();
+        roomUnsubscribe = docRef.onSnapshot(snapshot => {
+            if (snapshot.exists) syncLiarRoom(snapshot.data());
+        });
+    } catch (e) {
+        console.error("Join Error:", e);
+        alert("방 참가 실패: " + e.message);
+    }
+}
+
+function syncLiarRoom(data) {
+    const isHost = data.host === currentUser.uid;
+    const players = Object.entries(data.players || {}).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+
+    // 1. Lobby Update
+    const playerList = document.getElementById('player-list');
+    playerList.innerHTML = '';
+    players.forEach(([uid, p]) => {
+        const li = document.createElement('li');
+        li.className = 'player-tag' + (uid === data.host ? ' is-host' : '');
+        li.innerText = p.name;
+        playerList.appendChild(li);
+    });
+
+    // Host Settings Sync
+    const settingsDiv = document.getElementById('room-settings');
+    const topicSelect = document.getElementById('liar-topic-select');
+
+    if (isHost) {
+        settingsDiv.style.display = 'block';
+        if (document.activeElement !== topicSelect) {
+            topicSelect.value = data.topic || 'random';
+        }
+    } else {
+        settingsDiv.style.display = 'none';
+    }
+
+    document.getElementById('liar-start-multi-btn').style.display = (isHost && data.status === 'lobby') ? 'inline-block' : 'none';
+    document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
+
+    // 2. Game State Transition
+    if (data.status === 'playing') {
+        document.getElementById('liar-lobby').style.display = 'none';
+        document.getElementById('liar-game-play').style.display = 'block';
+        document.getElementById('liar-result').style.display = 'none';
+
+        const card = document.getElementById('liar-card');
+        const turnMsg = document.getElementById('liar-current-turn-msg');
+
+        if (data.liarId === currentUser.uid) {
+            card.dataset.role = 'liar';
+            card.dataset.word = '당신은 라이어입니다!';
+        } else {
+            card.dataset.role = 'player';
+            card.dataset.word = (data.topicName ? `[${data.topicName}]\n` : "") + `제시어: ${data.word}`;
+        }
+
+        if (!card.classList.contains('revealed')) {
+            card.innerText = "클릭하여 확인";
+            turnMsg.innerText = "당신의 카드를 확인하세요.";
+        }
+
+        document.getElementById('liar-host-controls').style.display = isHost ? 'block' : 'none';
+        document.getElementById('liar-discussion-msg').style.display = 'none';
+        document.getElementById('liar-reveal-multi-btn').style.display = 'none';
+
+    } else if (data.status === 'discussion') {
+        document.getElementById('liar-discussion-msg').style.display = 'block';
+        document.getElementById('liar-reveal-multi-btn').style.display = isHost ? 'inline-block' : 'none';
+        document.getElementById('liar-current-turn-msg').innerText = "토론 중...";
+    } else if (data.status === 'result') {
+        document.getElementById('liar-game-play').style.display = 'none';
+        document.getElementById('liar-result').style.display = 'block';
+
+        const liarName = data.players[data.liarId]?.name || "알 수 없음";
+        document.getElementById('liar-winner').innerText = `라이어는 [${liarName}] 이었습니다!`;
+        document.getElementById('liar-word-reveal').innerText = `주제: ${data.topicName}\n제시어: ${data.word}`;
+        document.getElementById('liar-restart-multi-btn').style.display = isHost ? 'inline-block' : 'none';
+    }
+}
+
+async function startLiarGame() {
+    if (!currentRoomId) return;
+    const docRef = db.collection('rooms').doc(currentRoomId);
+    const snap = await docRef.get();
+    const data = snap.data();
+    const players = Object.keys(data.players);
+    if (players.length < 3) return alert("최소 3명 이상의 플레이어가 필요합니다.");
+
+    let selectedTopic = data.topic || 'random';
+    if (selectedTopic === 'random') {
+        const topics = Object.keys(liarTopics);
+        selectedTopic = topics[Math.floor(Math.random() * topics.length)];
+    }
+
+    const wordList = liarTopics[selectedTopic];
+    const word = wordList[Math.floor(Math.random() * wordList.length)];
+    const liarId = players[Math.floor(Math.random() * players.length)];
+    const topicNames = { food: '음식', animal: '동물', object: '사물', sports: '스포츠', place: '장소' };
+
+    await docRef.update({
+        status: 'playing',
+        liarId: liarId,
+        word: word,
+        topicName: topicNames[selectedTopic],
+        revealed: false
+    });
+}
+
+function leaveLiarRoom() {
+    if (roomUnsubscribe) roomUnsubscribe();
+    if (currentRoomId && currentUser) {
+        const update = {};
+        update[`players.${currentUser.uid}`] = firebase.firestore.FieldValue.delete();
+        db.collection('rooms').doc(currentRoomId).update(update);
+    }
+    currentRoomId = null;
+    document.getElementById('liar-entry').style.display = 'block';
+    document.getElementById('liar-lobby').style.display = 'none';
+    document.getElementById('liar-game-play').style.display = 'none';
+    document.getElementById('liar-result').style.display = 'none';
+}
+
+// UI Event Listeners
+document.getElementById('liar-card').addEventListener('click', function () {
+    this.classList.add('revealed');
+    this.innerText = this.dataset.word;
+});
+
+document.getElementById('liar-create-btn').addEventListener('click', createLiarRoom);
+document.getElementById('liar-join-btn').addEventListener('click', () => joinLiarRoom());
+document.getElementById('liar-start-multi-btn').addEventListener('click', startLiarGame);
+document.getElementById('liar-leave-btn').addEventListener('click', leaveLiarRoom);
+document.getElementById('liar-topic-select').addEventListener('change', (e) => {
+    if (currentRoomId) db.collection('rooms').doc(currentRoomId).update({ topic: e.target.value });
+});
+document.getElementById('liar-next-state-btn').addEventListener('click', () => {
+    db.collection('rooms').doc(currentRoomId).update({ status: 'discussion' });
+});
+document.getElementById('liar-reveal-multi-btn').addEventListener('click', () => {
+    db.collection('rooms').doc(currentRoomId).update({ status: 'result' });
+});
+document.getElementById('liar-restart-multi-btn').addEventListener('click', () => {
+    db.collection('rooms').doc(currentRoomId).update({ status: 'lobby' });
+});
