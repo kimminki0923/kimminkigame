@@ -252,6 +252,14 @@ async function loadLeaderboard() {
                 const d = doc.data();
                 const li = document.createElement('li');
                 li.innerText = `${rank}. ${d.displayName}: ${d.highScore}`;
+
+                // Highlight current user
+                if (currentUser && doc.id === currentUser.uid) {
+                    li.style.color = '#2ecc71';
+                    li.style.fontWeight = 'bold';
+                    li.innerText += ' (나)';
+                }
+
                 list.appendChild(li);
                 rank++;
             });
