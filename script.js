@@ -1022,6 +1022,10 @@ function syncLiarRoom(data) {
 
     document.getElementById('liar-start-multi-btn').style.display = (isHost && data.status === 'lobby') ? 'inline-block' : 'none';
     document.getElementById('liar-host-controls').style.display = (isHost && data.status === 'lobby') ? 'block' : 'none';
+    const guestLeaveRef = document.getElementById('liar-leave-guest-btn');
+    if (guestLeaveRef) {
+        guestLeaveRef.style.display = (!isHost && data.status === 'lobby') ? 'block' : 'none';
+    }
     document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
 
     // Update max score display in lobby
@@ -1491,7 +1495,11 @@ document.getElementById('liar-card').addEventListener('click', function () {
 document.getElementById('liar-create-btn').addEventListener('click', createLiarRoom);
 document.getElementById('liar-join-btn').addEventListener('click', () => joinLiarRoom());
 document.getElementById('liar-start-multi-btn').addEventListener('click', startLiarGame);
-document.getElementById('liar-leave-btn').addEventListener('click', leaveLiarRoom);
+const leaveBtn = document.getElementById('liar-leave-btn');
+if (leaveBtn) leaveBtn.addEventListener('click', leaveLiarRoom);
+
+const leaveGuestBtn = document.getElementById('liar-leave-guest-btn');
+if (leaveGuestBtn) leaveGuestBtn.addEventListener('click', leaveLiarRoom);
 document.getElementById('liar-topic-select').addEventListener('change', (e) => {
     if (currentRoomId) db.collection('rooms').doc(currentRoomId).update({ topic: e.target.value });
 });
