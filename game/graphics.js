@@ -1,0 +1,268 @@
+// ============================================================
+// game/graphics.js - Background and Rendering
+// ============================================================
+
+function initBackgroundObjects() {
+    buildings.length = 0;
+    for (let i = 0; i < 25; i++) {
+        buildings.push({
+            x: Math.random() * 3000 - 1500,
+            width: 60 + Math.random() * 100,
+            height: 150 + Math.random() * 400,
+            color: `hsl(230, 25%, ${10 + Math.random() * 15}%)`,
+            windows: Math.random() > 0.5
+        });
+    }
+    clouds.length = 0;
+    for (let i = 0; i < 40; i++) {
+        clouds.push({
+            x: Math.random() * 4000 - 2000,
+            y: Math.random() * 800,
+            size: 50 + Math.random() * 80,
+            speed: (Math.random() - 0.5) * 0.8,
+            opacity: 0.3 + Math.random() * 0.5
+        });
+    }
+    planets.length = 0;
+    const pColors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#e056fd'];
+    for (let i = 0; i < 20; i++) {
+        planets.push({
+            x: Math.random() * 5000 - 2500,
+            y: Math.random() * 4000,
+            size: 15 + Math.random() * 80,
+            color: pColors[Math.floor(Math.random() * pColors.length)],
+            ring: Math.random() > 0.6,
+            texture: Math.random() > 0.5
+        });
+    }
+    stars.length = 0;
+    for (let i = 0; i < 200; i++) {
+        stars.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 2000,
+            size: Math.random() * 2,
+            blinkSpeed: 0.05 + Math.random() * 0.1,
+            phase: Math.random() * Math.PI * 2
+        });
+    }
+}
+
+function lerpColor(a, b, t) {
+    const ah = parseInt(a.replace('#', ''), 16);
+    const ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff;
+    const bh = parseInt(b.replace('#', ''), 16);
+    const br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff;
+    const nr = ar + (br - ar) * t;
+    const ng = ag + (bg - ag) * t;
+    const nb = ab + (bb - ab) * t;
+    return `rgb(${Math.floor(nr)}, ${Math.floor(ng)}, ${Math.floor(nb)})`;
+}
+
+function drawBackground(camX, camY) {
+    const score = window.gameState.score;
+    const w = canvas.width;
+    const h = canvas.height;
+    const time = Date.now() * 0.001;
+
+    // Sky Gradient (Score-based progression)
+    const keys = [
+        { scores: 0, top: '#ff9a9e', bot: '#fecfef' },
+        { scores: 200, top: '#89f7fe', bot: '#66a6ff' },
+        { scores: 500, top: '#2c3e50', bot: '#fd746c' },
+        { scores: 800, top: '#0f2027', bot: '#203a43' },
+        { scores: 1000, top: '#000000', bot: '#1c1c1c' },
+        { scores: 10000, top: '#ffffff', bot: '#dcdde1' }
+    ];
+
+    let k1 = keys[0], k2 = keys[keys.length - 1];
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (score >= keys[i].scores && score <= keys[i + 1].scores) {
+            k1 = keys[i]; k2 = keys[i + 1]; break;
+        } else if (score > keys[i].scores) { k1 = keys[i]; }
+    }
+    let t = (score - k1.scores) / (k2.scores - k1.scores + 0.001);
+    t = Math.max(0, Math.min(1, t));
+
+    const curTop = lerpColor(k1.top, k2.top, t);
+    const curBot = lerpColor(k1.bot, k2.bot, t);
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, curTop); grad.addColorStop(1, curBot);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Sun
+    const sunY = h * 0.2 + (score * 0.5);
+    if (sunY < h + 100 && score < 8000) {
+        const sunGrad = ctx.createRadialGradient(w / 2, sunY, 0, w / 2, sunY, 150);
+        sunGrad.addColorStop(0, 'rgba(255, 255, 200, 0.4)');
+        sunGrad.addColorStop(1, 'rgba(255, 255, 200, 0)');
+        ctx.fillStyle = sunGrad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#ffde7d';
+        ctx.beginPath();
+        ctx.arc(w / 2, sunY, 60, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Stars
+    const starOpacity = score < 9500 ? Math.max(0, Math.min(1, (score - 600) / 400)) : Math.max(0, 1 - (score - 9500) / 500);
+    if (starOpacity > 0) {
+        ctx.globalAlpha = starOpacity;
+        ctx.fillStyle = '#ffffff';
+        stars.forEach(s => {
+            const sx = (camX * 0.05 + s.x) % w;
+            const sy = (camY * 0.05 + s.y) % h;
+            const size = s.size + Math.sin(time * 5 + s.phase) * 0.5;
+            ctx.beginPath(); ctx.arc(sx, sy, Math.max(0, size), 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // Buildings
+    const buildAlpha = Math.max(0, 1 - score / 150);
+    if (buildAlpha > 0) {
+        ctx.globalAlpha = buildAlpha;
+        buildings.forEach(b => {
+            const bx = (camX * 0.3 + b.x + 50000) % 3000 - 1000;
+            const by = h - b.height + (score * 3);
+            ctx.fillStyle = b.color;
+            ctx.fillRect(bx, by, b.width, b.height);
+            if (b.windows) {
+                ctx.fillStyle = 'rgba(255,255,200,0.3)';
+                for (let wy = by + 10; wy < by + b.height; wy += 20) {
+                    for (let wx = bx + 5; wx < bx + b.width - 5; wx += 15) {
+                        if (Math.random() > 0.3) ctx.fillRect(wx, wy, 8, 12);
+                    }
+                }
+            }
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // Clouds
+    const cloudAlpha = score < 600 ? 1 : Math.max(0, 1 - (score - 600) / 200);
+    if (cloudAlpha > 0) {
+        ctx.globalAlpha = cloudAlpha * 0.7;
+        clouds.forEach(c => {
+            const cx = (camX * 0.1 + c.x + time * c.speed * 50 + 50000) % 4000 - 1000;
+            const cy = h * 0.5 + c.y + (score * 2) - 300;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, c.size, 0, Math.PI * 2);
+            ctx.arc(cx + c.size * 0.7, cy - c.size * 0.5, c.size * 0.8, 0, Math.PI * 2);
+            ctx.arc(cx - c.size * 0.7, cy - c.size * 0.3, c.size * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // Planets
+    const planetAlpha = score < 9500 ? Math.max(0, Math.min(1, (score - 800) / 200)) : Math.max(0, 1 - (score - 9500) / 500);
+    if (planetAlpha > 0) {
+        ctx.globalAlpha = planetAlpha;
+        planets.forEach((p) => {
+            const px = (camX * 0.02 + p.x) % 5000 - 1000;
+            const py = p.y - (score * 1.0) + 1000;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(px, py, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            if (p.texture) {
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * 0.8, 0, Math.PI, false);
+                ctx.fill();
+            }
+            if (p.ring) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(px, py, p.size * 2.2, p.size * 0.5, -0.3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        });
+        ctx.globalAlpha = 1;
+    }
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Camera & Player Interpolation
+    const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
+    if (window.gameState.stairs.length > 0) {
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
+    }
+    const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
+    const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + 100;
+
+    // Background
+    drawBackground(camX, camY);
+
+    // Stairs
+    window.gameState.stairs.forEach((s, i) => {
+        if (i < window.gameState.score - 5 || i > window.gameState.score + 18) return;
+        const sx = camX + s.x * STAIR_W;
+        const sy = camY - s.y * STAIR_H;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
+
+        // Stair body
+        const sGrad = ctx.createLinearGradient(sx, sy, sx, sy + STAIR_H);
+        if (i === window.gameState.score) {
+            sGrad.addColorStop(0, '#ffffff'); sGrad.addColorStop(1, '#dfe6e9');
+        } else {
+            sGrad.addColorStop(0, '#a29bfe'); sGrad.addColorStop(1, '#6c5ce7');
+        }
+        ctx.fillStyle = sGrad;
+        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
+
+        // Coin
+        if (s.hasCoin) {
+            let col = '#f1c40f';
+            if (s.coinVal === 5) col = '#00d2d3';
+            if (s.coinVal === 10) col = '#ff6b6b';
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx - 3, sy - 33, 2, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // Player
+    const px = camX + window.gameState.renderPlayer.x * STAIR_W;
+    const py = camY - window.gameState.renderPlayer.y * STAIR_H;
+    drawPlayerWithSkin(ctx, px, py, window.gameState.playerDir);
+
+    // Direction Arrow
+    ctx.fillStyle = '#ffeaa7';
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.shadowBlur = 4; ctx.shadowColor = 'black';
+    const bounce = Math.sin(Date.now() / 150) * 4;
+    ctx.fillText(window.gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
+    ctx.shadowBlur = 0;
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.life -= 0.02;
+        p.y += p.dy * p.life;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        const ppx = camX + p.x * STAIR_W;
+        const ppy = camY - p.y * STAIR_H - 50;
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(p.val, ppx, ppy);
+        ctx.globalAlpha = 1.0;
+    }
+}
