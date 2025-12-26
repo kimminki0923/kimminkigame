@@ -1287,6 +1287,50 @@ async function sendLiarMessage() {
     input.value = '';
 }
 
+// 설명 전송 함수 (차례일 때만)
+async function sendDescription() {
+    if (!currentRoomId || !currentUser) return;
+    const input = document.getElementById('description-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const docRef = db.collection('rooms').doc(currentRoomId);
+    const snap = await docRef.get();
+    const data = snap.data();
+
+    if (data.status !== 'turn_based') return;
+
+    const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
+    if (currentTurnPlayerId !== currentUser.uid) {
+        alert("지금은 당신의 차례가 아닙니다!");
+        return;
+    }
+
+    // Save description
+    const newDesc = {
+        uid: currentUser.uid,
+        name: currentUser.displayName,
+        text: text
+    };
+    const updatedDescriptions = [...(data.descriptions || []), newDesc];
+
+    // Advance Turn
+    let nextIndex = data.currentTurnIndex + 1;
+    let nextStatus = 'turn_based';
+    if (nextIndex >= data.turnOrder.length) {
+        nextStatus = 'discussion'; // All turns done
+    }
+
+    await docRef.update({
+        descriptions: updatedDescriptions,
+        currentTurnIndex: nextIndex,
+        status: nextStatus
+    });
+
+    input.value = '';
+    document.getElementById('my-turn-input').style.display = 'none';
+}
+
 async function voteForPlayer(targetUid) {
     if (!currentRoomId || !currentUser) return;
     const docRef = db.collection('rooms').doc(currentRoomId);
@@ -1465,47 +1509,3 @@ document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendLiarMessage();
 });
 document.getElementById('liar-guess-btn').addEventListener('click', submitLiarGuess);
-
-// 설명 전송 함수 (차례일 때만)
-async function sendDescription() {
-    if (!currentRoomId || !currentUser) return;
-    const input = document.getElementById('description-input');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const docRef = db.collection('rooms').doc(currentRoomId);
-    const snap = await docRef.get();
-    const data = snap.data();
-
-    if (data.status !== 'turn_based') return;
-
-    const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
-    if (currentTurnPlayerId !== currentUser.uid) {
-        alert("지금은 당신의 차례가 아닙니다!");
-        return;
-    }
-
-    // Save description
-    const newDesc = {
-        uid: currentUser.uid,
-        name: currentUser.displayName,
-        text: text
-    };
-    const updatedDescriptions = [...(data.descriptions || []), newDesc];
-
-    // Advance Turn
-    let nextIndex = data.currentTurnIndex + 1;
-    let nextStatus = 'turn_based';
-    if (nextIndex >= data.turnOrder.length) {
-        nextStatus = 'discussion'; // All turns done
-    }
-
-    await docRef.update({
-        descriptions: updatedDescriptions,
-        currentTurnIndex: nextIndex,
-        status: nextStatus
-    });
-
-    input.value = '';
-    document.getElementById('my-turn-input').style.display = 'none';
-}
