@@ -1223,6 +1223,11 @@ function syncLiarRoom(data) {
         document.getElementById('liar-identity-reveal').innerText = `라이어는 [${liarName}] 이었습니다!`;
         document.getElementById('liar-word-reveal').innerText = `주제: ${data.topicName}\n제시어: ${data.word}`;
     }
+
+    // Trigger Bot Logic (if host)
+    if (typeof handleBotAutomation === 'function') {
+        handleBotAutomation(data);
+    }
 }
 
 async function startLiarGame() {
@@ -1583,3 +1588,148 @@ document.getElementById('toggle-rules-btn')?.addEventListener('click', function 
         this.innerHTML = '📜 게임 규칙 보기';
     }
 });
+
+// --- Test Bot Logic ---
+document.getElementById('liar-add-bots-btn')?.addEventListener('click', addTestBots);
+
+async function addTestBots() {
+    if (!currentRoomId) return;
+    const docRef = db.collection('rooms').doc(currentRoomId);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) return;
+            const data = doc.data();
+            const players = data.players || {};
+            const scores = data.scores || {};
+
+            // Add 10 bots
+            for (let i = 1; i <= 10; i++) {
+                const botId = `bot_${Date.now()}_${i}`;
+                if (Object.keys(players).length >= 30) break;
+
+                players[botId] = {
+                    name: `🤖 Bot ${i}`,
+                    photo: `https://api.dicebear.com/7.x/bottts/svg?seed=${botId}`, // Random Robot Avatar
+                    joinedAt: Date.now() + i,
+                    isBot: true
+                };
+                scores[botId] = 0;
+            }
+            transaction.update(docRef, { players: players, scores: scores });
+        });
+    } catch (e) {
+        alert("봇 추가 실패: " + e);
+    }
+}
+
+// Bot Automation Hook (Called in syncLiarRoom by Host)
+let botActionTimer = null;
+function handleBotAutomation(data) {
+    if (!data || !currentUser) return;
+    const isHost = data.host === currentUser.uid;
+    if (!isHost) return; // Only host runs bot logic to prevent conflicts
+
+    // 1. Description Turn
+    if (data.status === 'turn_based') {
+        const currentTurnUid = data.turnOrder?.[data.currentTurnIndex];
+        const currentPlayer = data.players[currentTurnUid];
+
+        if (currentPlayer && currentPlayer.isBot && !botActionTimer) {
+            console.log(`🤖 Bot ${currentTurnUid} turn...`);
+            botActionTimer = setTimeout(async () => {
+                const descriptions = data.descriptions || [];
+                const randomMsg = ["음... 어렵네요.", "맛있는 것 같아요!", "평소에 자주 봅니다.", "저는 잘 모르겠어요.", "확실히 생물은 아니에요."];
+                const msg = randomMsg[Math.floor(Math.random() * randomMsg.length)];
+
+                const newDesc = {
+                    uid: currentTurnUid,
+                    name: currentPlayer.name,
+                    text: msg + " (자동응답)"
+                };
+
+                let nextIndex = data.currentTurnIndex + 1;
+                let nextStatus = 'turn_based';
+                if (nextIndex >= data.turnOrder.length) nextStatus = 'discussion';
+
+                await db.collection('rooms').doc(currentRoomId).update({
+                    descriptions: [...descriptions, newDesc],
+                    currentTurnIndex: nextIndex,
+                    status: nextStatus
+                });
+                botActionTimer = null;
+            }, 3000); // 3 seconds delay
+        }
+    }
+    // 2. Voting
+    else if (data.status === 'voting') {
+        // Find bots who haven't voted
+        const votes = data.votes || {};
+        const bots = Object.entries(data.players || {}).filter(([uid, p]) => p.isBot);
+        const players = Object.keys(data.players);
+
+        const pendingBots = bots.filter(([uid]) => !votes[uid]);
+
+        if (pendingBots.length > 0 && !botActionTimer) {
+            botActionTimer = setTimeout(async () => {
+                // All remaining bots vote randomly
+                const updates = {};
+                pendingBots.forEach(([botUid]) => {
+                    const target = players[Math.floor(Math.random() * players.length)];
+                    votes[botUid] = target;
+                });
+
+                // Check completion inside here locally to duplicate logic? 
+                // Or just update votes and let the last human trigger completion?
+                // But if all are bots?
+                // We should just update votes map. The sync logic or vote function checks completion.
+                // But wait, our voteForPlayer function uses transaction and triggers state change.
+                // We can simply update the 'votes' field map directly. 
+                // But we need to trigger state change if vote is done.
+                // Simpler: Just update votes. If all voted, Host (current logic) needs a trigger.
+                // Let's rely on standard logic: The last vote should trigger state change.
+                // We will update votes field. And we need to check if complete.
+
+                const totalVotes = Object.keys(votes).length;
+                let updatePayload = { votes: votes };
+
+                // Simple completion check
+                if (totalVotes === players.length) {
+                    // Start simplified calculation logic (duplicated for bots safety)
+                    const voteCounts = {};
+                    Object.values(votes).forEach(v => { voteCounts[v] = (voteCounts[v] || 0) + 1; });
+                    let maxVotes = 0; let candidates = [];
+                    for (const [uid, count] of Object.entries(voteCounts)) {
+                        if (count > maxVotes) { maxVotes = count; candidates = [uid]; }
+                        else if (count === maxVotes) candidates.push(uid);
+                    }
+                    if (candidates.length > 1) {
+                        updatePayload.status = 'discussion'; updatePayload.votes = {};
+                    } else {
+                        const eliminatedId = candidates[0];
+                        const scores = data.scores || {};
+                        if (eliminatedId === data.liarId) {
+                            Object.keys(data.players).forEach(uid => { if (uid !== data.liarId) scores[uid] = (scores[uid] || 0) + 1; });
+                            updatePayload.status = 'liar_guess'; updatePayload.votedOutId = eliminatedId; updatePayload.scores = scores;
+                        } else {
+                            scores[data.liarId] = (scores[data.liarId] || 0) + 1;
+                            updatePayload.status = 'result'; updatePayload.winner = 'liar'; updatePayload.roundWinner = 'liar'; updatePayload.votedOutId = eliminatedId; updatePayload.scores = scores; updatePayload.votes = {};
+                        }
+                    }
+                }
+
+                await db.collection('rooms').doc(currentRoomId).update(updatePayload);
+                botActionTimer = null;
+            }, 3000);
+        }
+    }
+    // Reset timer if state changed effectively
+    else {
+        if (botActionTimer && (data.status !== 'turn_based' && data.status !== 'voting')) {
+            clearTimeout(botActionTimer);
+            botActionTimer = null;
+        }
+    }
+}
+
