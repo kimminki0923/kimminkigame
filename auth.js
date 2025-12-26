@@ -157,11 +157,14 @@ async function loadCloudData(uid) {
             // Pass loaded data to game
             const savedScore = data.highScore || 0;
             const savedCoins = data.coinCount || 0;
-            updateGameData(savedScore, savedCoins);
+            const savedSkins = data.ownedSkins || ['default'];
+            const savedCurrentSkin = data.currentSkin || 'default';
+
+            updateGameData(savedScore, savedCoins, savedSkins, savedCurrentSkin);
             console.log("☁️ Cloud Data Loaded:", data);
         } else {
             console.log("☁️ New User, init data.");
-            saveCloudData(0, 0);
+            saveCloudData(0, 0, ['default'], 'default');
         }
     } catch (e) {
         console.error("Cloud Load Error:", e);
@@ -177,39 +180,41 @@ function loadLocalData() {
 // 2. Save (Called from script.js)
 // script.js determines WHAT to save (e.g. cumulative coins)
 // auth.js just executes the save to backend
-function saveCloudData(score, coins) {
+function saveCloudData(score, coins, skins, currentSkin) {
     if (!db || !currentUser) return;
 
-    // Using simple set with merge. 
-    // Ideally for coins we might want atomic increment, but let's trust the client state for now.
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
+        ownedSkins: skins,
+        currentSkin: currentSkin,
         displayName: currentUser.displayName || 'Anonymous',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
-        console.log("☁️ Saved to Cloud: Score", score, "Coins", coins);
+        console.log("☁️ Saved to Cloud: Score", score, "Coins", coins, "Skins", skins.length);
     }).catch((e) => {
         console.error("Cloud Save Failed:", e);
     });
 }
 
 // Bridge to script.js
-function updateGameData(score, coins) {
+function updateGameData(score, coins, skins, currentSkin) {
     if (window.setGameData) {
-        window.setGameData(score, coins);
+        window.setGameData(score, coins, skins, currentSkin);
     }
 }
 
 // Global Save Bridge
-window.saveData = function (score, coins) {
+window.saveData = function (score, coins, skins, currentSkin) {
     // Local Save
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
+    if (skins) localStorage.setItem('ownedSkins', JSON.stringify(skins));
+    if (currentSkin) localStorage.setItem('currentSkin', currentSkin);
 
     // Cloud Save
     if (currentUser && isCloudEnabled) {
-        saveCloudData(score, coins);
+        saveCloudData(score, coins, skins || [], currentSkin || 'default');
     }
 }
 

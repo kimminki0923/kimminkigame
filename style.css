@@ -652,6 +652,16 @@ button:active {
     }
 }
 
+#shop-scroll-area.active {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+    user-select: none;
+}
+
+#shop-scroll-area.active .shop-item {
+    pointer-events: none;
+}
+
 #scoreboard {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);

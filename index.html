@@ -174,10 +174,10 @@
 
                 <!-- Shop Overlay (Modal Style) -->
                 <div id="shop-overlay"
-                    style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center;">
+                    style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1001; align-items:center; justify-content:center;">
                     <!-- Modal Box -->
                     <div id="shop-modal"
-                        style="width:90%; max-width:500px; height:85%; background:#1a1a1a; border-radius:30px; border:3px solid #f1c40f; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,1);">
+                        style="width:95%; max-width:500px; height:85%; background:#1a1a1a; border-radius:30px; border:3px solid #f1c40f; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 50px rgba(0,0,0,1);">
 
                         <!-- Top Header with Close -->
                         <div
@@ -188,75 +188,79 @@
                         </div>
 
                         <!-- Scrollable Content Section -->
-                        <div style="flex:1; overflow-y:auto; padding:20px;">
+                        <div id="shop-scroll-area" class="shop-content-scroll"
+                            style="flex:1; overflow-y:auto; padding:30px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
                             <div
-                                style="font-size:18px; color:#f1c40f; margin-bottom:20px; background:rgba(255,255,255,0.1); padding:8px 20px; border-radius:20px; display:inline-block;">
+                                style="font-size:18px; color:#f1c40f; margin-bottom:20px; background:rgba(255,255,255,0.1); padding:10px 25px; border-radius:30px; display:inline-block; border: 1px solid rgba(241, 196, 15, 0.3);">
                                 🪙 <span id="shop-gold">0</span> Gold
                             </div>
 
                             <!-- Current Skin Section -->
                             <div
-                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #f1c40f;">
-                                <h3 style="margin:0 0 10px 0; color:#2ecc71;">🎮 현재 장착 스킨</h3>
-                                <div id="current-skin-display" style="font-size:24px;">⚪ 기본</div>
+                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin-bottom:25px; border:1px solid #2ecc71; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.1);">
+                                <h3 style="margin:0 0 10px 0; color:#2ecc71; font-size: 16px;">🎮 현재 장착 스킨</h3>
+                                <div id="current-skin-display" style="font-size:28px; font-weight: 800;">⚪ 기본</div>
                             </div>
 
                             <!-- Skin Grid -->
-                            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:15px;">
+                            <div
+                                style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:20px;">
                                 <!-- Default Skin (Free) -->
                                 <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                    <div style="font-size:36px; margin-bottom:8px;">⚪</div>
-                                    <h4 style="margin:0; color:#fff;">기본 (원형)</h4>
-                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">클래식한 둥근 캐릭터</p>
-                                    <button class="equip-btn" data-skin="default"
-                                        style="background:#2ecc71; border:none; padding:8px 20px; border-radius:20px; color:white; font-weight:bold; cursor:pointer; width:100%;">
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                    <div style="font-size:48px; margin-bottom:12px;">⚪</div>
+                                    <h4 style="margin:0; color:#fff; font-size: 16px;">기본 (원형)</h4>
+                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">클래식 캐릭터</p>
+                                    <button class="equip-btn primary-btn" data-skin="default"
+                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px;">
                                         장착하기
                                     </button>
                                 </div>
 
                                 <!-- Square Skin -->
                                 <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                    <div style="font-size:36px; margin-bottom:8px;">🟧</div>
-                                    <h4 style="margin:0; color:#e67e22;">사각형 스킨</h4>
-                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">회전하며 올라가는 큐브!</p>
-                                    <button class="buy-btn" data-id="skin_square" data-price="150"
-                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                    <div style="font-size:48px; margin-bottom:12px;">🟧</div>
+                                    <h4 style="margin:0; color:#e67e22; font-size: 16px;">사각형</h4>
+                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">재빠른 큐브</p>
+                                    <button class="buy-btn primary-btn" data-id="skin_square" data-price="150"
+                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
                                         150 G
                                     </button>
                                 </div>
 
                                 <!-- Triangle Skin -->
                                 <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                    <div style="font-size:36px; margin-bottom:8px;">🔺</div>
-                                    <h4 style="margin:0; color:#e74c3c;">삼각형 스킨</h4>
-                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">날카롭게 회전하는 피라미드!</p>
-                                    <button class="buy-btn" data-id="skin_triangle" data-price="200"
-                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                    <div style="font-size:48px; margin-bottom:12px;">🔺</div>
+                                    <h4 style="margin:0; color:#e74c3c; font-size: 16px;">삼각형</h4>
+                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">날카로운 각도</p>
+                                    <button class="buy-btn primary-btn" data-id="skin_triangle" data-price="200"
+                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
                                         200 G
                                     </button>
                                 </div>
 
                                 <!-- Diamond Skin -->
                                 <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                    <div style="font-size:36px; margin-bottom:8px;">💎</div>
-                                    <h4 style="margin:0; color:#3498db;">다이아몬드 스킨</h4>
-                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">반짝이는 프리미엄 다이아!</p>
-                                    <button class="buy-btn" data-id="skin_diamond" data-price="500"
-                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                    <div style="font-size:48px; margin-bottom:12px;">💎</div>
+                                    <h4 style="margin:0; color:#3498db; font-size: 16px;">다이아몬드</h4>
+                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">반짝이는 보석</p>
+                                    <button class="buy-btn primary-btn" data-id="skin_diamond" data-price="500"
+                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
                                         500 G
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Close Button -->
-                            <button id="close-shop-btn"
-                                style="margin-top:35px; padding:15px 60px; background:#e74c3c; border:none; color:white; border-radius:35px; font-size:18px; cursor:pointer; font-weight:bold; box-shadow:0 0 15px rgba(231,76,60,0.4);">
-                                ✕ 닫기 (원래 화면으로)
-                            </button>
+                            <!-- Bottom Close Button -->
+                            <div style="margin-top:40px; text-align: center; padding-bottom: 20px;">
+                                <button id="close-shop-btn" class="secondary-btn"
+                                    style="width: 100%; max-width: 300px; padding: 15px; border-radius: 15px; font-size: 16px; background: #e74c3c;">
+                                    ✕ 닫기
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

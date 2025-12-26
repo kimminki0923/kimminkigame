@@ -673,6 +673,34 @@ document.getElementById('close-shop-btn')?.addEventListener('click', () => {
 });
 
 // Update Shop UI
+// Shop Drag-to-Scroll Logic
+const shopScrollArea = document.getElementById('shop-scroll-area');
+let isDown = false;
+let startY;
+let scrollTop;
+
+if (shopScrollArea) {
+    shopScrollArea.addEventListener('mousedown', (e) => {
+        isDown = true;
+        shopScrollArea.classList.add('active');
+        startY = e.pageY - shopScrollArea.offsetTop;
+        scrollTop = shopScrollArea.scrollTop;
+    });
+    shopScrollArea.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+    shopScrollArea.addEventListener('mouseup', () => {
+        isDown = false;
+    });
+    shopScrollArea.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const y = e.pageY - shopScrollArea.offsetTop;
+        const walk = (y - startY) * 2; // Scroll speed multiplier
+        shopScrollArea.scrollTop = scrollTop - walk;
+    });
+}
+
 function updateShopUI() {
     // Gold Display
     const shopGold = document.getElementById('shop-gold');
@@ -711,29 +739,26 @@ function updateShopUI() {
     });
 }
 
-// Buy Skin
+// Buy Skin (Updated to trigger global save)
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('buy-btn')) {
-        const skinId = e.target.dataset.id;
-        const price = parseInt(e.target.dataset.price);
+        const btn = e.target;
+        const skinId = btn.dataset.id;
+        const price = parseInt(btn.dataset.price);
 
         if (ownedSkins.includes(skinId)) {
-            // Already owned, equip instead
             equipSkin(skinId);
             return;
         }
 
         if (totalCoins >= price) {
-            // Purchase
             totalCoins -= price;
-            gameState.coinCount = 0; // Reset session just in case, or keep it. Actually shop balance is totalCoins now.
-
             ownedSkins.push(skinId);
 
-            // Save
-            localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
-            document.getElementById('coin-count').innerText = totalCoins;
-            if (window.saveData) window.saveData(aiHighScore, totalCoins);
+            // SAVE ALL
+            if (window.saveData) {
+                window.saveData(aiHighScore, totalCoins, ownedSkins, skinId);
+            }
 
             alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
 
@@ -746,12 +771,23 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Shop Close Button
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'close-shop-btn') {
+        document.getElementById('shop-overlay').style.display = 'none';
+    }
+});
+
 // Equip Skin
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('equip-btn')) {
         const skinId = e.target.dataset.skin || e.target.dataset.id;
         if (ownedSkins.includes(skinId) || skinId === 'default') {
             equipSkin(skinId);
+            // Save current skin selection
+            if (window.saveData) {
+                window.saveData(aiHighScore, totalCoins, ownedSkins, skinId);
+            }
         }
     }
 });
@@ -950,13 +986,18 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 // Redirect redundant totalCoins declaration
 
 // --- Data Bridge (Connected to auth.js) ---
-window.setGameData = function (score, coins) {
-    console.log(`Loaded Game Data: HighScore ${score}, Coins ${coins}`);
+window.setGameData = function (score, coins, skins, cSkin) {
+    console.log(`Loaded Game Data: Score ${score}, Coins ${coins}, Skins ${skins?.length}`);
     aiHighScore = score;
-    highScoreEl.innerText = aiHighScore;
+    if (highScoreEl) highScoreEl.innerText = aiHighScore;
 
-    totalCoins = coins; // Set Global Total
-    coinEl.innerText = totalCoins;
+    totalCoins = coins;
+    if (coinEl) coinEl.innerText = totalCoins;
+
+    if (skins) ownedSkins = skins;
+    if (cSkin) currentSkin = cSkin;
+
+    updateShopUI();
 }
 
 function gameOver() {
@@ -990,7 +1031,7 @@ function gameOver() {
 
     // TRIGGER SAVE (Only for human)
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
     }
 
     statusEl.innerText = "Game Over!";
