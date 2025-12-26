@@ -97,12 +97,59 @@ async function loadCloudData(uid) {
     if (!db) return;
     try {
         const doc = await db.collection('users').doc(uid).get();
+
+        // Local Cache (Truth)
+        const localScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+        const localCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
+        const localSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+        const localSkin = localStorage.getItem('currentSkin') || 'default';
+
+        let finalScore = localScore;
+        let finalCoins = localCoins;
+        let finalSkins = localSkins;
+        let finalSkin = localSkin;
+        let needSync = false;
+
         if (doc.exists) {
             const data = doc.data();
-            applyGameData(data.highScore, data.coinCount, data.ownedSkins, data.currentSkin);
+            const cloudScore = data.highScore || 0;
+            const cloudCoins = data.coinCount || 0;
+            const cloudSkins = data.ownedSkins || ['default'];
+
+            // Merge Strategy: MAX
+            if (cloudScore > finalScore) finalScore = cloudScore;
+            if (cloudCoins > finalCoins) finalCoins = cloudCoins;
+
+            // Merge Skins (Union)
+            const skinSet = new Set([...finalSkins, ...cloudSkins]);
+            finalSkins = Array.from(skinSet);
+
+            // Prefer Cloud Skin if different, unless local changed recently? 
+            // Stick to cloud skin to be safe, or local? 
+            // If cloud has a skin we don't own locally, we should probably equip it if cloud says so.
+            // But usually user wants 'current' state. Let's trust local skin if it's in the owned list.
+            if (data.currentSkin && finalSkins.includes(data.currentSkin)) {
+                finalSkin = data.currentSkin;
+            }
+
+            // If Local was ahead, or we merged, we might want to sync back later?
+            // Actually, if Local < Cloud, we update Local.
+            // If Local > Cloud, we MUST update Cloud immediately.
+            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length) {
+                needSync = true;
+            }
         } else {
-            saveCloudData(0, 0, ['default'], 'default');
+            // New user on cloud, but has local data -> Sync up!
+            needSync = true;
         }
+
+        if (needSync) {
+            console.log("☁️ Syncing Local Progress to Cloud...");
+            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin);
+        }
+
+        applyGameData(finalScore, finalCoins, finalSkins, finalSkin);
+
     } catch (e) {
         console.error("Load Cloud Error:", e);
     }
