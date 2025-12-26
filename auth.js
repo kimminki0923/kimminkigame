@@ -39,6 +39,11 @@ function initAuth() {
                 console.log("✅ Logged in as:", user.displayName);
                 updateUI_LoggedIn(user);
                 loadCloudData(user.uid);
+
+                // Update displayName in Firestore for leaderboard
+                db.collection('users').doc(user.uid).set({
+                    displayName: user.displayName || 'Anonymous'
+                }, { merge: true });
             } else {
                 // Logged Out
                 currentUser = null;

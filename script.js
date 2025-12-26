@@ -689,19 +689,27 @@ const shopOverlay = document.getElementById('shop-overlay');
 const closeShopBtn = document.getElementById('close-shop-btn');
 const shopGoldEl = document.getElementById('shop-gold');
 
+console.log("Shop elements:", { shopOpenBtn, shopOverlay, closeShopBtn, shopGoldEl });
+
 if (shopOpenBtn) {
     shopOpenBtn.addEventListener('click', () => {
+        console.log("Opening shop...");
         if (shopOverlay) {
             shopOverlay.style.display = 'flex';
-            if (shopGoldEl) shopGoldEl.innerText = gameState.coinCount;
+            // Read from UI element which is updated by auth.js
+            const currentCoins = document.getElementById('coin-count')?.innerText || gameState.coinCount || 0;
+            if (shopGoldEl) shopGoldEl.innerText = currentCoins;
         }
     });
 }
 
 if (closeShopBtn) {
     closeShopBtn.addEventListener('click', () => {
+        console.log("Closing shop...");
         if (shopOverlay) shopOverlay.style.display = 'none';
     });
+} else {
+    console.warn("close-shop-btn not found!");
 }
 
 // Buy Button Handlers
@@ -709,14 +717,27 @@ document.querySelectorAll('.buy-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const id = e.target.dataset.id;
         const price = parseInt(e.target.dataset.price);
+        const currentCoins = parseInt(document.getElementById('coin-count')?.innerText) || gameState.coinCount || 0;
 
-        console.log(`Attempting to buy: ${id} for ${price}G`);
+        console.log(`Attempting to buy: ${id} for ${price}G (have: ${currentCoins}G)`);
 
-        if (gameState.coinCount >= price) {
-            alert(`구매 기능은 다음 업데이트에서! (${id} - ${price}G)`);
-            // TODO: Deduct coins, save purchase, apply skin
+        if (currentCoins >= price) {
+            // Deduct coins
+            gameState.coinCount = currentCoins - price;
+            document.getElementById('coin-count').innerText = gameState.coinCount;
+            document.getElementById('shop-gold').innerText = gameState.coinCount;
+
+            // Save to cloud
+            if (window.saveData) {
+                window.saveData(aiHighScore, gameState.coinCount);
+            }
+
+            alert(`✅ ${id} 구매 완료! (남은 골드: ${gameState.coinCount}G)`);
+            e.target.innerText = '구매완료';
+            e.target.disabled = true;
+            e.target.style.background = '#7f8c8d';
         } else {
-            alert(`골드가 부족합니다! (보유: ${gameState.coinCount}G / 필요: ${price}G)`);
+            alert(`골드가 부족합니다! (보유: ${currentCoins}G / 필요: ${price}G)`);
         }
     });
 });
