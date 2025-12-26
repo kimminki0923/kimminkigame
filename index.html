@@ -222,7 +222,7 @@
                     공개</button>
             </div>
 
-            <!-- Chat Section -->
+            <!-- Turn/Chat Section -->
             <div id="liar-chat-section"
                 style="display:none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
                 <div id="liar-chat-messages"
@@ -234,9 +234,33 @@
                 </div>
             </div>
 
+            <!-- Description Log (Bottom Left) -->
+            <div id="description-log"
+                style="display:none; margin-top:15px; background: rgba(0,0,0,0.5); padding:10px; border-radius:8px; text-align:left; font-size:13px;">
+                <h4 style="margin:0 0 5px 0; color:#f1c40f;">📝 설명 기록</h4>
+                <div id="description-list"></div>
+            </div>
+
+            <!-- Voting Section -->
+            <div id="liar-vote-section" style="display:none; margin-top:20px;">
+                <h3>🗳️ 투표 시간</h3>
+                <p>라이어라고 생각되는 사람을 선택하세요 (1인 1표)</p>
+                <div id="vote-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+                <p id="vote-status" style="color:#888; margin-top:10px;"></p>
+            </div>
+
+            <!-- Liar Guess Section -->
+            <div id="liar-guess-section" style="display:none; margin-top:20px;">
+                <h3 style="color:#e74c3c;">🕵️ 당신은 지목되었습니다!</h3>
+                <p>마지막 기회입니다. 제시어가 무엇일까요?</p>
+                <input type="text" id="liar-word-input" class="room-input" placeholder="제시어 입력">
+                <button id="liar-guess-btn" class="primary-btn">정답 확인</button>
+            </div>
+
             <div id="liar-result" style="display:none;">
                 <h2 id="liar-winner"></h2>
-                <p id="liar-word-reveal"></p>
+                <p id="liar-identity-reveal"></p>
+                <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
                 <button id="liar-restart-multi-btn" class="primary-btn" style="display:none; margin-top: 20px;">새
                     게임</button>
             </div>

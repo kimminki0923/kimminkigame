@@ -960,6 +960,11 @@ async function joinLiarRoom(roomId) {
     }
 }
 
+// Helper to check if it's my turn
+function isMyTurn(data) {
+    return data.status === 'turn_based' && data.turnOrder[data.currentTurnIndex] === currentUser.uid;
+}
+
 function syncLiarRoom(data) {
     const isHost = data.host === currentUser.uid;
     const players = Object.entries(data.players || {}).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
@@ -974,7 +979,6 @@ function syncLiarRoom(data) {
         playerList.appendChild(li);
     });
 
-    // Host Settings Sync
     const settingsDiv = document.getElementById('room-settings');
     const topicSelect = document.getElementById('liar-topic-select');
 
@@ -990,32 +994,54 @@ function syncLiarRoom(data) {
     document.getElementById('liar-start-multi-btn').style.display = (isHost && data.status === 'lobby') ? 'inline-block' : 'none';
     document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
 
-    // 2. Game State Transition Logic
+
+    // 2. Game State Views
     const lobbyDiv = document.getElementById('liar-lobby');
     const gameDiv = document.getElementById('liar-game-play');
     const resultDiv = document.getElementById('liar-result');
+    const chatSection = document.getElementById('liar-chat-section');
     const turnMsg = document.getElementById('liar-current-turn-msg');
+    const descLog = document.getElementById('description-log');
+    const descList = document.getElementById('description-list');
+    const voteSection = document.getElementById('liar-vote-section');
+    const voteBtns = document.getElementById('vote-buttons');
+    const guessSection = document.getElementById('liar-guess-section');
 
-    // Reset defaults
+    // Default Hidden
     document.getElementById('liar-host-controls').style.display = 'none';
     document.getElementById('liar-discussion-msg').style.display = 'none';
     document.getElementById('liar-reveal-multi-btn').style.display = 'none';
+    voteSection.style.display = 'none';
+    guessSection.style.display = 'none';
+    descLog.style.display = 'none';
+
+    // Render Description Log
+    if (data.descriptions && data.descriptions.length > 0) {
+        descLog.style.display = 'block';
+        descList.innerHTML = '';
+        data.descriptions.forEach(desc => {
+            const row = document.createElement('div');
+            row.className = 'desc-row';
+            row.innerHTML = `<span class="desc-name">${desc.name}</span><span class="desc-text">${desc.text}</span>`;
+            descList.appendChild(row);
+        });
+    }
 
     if (data.status === 'lobby') {
         lobbyDiv.style.display = 'block';
         gameDiv.style.display = 'none';
         resultDiv.style.display = 'none';
+        chatSection.style.display = 'block';
 
         const card = document.getElementById('liar-card');
-        card.classList.remove('revealed');
-        card.classList.remove('card-back');
-        card.classList.add('card-back');
+        card.className = 'card-back';
         card.innerText = "클릭하여 확인";
 
     } else if (data.status === 'playing') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
+        chatSection.style.display = 'block';
 
         const card = document.getElementById('liar-card');
         if (data.liarId === currentUser.uid) {
@@ -1038,35 +1064,91 @@ function syncLiarRoom(data) {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
+        chatSection.style.display = 'block';
 
         const currentTurnPlayerId = data.turnOrder[data.currentTurnIndex];
         const currentTurnPlayer = data.players[currentTurnPlayerId];
 
         if (currentTurnPlayerId === currentUser.uid) {
-            turnMsg.innerText = "당신의 차례입니다! 채팅창에 한 마디 설명을 입력하세요.";
+            turnMsg.innerText = "🎤 당신의 차례입니다! 제시어에 대한 설명을 입력하세요.";
             turnMsg.style.color = "#2ecc71";
+            document.getElementById('liar-chat-input').placeholder = "제시어에 대한 한 문장 설명...";
+            document.getElementById('liar-chat-input').focus();
         } else {
-            turnMsg.innerText = `[${currentTurnPlayer.name}] 님의 차례입니다... 설명하는 중`;
+            turnMsg.innerText = `👂 [${currentTurnPlayer.name}] 님이 설명하는 중입니다...`;
             turnMsg.style.color = "#fff";
+            document.getElementById('liar-chat-input').placeholder = "다른 사람의 설명을 듣는 중...";
         }
 
     } else if (data.status === 'discussion') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'block';
         resultDiv.style.display = 'none';
+        chatSection.style.display = 'block';
 
         document.getElementById('liar-discussion-msg').style.display = 'block';
         document.getElementById('liar-reveal-multi-btn').style.display = isHost ? 'inline-block' : 'none';
-        turnMsg.innerText = "자유 토론 시간입니다! 라이어를 찾아내세요.";
+        document.getElementById('liar-reveal-multi-btn').innerText = "투표 시작"; // Change text
+        turnMsg.innerText = "🗣️ 자유 토론 시간입니다! 라이어를 찾아내세요.";
         turnMsg.style.color = "#f1c40f";
+
+    } else if (data.status === 'voting') {
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+        chatSection.style.display = 'none'; // Hide chat during voting
+        voteSection.style.display = 'block';
+        turnMsg.innerText = "🤔 신중하게 투표하세요!";
+
+        voteBtns.innerHTML = '';
+        players.forEach(([uid, p]) => {
+            const btn = document.createElement('button');
+            btn.className = 'vote-btn';
+            btn.innerText = p.name;
+            if (data.votes && data.votes[currentUser.uid] === uid) {
+                btn.classList.add('selected');
+            }
+            btn.onclick = () => voteForPlayer(uid);
+            voteBtns.appendChild(btn);
+        });
+
+        const votedCount = Object.keys(data.votes || {}).length;
+        const totalCount = players.length;
+        document.getElementById('vote-status').innerText = `투표 현황: ${votedCount} / ${totalCount}`;
+
+    } else if (data.status === 'liar_guess') {
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+        chatSection.style.display = 'none';
+        guessSection.style.display = 'block';
+        turnMsg.innerText = "🛑 라이어 최후의 변론!";
+
+        // Show who was voted out
+        const votedName = data.players[data.votedOutId].name;
+        document.querySelector('#liar-guess-section h3').innerText = `🕵️ [${votedName}] 님이 지목되었습니다!`;
+
+        if (data.liarId === currentUser.uid && data.votedOutId === currentUser.uid) {
+            document.getElementById('liar-word-input').style.display = 'inline-block';
+            document.getElementById('liar-guess-btn').style.display = 'inline-block';
+        } else {
+            document.getElementById('liar-word-input').style.display = 'none';
+            document.getElementById('liar-guess-btn').style.display = 'none';
+            document.querySelector('#liar-guess-section p').innerText = "라이어가 제시어를 맞추고 있습니다...";
+        }
 
     } else if (data.status === 'result') {
         lobbyDiv.style.display = 'none';
         gameDiv.style.display = 'none';
         resultDiv.style.display = 'block';
+        chatSection.style.display = 'block';
 
         const liarName = data.players[data.liarId]?.name || "알 수 없음";
-        document.getElementById('liar-winner').innerText = `라이어는 [${liarName}] 이었습니다!`;
+        const winnerText = data.winner === 'liar' ? "👿 라이어 승리!" : "😇 시민 승리!";
+        document.getElementById('liar-winner').innerText = winnerText;
+        document.getElementById('liar-winner').style.color = data.winner === 'liar' ? '#e74c3c' : '#2ecc71';
+
+        document.getElementById('liar-identity-reveal').innerText = `라이어는 [${liarName}] 이었습니다!`;
         document.getElementById('liar-word-reveal').innerText = `주제: ${data.topicName}\n제시어: ${data.word}`;
         document.getElementById('liar-restart-multi-btn').style.display = isHost ? 'inline-block' : 'none';
     }
@@ -1078,7 +1160,7 @@ async function startLiarGame() {
     const snap = await docRef.get();
     const data = snap.data();
     const players = Object.keys(data.players);
-    if (players.length < 1) return alert("플레이어가 부족합니다."); // Min players reduced for testing
+    if (players.length < 1) return alert("플레이어가 부족합니다.");
 
     let selectedTopic = data.topic || 'random';
     if (selectedTopic === 'random') {
@@ -1104,7 +1186,9 @@ async function startLiarGame() {
         topicName: topicNames[selectedTopic],
         turnOrder: players,
         currentTurnIndex: 0,
-        revealed: false
+        revealed: false,
+        descriptions: [],
+        votes: {}
     });
 }
 
@@ -1142,6 +1226,14 @@ async function sendLiarMessage() {
             return;
         }
 
+        // Save description
+        const newDesc = {
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            text: text
+        };
+        const updatedDescriptions = [...(data.descriptions || []), newDesc];
+
         // Advance Turn
         let nextIndex = data.currentTurnIndex + 1;
         let nextStatus = 'turn_based';
@@ -1150,19 +1242,111 @@ async function sendLiarMessage() {
         }
 
         await docRef.update({
+            descriptions: updatedDescriptions,
             currentTurnIndex: nextIndex,
             status: nextStatus
         });
+
+        input.value = ''; // Clear only if successfully sent as description
+        return;
     }
 
-    // Send Message always
-    await db.collection('rooms').doc(currentRoomId).collection('messages').add({
-        uid: currentUser.uid,
-        name: currentUser.displayName,
-        text: text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = '';
+    // Normal Chat (Lobby, Discussion, End)
+    if (data.status === 'lobby' || data.status === 'playing' || data.status === 'discussion' || data.status === 'result') {
+        await db.collection('rooms').doc(currentRoomId).collection('messages').add({
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            text: text,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = '';
+    }
+}
+
+async function voteForPlayer(targetUid) {
+    if (!currentRoomId || !currentUser) return;
+    const docRef = db.collection('rooms').doc(currentRoomId);
+
+    // Optimistic UI update handled by sync
+    const update = {};
+    update[`votes.${currentUser.uid}`] = targetUid;
+    await docRef.update(update);
+
+    // Check if everyone voted (Client side check, but triggered by last voter)
+    const snap = await docRef.get();
+    const data = snap.data();
+    const players = Object.keys(data.players);
+    const votes = data.votes || {};
+
+    if (Object.keys(votes).length === players.length) {
+        // Tally votes
+        const voteCounts = {};
+        Object.values(votes).forEach(v => {
+            voteCounts[v] = (voteCounts[v] || 0) + 1;
+        });
+
+        // Find max
+        let maxVotes = 0;
+        let candidates = [];
+        for (const [uid, count] of Object.entries(voteCounts)) {
+            if (count > maxVotes) {
+                maxVotes = count;
+                candidates = [uid];
+            } else if (count === maxVotes) {
+                candidates.push(uid);
+            }
+        }
+
+        // Tie?
+        if (candidates.length > 1) {
+            alert("동점입니다! 재투표를 위해 토론으로 돌아갑니다.");
+            await docRef.update({
+                status: 'discussion',
+                votes: {} // Reset votes
+            });
+        } else {
+            // Eliminated
+            const eliminatedId = candidates[0];
+
+            // If Liar is caught -> Liar gets chance to guess
+            if (eliminatedId === data.liarId) {
+                await docRef.update({
+                    status: 'liar_guess',
+                    votedOutId: eliminatedId
+                });
+            } else {
+                // Liar Wins immediately (Civilians killed wrong person)
+                await docRef.update({
+                    status: 'result',
+                    winner: 'liar',
+                    votedOutId: eliminatedId
+                });
+            }
+        }
+    }
+}
+
+async function submitLiarGuess() {
+    if (!currentRoomId || !currentUser) return;
+    const input = document.getElementById('liar-word-input');
+    const guess = input.value.trim();
+    if (!guess) return;
+
+    const docRef = db.collection('rooms').doc(currentRoomId);
+    const snap = await docRef.get();
+    const data = snap.data();
+
+    if (data.status !== 'liar_guess') return;
+
+    // Simple exact match check (ignore whitespace/case)
+    const correct = data.word.trim();
+    if (guess === correct) {
+        // Liar Wins
+        await docRef.update({ status: 'result', winner: 'liar' });
+    } else {
+        // Civilians Win
+        await docRef.update({ status: 'result', winner: 'civilian' });
+    }
 }
 
 // UI Event Listeners
@@ -1183,7 +1367,9 @@ document.getElementById('liar-next-state-btn').addEventListener('click', () => {
     db.collection('rooms').doc(currentRoomId).update({ status: 'turn_based' });
 });
 document.getElementById('liar-reveal-multi-btn').addEventListener('click', () => {
-    db.collection('rooms').doc(currentRoomId).update({ status: 'result' });
+    // Check status to decide next step
+    // If status is discussion, move to 'voting'
+    db.collection('rooms').doc(currentRoomId).update({ status: 'voting' });
 });
 document.getElementById('liar-restart-multi-btn').addEventListener('click', () => {
     if (!currentRoomId) return; // Safety check
@@ -1200,3 +1386,4 @@ document.getElementById('liar-chat-send-btn').addEventListener('click', sendLiar
 document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendLiarMessage();
 });
+document.getElementById('liar-guess-btn').addEventListener('click', submitLiarGuess);

@@ -411,3 +411,43 @@ button:active {
         display: flex;
     }
 }
+
+.desc-row {
+    display: flex;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 2px;
+}
+
+.desc-name {
+    font-weight: bold;
+    color: #2ecc71;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.desc-text {
+    color: #eee;
+    flex: 1;
+}
+
+.vote-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vote-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: #e74c3c;
+}
+
+.vote-btn.selected {
+    background: #e74c3c;
+    border-color: #c0392b;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
