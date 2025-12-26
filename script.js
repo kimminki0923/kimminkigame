@@ -661,7 +661,7 @@ const SKIN_DATA = {
 document.getElementById('shop-open-btn')?.addEventListener('click', () => {
     const overlay = document.getElementById('shop-overlay');
     if (overlay) {
-        overlay.style.display = 'block';
+        overlay.style.display = 'flex';
         updateShopUI();
     }
 });

@@ -168,303 +168,313 @@
                 <button id="stop-btn"
                     style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
 
-                <!-- Shop Overlay (Redesigned) -->
+                <!-- Shop Overlay (Modal Style) -->
                 <div id="shop-overlay"
-                    style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:100; overflow-y:auto;">
-                    <!-- Sticky Top Close Button for Mobile -->
-                    <button class="top-close-btn" onclick="document.getElementById('shop-overlay').style.display='none'"
-                        style="position:fixed; top:20px; right:20px; width:45px; height:45px; border-radius:50%; background:rgba(231, 76, 60, 0.8); border:none; color:white; font-size:24px; cursor:pointer; z-index:101; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(0,0,0,0.5);">
-                        ✕
-                    </button>
+                    style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center;">
+                    <!-- Modal Box -->
+                    <div id="shop-modal"
+                        style="width:90%; max-width:500px; height:85%; background:#1a1a1a; border-radius:30px; border:3px solid #f1c40f; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,1);">
 
-                    <div style="max-width:600px; margin:20px auto; padding:20px; text-align:center;">
-                        <h2 style="font-size:28px; color:#f1c40f; margin-bottom:5px;">🛒 스킨 상점</h2>
+                        <!-- Top Header with Close -->
                         <div
-                            style="font-size:18px; color:#f1c40f; margin-bottom:20px; background:rgba(255,255,255,0.1); padding:8px 20px; border-radius:20px; display:inline-block;">
-                            🪙 <span id="shop-gold">0</span> Gold
+                            style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; background:#222;">
+                            <h2 style="font-size:24px; color:#f1c40f; margin:0;">🛒 스킨 상점</h2>
+                            <button onclick="document.getElementById('shop-overlay').style.display='none'"
+                                style="background:#e74c3c; border:none; color:white; width:35px; height:35px; border-radius:50%; cursor:pointer; font-weight:bold;">✕</button>
                         </div>
 
-                        <!-- Current Skin Section -->
-                        <div
-                            style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #f1c40f;">
-                            <h3 style="margin:0 0 10px 0; color:#2ecc71;">🎮 현재 장착 스킨</h3>
-                            <div id="current-skin-display" style="font-size:24px;">⚪ 기본</div>
+                        <!-- Scrollable Content Section -->
+                        <div style="flex:1; overflow-y:auto; padding:20px;">
+                            <div
+                                style="font-size:18px; color:#f1c40f; margin-bottom:20px; background:rgba(255,255,255,0.1); padding:8px 20px; border-radius:20px; display:inline-block;">
+                                🪙 <span id="shop-gold">0</span> Gold
+                            </div>
+
+                            <!-- Current Skin Section -->
+                            <div
+                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #f1c40f;">
+                                <h3 style="margin:0 0 10px 0; color:#2ecc71;">🎮 현재 장착 스킨</h3>
+                                <div id="current-skin-display" style="font-size:24px;">⚪ 기본</div>
+                            </div>
+
+                            <!-- Skin Grid -->
+                            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:15px;">
+                                <!-- Default Skin (Free) -->
+                                <div class="shop-item"
+                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+                                    <div style="font-size:36px; margin-bottom:8px;">⚪</div>
+                                    <h4 style="margin:0; color:#fff;">기본 (원형)</h4>
+                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">클래식한 둥근 캐릭터</p>
+                                    <button class="equip-btn" data-skin="default"
+                                        style="background:#2ecc71; border:none; padding:8px 20px; border-radius:20px; color:white; font-weight:bold; cursor:pointer; width:100%;">
+                                        장착하기
+                                    </button>
+                                </div>
+
+                                <!-- Square Skin -->
+                                <div class="shop-item"
+                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+                                    <div style="font-size:36px; margin-bottom:8px;">🟧</div>
+                                    <h4 style="margin:0; color:#e67e22;">사각형 스킨</h4>
+                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">회전하며 올라가는 큐브!</p>
+                                    <button class="buy-btn" data-id="skin_square" data-price="150"
+                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                        150 G
+                                    </button>
+                                </div>
+
+                                <!-- Triangle Skin -->
+                                <div class="shop-item"
+                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+                                    <div style="font-size:36px; margin-bottom:8px;">🔺</div>
+                                    <h4 style="margin:0; color:#e74c3c;">삼각형 스킨</h4>
+                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">날카롭게 회전하는 피라미드!</p>
+                                    <button class="buy-btn" data-id="skin_triangle" data-price="200"
+                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                        200 G
+                                    </button>
+                                </div>
+
+                                <!-- Diamond Skin -->
+                                <div class="shop-item"
+                                    style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+                                    <div style="font-size:36px; margin-bottom:8px;">💎</div>
+                                    <h4 style="margin:0; color:#3498db;">다이아몬드 스킨</h4>
+                                    <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">반짝이는 프리미엄 다이아!</p>
+                                    <button class="buy-btn" data-id="skin_diamond" data-price="500"
+                                        style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
+                                        500 G
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Close Button -->
+                            <button id="close-shop-btn"
+                                style="margin-top:35px; padding:15px 60px; background:#e74c3c; border:none; color:white; border-radius:35px; font-size:18px; cursor:pointer; font-weight:bold; box-shadow:0 0 15px rgba(231,76,60,0.4);">
+                                ✕ 닫기 (원래 화면으로)
+                            </button>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Skin Grid -->
-                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:15px;">
-                            <!-- Default Skin (Free) -->
-                            <div class="shop-item"
-                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size:36px; margin-bottom:8px;">⚪</div>
-                                <h4 style="margin:0; color:#fff;">기본 (원형)</h4>
-                                <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">클래식한 둥근 캐릭터</p>
-                                <button class="equip-btn" data-skin="default"
-                                    style="background:#2ecc71; border:none; padding:8px 20px; border-radius:20px; color:white; font-weight:bold; cursor:pointer; width:100%;">
-                                    장착하기
-                                </button>
-                            </div>
+                <div id="mobile-controls">
+                    <button id="btn-turn">↩️<br>TURN</button>
+                    <button id="btn-jump">🪜<br>CLIMB</button>
+                </div>
+            </div>
+        </div>
 
-                            <!-- Square Skin -->
-                            <div class="shop-item"
-                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size:36px; margin-bottom:8px;">🟧</div>
-                                <h4 style="margin:0; color:#e67e22;">사각형 스킨</h4>
-                                <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">회전하며 올라가는 큐브!</p>
-                                <button class="buy-btn" data-id="skin_square" data-price="150"
-                                    style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
-                                    150 G
-                                </button>
-                            </div>
+        <!-- Liar Game Page -->
+        <div id="page-liar" class="page">
+            <div id="liar-game-container">
+                <h1>Liar Game 🕵️</h1>
 
-                            <!-- Triangle Skin -->
-                            <div class="shop-item"
-                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size:36px; margin-bottom:8px;">🔺</div>
-                                <h4 style="margin:0; color:#e74c3c;">삼각형 스킨</h4>
-                                <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">날카롭게 회전하는 피라미드!</p>
-                                <button class="buy-btn" data-id="skin_triangle" data-price="200"
-                                    style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
-                                    200 G
-                                </button>
-                            </div>
+                <!-- Entry Screen -->
+                <div id="liar-entry">
+                    <div class="rules-container" style="max-width: 400px; margin: 0 auto 20px auto;">
+                        <button id="toggle-rules-btn" class="secondary-btn"
+                            style="width:100%; display:flex; justify-content:center; align-items:center; gap:5px; background: rgba(52, 152, 219, 0.3);">
+                            📜 게임 규칙 보기
+                        </button>
+                        <div id="game-rules"
+                            style="display:none; text-align:left; background:rgba(0,0,0,0.5); padding:15px; border-radius:8px; margin-top:10px; font-size:13px; line-height:1.6; color:#eee; border: 1px solid rgba(255,255,255,0.2);">
+                            <strong style="color:#f1c40f; font-size:15px;">🕵️ 게임 목표</strong><br>
+                            - <strong>시민</strong>: 라이어를 찾아내고, 라이어가 제시어를 못 맞추게 하세요.<br>
+                            - <strong>라이어</strong>: 정체를 숨기거나, 들키더라도 마지막에 제시어를 맞추세요.<br><br>
 
-                            <!-- Diamond Skin -->
-                            <div class="shop-item"
-                                style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size:36px; margin-bottom:8px;">💎</div>
-                                <h4 style="margin:0; color:#3498db;">다이아몬드 스킨</h4>
-                                <p style="color:#aaa; font-size:11px; margin:5px 0 10px;">반짝이는 프리미엄 다이아!</p>
-                                <button class="buy-btn" data-id="skin_diamond" data-price="500"
-                                    style="background:#f1c40f; border:none; padding:8px 20px; border-radius:20px; color:black; font-weight:bold; cursor:pointer; width:100%;">
-                                    500 G
-                                </button>
-                            </div>
+                            <strong style="color:#2ecc71; font-size:15px;">🎮 진행 방법</strong><br>
+                            1. <strong>제시어 확인</strong>: 시민은 제시어를 보고, 라이어는 모른 채 시작합니다.<br>
+                            2. <strong>설명하기</strong>: 돌아가며 제시어에 대해 모호하게 설명합니다. (라이어에게 힌트를 주지 않으면서 공감대 형성)<br>
+                            3. <strong>투표</strong>: 토론 후 라이어를 지목합니다.<br><br>
+
+                            <strong style="color:#e74c3c; font-size:15px;">🏆 승리 조건</strong><br>
+                            - <strong>시민 승리 (1점)</strong>: 라이어를 투표로 검거하고, 라이어가 제시어 정답을 <strong>틀렸을 때</strong>.<br>
+                            - <strong>라이어 승리 (1점)</strong>: 투표에서 살아남거나, 검거되어도 <strong>마지막 기회에 제시어를 맞췄을 때</strong>.<br>
+                            (라이어가 제시어를 맞추면, 시민들이 검거에 성공했더라도 라이어도 같이 점수를 얻습니다!)
                         </div>
-
-                        <!-- Close Button -->
-                        <button id="close-shop-btn"
-                            style="margin-top:35px; padding:15px 60px; background:#e74c3c; border:none; color:white; border-radius:35px; font-size:18px; cursor:pointer; font-weight:bold; box-shadow:0 0 15px rgba(231,76,60,0.4);">
-                            ✕ 닫기 (원래 화면으로)
+                    </div>
+                    <div id="liar-auth-request" style="display:none; margin: 30px 0; text-align:center;">
+                        <p style="color:#bdc3c7; font-size:14px; margin-bottom:15px;">게임을 시작하거나 방을 만드려면 로그인이 필요합니다.</p>
+                        <button id="liar-login-btn" class="primary-btn"
+                            style="background:#4285F4; border:none; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding: 12px 24px;">
+                            <svg width="18" height="18" viewBox="0 0 18 18">
+                                <path
+                                    d="M17.64 9.2c0-.637-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
+                                    fill="#fff"></path>
+                                <path
+                                    d="M9 18c2.43 0 4.467-.806 5.956-2.185l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.715H.957v2.332A8.997 8.997 0 0 0 9 18z"
+                                    fill="#34A853"></path>
+                                <path
+                                    d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
+                                    fill="#FBBC05"></path>
+                                <path
+                                    d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.272C4.672 5.141 6.656 3.58 9 3.58z"
+                                    fill="#EA4335"></path>
+                            </svg>
+                            Google 로그인
                         </button>
                     </div>
-                </div>
-            </div>
 
-            <div id="mobile-controls">
-                <button id="btn-turn">↩️<br>TURN</button>
-                <button id="btn-jump">🪜<br>CLIMB</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Liar Game Page -->
-    <div id="page-liar" class="page">
-        <div id="liar-game-container">
-            <h1>Liar Game 🕵️</h1>
-
-            <!-- Entry Screen -->
-            <div id="liar-entry">
-                <div class="rules-container" style="max-width: 400px; margin: 0 auto 20px auto;">
-                    <button id="toggle-rules-btn" class="secondary-btn"
-                        style="width:100%; display:flex; justify-content:center; align-items:center; gap:5px; background: rgba(52, 152, 219, 0.3);">
-                        📜 게임 규칙 보기
-                    </button>
-                    <div id="game-rules"
-                        style="display:none; text-align:left; background:rgba(0,0,0,0.5); padding:15px; border-radius:8px; margin-top:10px; font-size:13px; line-height:1.6; color:#eee; border: 1px solid rgba(255,255,255,0.2);">
-                        <strong style="color:#f1c40f; font-size:15px;">🕵️ 게임 목표</strong><br>
-                        - <strong>시민</strong>: 라이어를 찾아내고, 라이어가 제시어를 못 맞추게 하세요.<br>
-                        - <strong>라이어</strong>: 정체를 숨기거나, 들키더라도 마지막에 제시어를 맞추세요.<br><br>
-
-                        <strong style="color:#2ecc71; font-size:15px;">🎮 진행 방법</strong><br>
-                        1. <strong>제시어 확인</strong>: 시민은 제시어를 보고, 라이어는 모른 채 시작합니다.<br>
-                        2. <strong>설명하기</strong>: 돌아가며 제시어에 대해 모호하게 설명합니다. (라이어에게 힌트를 주지 않으면서 공감대 형성)<br>
-                        3. <strong>투표</strong>: 토론 후 라이어를 지목합니다.<br><br>
-
-                        <strong style="color:#e74c3c; font-size:15px;">🏆 승리 조건</strong><br>
-                        - <strong>시민 승리 (1점)</strong>: 라이어를 투표로 검거하고, 라이어가 제시어 정답을 <strong>틀렸을 때</strong>.<br>
-                        - <strong>라이어 승리 (1점)</strong>: 투표에서 살아남거나, 검거되어도 <strong>마지막 기회에 제시어를 맞췄을 때</strong>.<br>
-                        (라이어가 제시어를 맞추면, 시민들이 검거에 성공했더라도 라이어도 같이 점수를 얻습니다!)
+                    <div id="liar-game-controls">
+                        <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 입력 (선택)">
+                        <div
+                            style="margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                            <label style="color:#fff; font-size:16px; font-weight:bold; margin-right: 10px;">🏆 최대 점수
+                                설정:</label>
+                            <input type="number" id="liar-max-score" class="room-input" value="3"
+                                style="width:60px; text-align:center; font-weight:bold;" min="1" max="10">
+                        </div>
+                        <div class="liar-btn-group">
+                            <button id="liar-create-btn" class="primary-btn">방 만들기</button>
+                            <button id="liar-join-btn" class="secondary-btn">참가하기</button>
+                        </div>
                     </div>
                 </div>
-                <div id="liar-auth-request" style="display:none; margin: 30px 0; text-align:center;">
-                    <p style="color:#bdc3c7; font-size:14px; margin-bottom:15px;">게임을 시작하거나 방을 만드려면 로그인이 필요합니다.</p>
-                    <button id="liar-login-btn" class="primary-btn"
-                        style="background:#4285F4; border:none; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding: 12px 24px;">
-                        <svg width="18" height="18" viewBox="0 0 18 18">
-                            <path
-                                d="M17.64 9.2c0-.637-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
-                                fill="#fff"></path>
-                            <path
-                                d="M9 18c2.43 0 4.467-.806 5.956-2.185l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.715H.957v2.332A8.997 8.997 0 0 0 9 18z"
-                                fill="#34A853"></path>
-                            <path
-                                d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
-                                fill="#FBBC05"></path>
-                            <path
-                                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.272C4.672 5.141 6.656 3.58 9 3.58z"
-                                fill="#EA4335"></path>
-                        </svg>
-                        Google 로그인
-                    </button>
-                </div>
 
-                <div id="liar-game-controls">
-                    <input type="text" id="liar-room-id" class="room-input" placeholder="방 코드 입력 (선택)">
-                    <div style="margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
-                        <label style="color:#fff; font-size:16px; font-weight:bold; margin-right: 10px;">🏆 최대 점수
-                            설정:</label>
-                        <input type="number" id="liar-max-score" class="room-input" value="3"
-                            style="width:60px; text-align:center; font-weight:bold;" min="1" max="10">
+                <!-- Lobby -->
+                <div id="liar-lobby" style="display:none;">
+                    <h2>참가자 대기 중...</h2>
+                    <h3 id="display-room-id" style="color: #f1c40f; letter-spacing: 2px;"></h3>
+
+                    <!-- Max Score Display -->
+                    <div id="max-score-display"
+                        style="background: linear-gradient(135deg, #f1c40f, #e67e22); color: #000; padding: 10px 20px; border-radius: 10px; display: inline-block; margin: 10px 0; font-weight: bold;">
+                        🏆 <span id="display-max-score">3</span>점 먼저 달성하면 우승!
                     </div>
-                    <div class="liar-btn-group">
-                        <button id="liar-create-btn" class="primary-btn">방 만들기</button>
-                        <button id="liar-join-btn" class="secondary-btn">참가하기</button>
+
+                    <ul id="player-list" class="player-list"></ul>
+                    <p id="waiting-msg" class="blink">플레이어를 기다리고 있습니다...</p>
+
+                    <div id="room-settings"
+                        style="display:none; margin: 20px 0; padding:15px; border:1px solid rgba(255,255,255,0.1); border-radius:10px;">
+                        <label style="color:#aaa; margin-right:10px;">주제:</label>
+                        <select id="liar-topic-select" class="room-input" style="width:auto;">
+                            <option value="random">랜덤</option>
+                            <option value="food">음식</option>
+                            <option value="animal">동물</option>
+                            <option value="object">사물</option>
+                            <option value="sports">스포츠</option>
+                            <option value="place">장소</option>
+                        </select>
                     </div>
-                </div>
-            </div>
 
-            <!-- Lobby -->
-            <div id="liar-lobby" style="display:none;">
-                <h2>참가자 대기 중...</h2>
-                <h3 id="display-room-id" style="color: #f1c40f; letter-spacing: 2px;"></h3>
-
-                <!-- Max Score Display -->
-                <div id="max-score-display"
-                    style="background: linear-gradient(135deg, #f1c40f, #e67e22); color: #000; padding: 10px 20px; border-radius: 10px; display: inline-block; margin: 10px 0; font-weight: bold;">
-                    🏆 <span id="display-max-score">3</span>점 먼저 달성하면 우승!
+                    <div id="liar-host-controls" style="display:none; margin-top:20px;">
+                        <button id="liar-start-multi-btn" class="primary-btn">게임 시작</button>
+                        <button id="liar-add-bots-btn" class="secondary-btn" style="background:#8e44ad;">🤖 봇 10명
+                            추가</button>
+                        <button id="liar-leave-btn" class="secondary-btn" style="background:#c0392b;">나가기</button>
+                    </div>
+                    <!-- Non-host leave button (always visible if not host, but we will control visibility in JS) -->
+                    <button id="liar-leave-guest-btn" class="secondary-btn"
+                        style="display:none; background:#c0392b; margin-top:20px;">나가기</button>
                 </div>
 
-                <ul id="player-list" class="player-list"></ul>
-                <p id="waiting-msg" class="blink">플레이어를 기다리고 있습니다...</p>
+                <!-- Game Play -->
+                <div id="liar-game-play" style="display:none;">
+                    <div id="liar-card-container">
+                        <div id="liar-card" class="card-back">
+                            <span id="liar-card-topic" style="font-size: 14px; color: #ccc;"></span>
+                            <span id="liar-card-word"
+                                style="font-size: 24px; font-weight: bold; margin-top: 5px; display: block;">클릭하여
+                                확인</span>
+                        </div>
+                    </div>
+                    <p id="liar-current-turn-msg"
+                        style="margin-top: 20px; font-size: 18px; font-weight: bold; min-height: 27px; transition: color 0.3s;">
+                    </p>
 
-                <div id="room-settings"
-                    style="display:none; margin: 20px 0; padding:15px; border:1px solid rgba(255,255,255,0.1); border-radius:10px;">
-                    <label style="color:#aaa; margin-right:10px;">주제:</label>
-                    <select id="liar-topic-select" class="room-input" style="width:auto;">
-                        <option value="random">랜덤</option>
-                        <option value="food">음식</option>
-                        <option value="animal">동물</option>
-                        <option value="object">사물</option>
-                        <option value="sports">스포츠</option>
-                        <option value="place">장소</option>
-                    </select>
+                    <h4 id="liar-discussion-msg" style="display:none; color: #e74c3c; margin-top: 20px;">자유 토론 시간!</h4>
+
+                    <div id="liar-host-controls-play" style="margin-top:20px;">
+                        <!-- Host buttons injected by JS -->
+                    </div>
+                    <!-- Host Next Step Button will be dynamically managed -->
+                    <button id="liar-reveal-multi-btn" class="secondary-btn" style="display:none; margin-top: 10px;">투표
+                        시작</button>
                 </div>
 
-                <div id="liar-host-controls" style="display:none; margin-top:20px;">
-                    <button id="liar-start-multi-btn" class="primary-btn">게임 시작</button>
-                    <button id="liar-add-bots-btn" class="secondary-btn" style="background:#8e44ad;">🤖 봇 10명
-                        추가</button>
-                    <button id="liar-leave-btn" class="secondary-btn" style="background:#c0392b;">나가기</button>
-                </div>
-                <!-- Non-host leave button (always visible if not host, but we will control visibility in JS) -->
-                <button id="liar-leave-guest-btn" class="secondary-btn"
-                    style="display:none; background:#c0392b; margin-top:20px;">나가기</button>
-            </div>
-
-            <!-- Game Play -->
-            <div id="liar-game-play" style="display:none;">
-                <div id="liar-card-container">
-                    <div id="liar-card" class="card-back">
-                        <span id="liar-card-topic" style="font-size: 14px; color: #ccc;"></span>
-                        <span id="liar-card-word"
-                            style="font-size: 24px; font-weight: bold; margin-top: 5px; display: block;">클릭하여 확인</span>
+                <!-- My Turn Description Input (별도) -->
+                <div id="my-turn-input"
+                    style="display:none; margin-top:15px; background: linear-gradient(135deg, #2ecc71, #27ae60); padding:15px; border-radius:12px;">
+                    <h4 style="margin:0 0 10px 0; color:#fff;">🎤 당신의 차례입니다!</h4>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="description-input" class="room-input" placeholder="제시어에 대한 설명을 입력하세요..."
+                            style="flex: 1;">
+                        <button id="description-send-btn" class="primary-btn"
+                            style="padding: 10px; background:#fff; color:#27ae60;">설명 전송</button>
                     </div>
                 </div>
-                <p id="liar-current-turn-msg"
-                    style="margin-top: 20px; font-size: 18px; font-weight: bold; min-height: 27px; transition: color 0.3s;">
-                </p>
 
-                <h4 id="liar-discussion-msg" style="display:none; color: #e74c3c; margin-top: 20px;">자유 토론 시간!</h4>
-
-                <div id="liar-host-controls-play" style="margin-top:20px;">
-                    <!-- Host buttons injected by JS -->
+                <!-- Turn/Chat Section (일반 채팅) -->
+                <div id="liar-chat-section"
+                    style="display:none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+                    <h4 style="margin:0 0 10px 0; color:#aaa;">💬 채팅</h4>
+                    <div id="liar-chat-messages"
+                        style="height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 10px;">
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="liar-chat-input" class="room-input" placeholder="메시지 입력..."
+                            style="flex: 1;">
+                        <button id="liar-chat-send-btn" class="primary-btn" style="padding: 10px;">전송</button>
+                    </div>
                 </div>
-                <!-- Host Next Step Button will be dynamically managed -->
-                <button id="liar-reveal-multi-btn" class="secondary-btn" style="display:none; margin-top: 10px;">투표
-                    시작</button>
-            </div>
 
-            <!-- My Turn Description Input (별도) -->
-            <div id="my-turn-input"
-                style="display:none; margin-top:15px; background: linear-gradient(135deg, #2ecc71, #27ae60); padding:15px; border-radius:12px;">
-                <h4 style="margin:0 0 10px 0; color:#fff;">🎤 당신의 차례입니다!</h4>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="description-input" class="room-input" placeholder="제시어에 대한 설명을 입력하세요..."
-                        style="flex: 1;">
-                    <button id="description-send-btn" class="primary-btn"
-                        style="padding: 10px; background:#fff; color:#27ae60;">설명 전송</button>
+                <!-- Description Log -->
+                <div id="description-log"
+                    style="display:none; margin-top:15px; background: rgba(0,0,0,0.5); padding:10px; border-radius:8px; text-align:left; font-size:13px;">
+                    <h4 style="margin:0 0 5px 0; color:#f1c40f;">📝 설명 기록</h4>
+                    <div id="description-list"></div>
                 </div>
-            </div>
 
-            <!-- Turn/Chat Section (일반 채팅) -->
-            <div id="liar-chat-section"
-                style="display:none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
-                <h4 style="margin:0 0 10px 0; color:#aaa;">💬 채팅</h4>
-                <div id="liar-chat-messages"
-                    style="height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 10px;">
+                <!-- Voting Section -->
+                <div id="liar-vote-section" style="display:none; margin-top:20px;">
+                    <h3>🗳️ 투표 시간</h3>
+                    <p>라이어라고 생각되는 사람을 선택하세요 (1인 1표)</p>
+                    <div id="vote-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">
+                    </div>
+                    <p id="vote-status" style="color:#888; margin-top:10px;"></p>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="liar-chat-input" class="room-input" placeholder="메시지 입력..." style="flex: 1;">
-                    <button id="liar-chat-send-btn" class="primary-btn" style="padding: 10px;">전송</button>
+
+                <!-- Liar Guess Section -->
+                <div id="liar-guess-section" style="display:none; margin-top:20px;">
+                    <h3 style="color:#e74c3c;">🕵️ 당신은 지목되었습니다!</h3>
+                    <p>마지막 기회입니다. 제시어가 무엇일까요?</p>
+                    <input type="text" id="liar-word-input" class="room-input" placeholder="제시어 입력">
+                    <button id="liar-guess-btn" class="primary-btn">정답 확인</button>
                 </div>
-            </div>
 
-            <!-- Description Log -->
-            <div id="description-log"
-                style="display:none; margin-top:15px; background: rgba(0,0,0,0.5); padding:10px; border-radius:8px; text-align:left; font-size:13px;">
-                <h4 style="margin:0 0 5px 0; color:#f1c40f;">📝 설명 기록</h4>
-                <div id="description-list"></div>
-            </div>
+                <!-- Result Section -->
+                <div id="liar-result" style="display:none;">
+                    <h2 id="liar-winner"></h2>
+                    <p id="liar-identity-reveal"></p>
+                    <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
 
-            <!-- Voting Section -->
-            <div id="liar-vote-section" style="display:none; margin-top:20px;">
-                <h3>🗳️ 투표 시간</h3>
-                <p>라이어라고 생각되는 사람을 선택하세요 (1인 1표)</p>
-                <div id="vote-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
-                <p id="vote-status" style="color:#888; margin-top:10px;"></p>
-            </div>
-
-            <!-- Liar Guess Section -->
-            <div id="liar-guess-section" style="display:none; margin-top:20px;">
-                <h3 style="color:#e74c3c;">🕵️ 당신은 지목되었습니다!</h3>
-                <p>마지막 기회입니다. 제시어가 무엇일까요?</p>
-                <input type="text" id="liar-word-input" class="room-input" placeholder="제시어 입력">
-                <button id="liar-guess-btn" class="primary-btn">정답 확인</button>
-            </div>
-
-            <!-- Result Section -->
-            <div id="liar-result" style="display:none;">
-                <h2 id="liar-winner"></h2>
-                <p id="liar-identity-reveal"></p>
-                <p id="liar-word-reveal" style="font-size:18px; color:#f1c40f; margin-top:10px;"></p>
-
-                <div id="liar-post-game-btns" style="margin-top: 20px;">
-                    <button id="liar-next-round-btn" class="primary-btn" style="display:none;">다음 라운드</button>
-                    <button id="liar-restart-multi-btn" class="secondary-btn" style="display:none;">게임 종료 (새
-                        게임)</button>
+                    <div id="liar-post-game-btns" style="margin-top: 20px;">
+                        <button id="liar-next-round-btn" class="primary-btn" style="display:none;">다음 라운드</button>
+                        <button id="liar-restart-multi-btn" class="secondary-btn" style="display:none;">게임 종료 (새
+                            게임)</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- UI Overlays -->
-    <div id="turn-overlay"
-        style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
-        <span id="overlay-msg"></span>
-    </div>
+        <!-- UI Overlays -->
+        <div id="turn-overlay"
+            style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
+            <span id="overlay-msg"></span>
+        </div>
 
-    <div id="scoreboard"
-        style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
-        <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small id="score-limit"
-                style="color:#aaa; font-size:12px;"></small></h4>
-        <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
-    </div>
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">
-        (ONNX Model Check: AI buttons available)
-    </div>
-    <script src="auth.js"></script>
-    <script src="script.js?v=chat_fix_v2"></script>
+        <div id="scoreboard"
+            style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+            <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small
+                    id="score-limit" style="color:#aaa; font-size:12px;"></small></h4>
+            <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: #888;">
+            (ONNX Model Check: AI buttons available)
+        </div>
+        <script src="auth.js"></script>
+        <script src="script.js?v=chat_fix_v2"></script>
 </body>
 
 </html>
