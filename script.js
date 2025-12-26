@@ -876,6 +876,7 @@ const liarTopics = {
 
 let currentRoomId = null;
 let roomUnsubscribe = null;
+let chatUnsubscribe = null;
 
 async function createLiarRoom() {
     if (!currentUser) return alert("로그인이 필요합니다. G Google 로그인을 먼저 해주세요.");
@@ -926,12 +927,31 @@ async function joinLiarRoom(roomId) {
         document.getElementById('liar-entry').style.display = 'none';
         document.getElementById('liar-lobby').style.display = 'block';
         document.getElementById('display-room-id').innerText = roomId;
+        document.getElementById('liar-chat-section').style.display = 'block'; // Show Chat
 
         // Sync Listener
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = docRef.onSnapshot(snapshot => {
             if (snapshot.exists) syncLiarRoom(snapshot.data());
         });
+
+        // Chat Listener
+        if (chatUnsubscribe) chatUnsubscribe();
+        const chatList = document.getElementById('liar-chat-messages');
+        chatList.innerHTML = ''; // Clear old messages
+        chatUnsubscribe = docRef.collection('messages').orderBy('timestamp').onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const msg = change.doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'chat-msg';
+                    div.innerHTML = `<span class="chat-name">${msg.name}:</span><span class="chat-content">${msg.text}</span>`;
+                    chatList.appendChild(div);
+                    chatList.scrollTop = chatList.scrollHeight;
+                }
+            });
+        });
+
     } catch (e) {
         console.error("Join Error:", e);
         alert("방 참가 실패: " + e.message);
@@ -968,11 +988,27 @@ function syncLiarRoom(data) {
     document.getElementById('liar-start-multi-btn').style.display = (isHost && data.status === 'lobby') ? 'inline-block' : 'none';
     document.getElementById('waiting-msg').style.display = (data.status === 'lobby') ? 'block' : 'none';
 
-    // 2. Game State Transition
-    if (data.status === 'playing') {
-        document.getElementById('liar-lobby').style.display = 'none';
-        document.getElementById('liar-game-play').style.display = 'block';
-        document.getElementById('liar-result').style.display = 'none';
+    // 2. Game State Transition Logic
+    // Reset all views first
+    const lobbyDiv = document.getElementById('liar-lobby');
+    const gameDiv = document.getElementById('liar-game-play');
+    const resultDiv = document.getElementById('liar-result');
+
+    if (data.status === 'lobby') {
+        lobbyDiv.style.display = 'block';
+        gameDiv.style.display = 'none';
+        resultDiv.style.display = 'none';
+        // Reset card state
+        const card = document.getElementById('liar-card');
+        card.classList.remove('revealed');
+        card.classList.remove('card-back');
+        card.classList.add('card-back');
+        card.innerText = "클릭하여 확인";
+
+    } else if (data.status === 'playing') {
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
 
         const card = document.getElementById('liar-card');
         const turnMsg = document.getElementById('liar-current-turn-msg');
@@ -986,8 +1022,9 @@ function syncLiarRoom(data) {
         }
 
         if (!card.classList.contains('revealed')) {
-            card.innerText = "클릭하여 확인";
             turnMsg.innerText = "당신의 카드를 확인하세요.";
+        } else {
+            turnMsg.innerText = "제시어를 확인했습니다. 대기하세요.";
         }
 
         document.getElementById('liar-host-controls').style.display = isHost ? 'block' : 'none';
@@ -995,12 +1032,21 @@ function syncLiarRoom(data) {
         document.getElementById('liar-reveal-multi-btn').style.display = 'none';
 
     } else if (data.status === 'discussion') {
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+
         document.getElementById('liar-discussion-msg').style.display = 'block';
         document.getElementById('liar-reveal-multi-btn').style.display = isHost ? 'inline-block' : 'none';
         document.getElementById('liar-current-turn-msg').innerText = "토론 중...";
+
+        // Hide card if discussion phase (optional, but good for focus)
+        // document.getElementById('liar-card-container').style.display = 'none';
+
     } else if (data.status === 'result') {
-        document.getElementById('liar-game-play').style.display = 'none';
-        document.getElementById('liar-result').style.display = 'block';
+        lobbyDiv.style.display = 'none';
+        gameDiv.style.display = 'none';
+        resultDiv.style.display = 'block';
 
         const liarName = data.players[data.liarId]?.name || "알 수 없음";
         document.getElementById('liar-winner').innerText = `라이어는 [${liarName}] 이었습니다!`;
@@ -1039,6 +1085,8 @@ async function startLiarGame() {
 
 function leaveLiarRoom() {
     if (roomUnsubscribe) roomUnsubscribe();
+    if (chatUnsubscribe) chatUnsubscribe();
+
     if (currentRoomId && currentUser) {
         const update = {};
         update[`players.${currentUser.uid}`] = firebase.firestore.FieldValue.delete();
@@ -1049,6 +1097,22 @@ function leaveLiarRoom() {
     document.getElementById('liar-lobby').style.display = 'none';
     document.getElementById('liar-game-play').style.display = 'none';
     document.getElementById('liar-result').style.display = 'none';
+    document.getElementById('liar-chat-section').style.display = 'none';
+}
+
+function sendLiarMessage() {
+    if (!currentRoomId || !currentUser) return;
+    const input = document.getElementById('liar-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    db.collection('rooms').doc(currentRoomId).collection('messages').add({
+        uid: currentUser.uid,
+        name: currentUser.displayName,
+        text: text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    input.value = '';
 }
 
 // UI Event Listeners
@@ -1071,5 +1135,14 @@ document.getElementById('liar-reveal-multi-btn').addEventListener('click', () =>
     db.collection('rooms').doc(currentRoomId).update({ status: 'result' });
 });
 document.getElementById('liar-restart-multi-btn').addEventListener('click', () => {
-    db.collection('rooms').doc(currentRoomId).update({ status: 'lobby' });
+    db.collection('rooms').doc(currentRoomId).update({
+        status: 'lobby',
+        liarId: null, // Reset state
+        word: "",
+        revealed: false
+    });
+});
+document.getElementById('liar-chat-send-btn').addEventListener('click', sendLiarMessage);
+document.getElementById('liar-chat-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendLiarMessage();
 });

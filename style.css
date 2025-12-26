@@ -389,6 +389,23 @@ button:active {
     text-shadow: 1px 1px 2px #000;
 }
 
+/* Chat Styling */
+.chat-msg {
+    margin-bottom: 5px;
+    font-size: 14px;
+    word-wrap: break-word;
+}
+
+.chat-name {
+    font-weight: bold;
+    color: #00d2d3;
+    margin-right: 5px;
+}
+
+.chat-content {
+    color: #eee;
+}
+
 @media (max-width: 768px) {
     #mobile-controls {
         display: flex;
