@@ -61,19 +61,29 @@ const userNameEl = document.getElementById('user-name');
 const userImgEl = document.getElementById('user-img');
 
 function updateUI_LoggedIn(user) {
-    if (!loginBtn) return;
-    loginBtn.style.display = 'none';
-    userInfoEl.style.display = 'flex';
-    userNameEl.innerText = user.displayName;
-    userImgEl.src = user.photoURL;
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (userInfoEl) userInfoEl.style.display = 'flex';
+    if (userNameEl) userNameEl.innerText = user.displayName;
+    if (userImgEl) userImgEl.src = user.photoURL;
+
+    // Liar Game UI
+    const liarAuth = document.getElementById('liar-auth-request');
+    const liarControls = document.getElementById('liar-game-controls');
+    if (liarAuth) liarAuth.style.display = 'none';
+    if (liarControls) liarControls.style.display = 'block';
 }
 
 function updateUI_LoggedOut() {
-    if (!loginBtn) return;
-    loginBtn.style.display = 'inline-block';
-    userInfoEl.style.display = 'none';
-    userImgEl.src = "";
-    userNameEl.innerText = "";
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (userInfoEl) userInfoEl.style.display = 'none';
+    if (userImgEl) userImgEl.src = "";
+    if (userNameEl) userNameEl.innerText = "";
+
+    // Liar Game UI
+    const liarAuth = document.getElementById('liar-auth-request');
+    const liarControls = document.getElementById('liar-game-controls');
+    if (liarAuth) liarAuth.style.display = 'block';
+    if (liarControls) liarControls.style.display = 'none';
 }
 
 // --- Actions ---
@@ -184,5 +194,8 @@ window.saveData = function (score, coins) {
 }
 
 // Bind Events
+// Bind Events
 if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
 document.getElementById('logout-btn').addEventListener('click', logout);
+const liarLoginBtn = document.getElementById('liar-login-btn');
+if (liarLoginBtn) liarLoginBtn.addEventListener('click', loginWithGoogle);
