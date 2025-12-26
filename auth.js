@@ -71,6 +71,11 @@ function updateUI_LoggedIn(user) {
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'none';
     if (liarControls) liarControls.style.display = 'block';
+
+    // Leaderboard
+    const leaderboard = document.getElementById('leaderboard');
+    if (leaderboard) leaderboard.style.display = 'block';
+    loadLeaderboard();
 }
 
 function updateUI_LoggedOut() {
@@ -84,6 +89,10 @@ function updateUI_LoggedOut() {
     const liarControls = document.getElementById('liar-game-controls');
     if (liarAuth) liarAuth.style.display = 'block';
     if (liarControls) liarControls.style.display = 'none';
+
+    // Leaderboard
+    const leaderboard = document.getElementById('leaderboard');
+    if (leaderboard) leaderboard.style.display = 'none';
 }
 
 // --- Actions ---
@@ -166,6 +175,7 @@ function saveCloudData(score, coins) {
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
+        displayName: currentUser.displayName || 'Anonymous',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
         console.log("☁️ Saved to Cloud: Score", score, "Coins", coins);
@@ -199,3 +209,41 @@ if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
 document.getElementById('logout-btn').addEventListener('click', logout);
 const liarLoginBtn = document.getElementById('liar-login-btn');
 if (liarLoginBtn) liarLoginBtn.addEventListener('click', loginWithGoogle);
+
+// --- Leaderboard ---
+async function loadLeaderboard() {
+    if (!db || !isCloudEnabled) return;
+
+    const listEl = document.getElementById('leaderboard-list');
+    if (!listEl) return;
+
+    try {
+        const snapshot = await db.collection('users')
+            .orderBy('highScore', 'desc')
+            .limit(10)
+            .get();
+
+        listEl.innerHTML = '';
+
+        if (snapshot.empty) {
+            listEl.innerHTML = '<li style="color:#aaa;">아직 기록이 없습니다</li>';
+            return;
+        }
+
+        let rank = 1;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const name = data.displayName || data.email?.split('@')[0] || 'Anonymous';
+            const score = data.highScore || 0;
+
+            const li = document.createElement('li');
+            li.style.color = rank === 1 ? '#f1c40f' : rank === 2 ? '#bdc3c7' : rank === 3 ? '#cd6133' : '#fff';
+            li.innerHTML = `<span style="font-weight:${rank <= 3 ? 'bold' : 'normal'}">${name.substring(0, 8)}</span> <span style="float:right; color:#3498db;">${score}</span>`;
+            listEl.appendChild(li);
+            rank++;
+        });
+    } catch (e) {
+        console.error("Leaderboard error:", e);
+        listEl.innerHTML = '<li style="color:#e74c3c;">로드 실패</li>';
+    }
+}
