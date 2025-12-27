@@ -37,6 +37,36 @@ let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
 let skinRotation = 0; // For animation
 let isDataLoaded = false; // Persistence Guard
+window.pharaohCrowns = parseInt(localStorage.getItem('pharaohCrowns') || 0);
+window.snowCrystals = parseInt(localStorage.getItem('snowCrystals') || 0);
+
+// Data Setter for Auth
+window.setGameData = function (score, coins, skins, skin, stairSkins, sSkin, pets, cPet, maps, cMap, crowns, crystals) {
+    aiHighScore = score;
+    totalCoins = coins;
+    ownedSkins = skins;
+    currentSkin = skin;
+    window.pharaohCrowns = crowns || 0;
+    window.snowCrystals = crystals || 0;
+
+    // Globals for shop
+    window.totalCoins = coins;
+    window.aiHighScore = score;
+    window.ownedSkins = skins;
+    window.currentSkin = skin;
+    window.ownedStairSkins = stairSkins;
+    window.currentStairSkin = sSkin;
+    window.ownedPets = pets;
+    window.currentPet = cPet;
+    window.ownedMaps = maps;
+    window.currentMap = cMap;
+
+    if (highScoreEl) highScoreEl.innerText = aiHighScore;
+    if (coinEl) coinEl.innerText = totalCoins;
+
+    console.log("✅ Game Data Loaded:", { score, coins, crowns, crystals });
+    isDataLoaded = true;
+};
 
 // Game Config
 const STAIR_W = 100;
@@ -136,7 +166,7 @@ function initGame() {
     }
 
     // Init Object
-    window.gameState.stairs.push({ x: 0, y: 0, dir: 1, hasCoin: false, coinVal: 0 });
+    window.gameState.stairs.push({ x: 0, y: 0, dir: 1, hasCoin: false, coinVal: 0, hasItem: null });
     window.gameState.renderPlayer = { x: 0, y: 0 };
 
     for (let i = 0; i < 30; i++) {
@@ -177,7 +207,7 @@ function addStair() {
     // START CONSTRAINT
     if (window.gameState.stairs.length < 6) {
         window.gameState.stairs.push({
-            x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0
+            x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0, hasItem: null
         });
         return;
     }
@@ -193,12 +223,21 @@ function addStair() {
         if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
     }
 
+    let hasItem = null;
+    // Rare Item Spawn Chance: 0.5% each
+    if (!hasCoin) {
+        const rItem = Math.random();
+        if (rItem < 0.005) { hasItem = 'crown'; }
+        else if (rItem < 0.01) { hasItem = 'snowflake'; }
+    }
+
     window.gameState.stairs.push({
         x: last.x + (nextDir === 1 ? 1 : -1),
         y: last.y + 1,
         dir: nextDir,
         hasCoin: hasCoin,
-        coinVal: coinVal
+        coinVal: coinVal,
+        hasItem: hasItem
     });
 }
 
@@ -248,6 +287,25 @@ function performAction(action) {
             let col = '#ffd700'; if (next.coinVal === 5) col = '#00d2d3'; if (next.coinVal === 10) col = '#ff6b6b';
             particles.push({ type: 'text', val: '+' + next.coinVal, x: next.x, y: next.y, life: 1.0, color: col, dy: -3 });
         }
+
+        if (next.hasItem) {
+            if (next.hasItem === 'crown') {
+                window.pharaohCrowns++;
+                particles.push({ type: 'text', val: '👑 +1', x: next.x, y: next.y - 10, life: 1.5, color: '#f1c40f', dy: -4 });
+                window.gameState.coinCount += 50; // Bonus score for rare item
+            } else if (next.hasItem === 'snowflake') {
+                window.snowCrystals++;
+                particles.push({ type: 'text', val: '❄️ +1', x: next.x, y: next.y - 10, life: 1.5, color: '#00d2d3', dy: -4 });
+                window.gameState.coinCount += 50;
+            }
+            next.hasItem = null;
+
+            // Trigger Save
+            if (!window.isTraining && !window.isAutoPlaying && window.saveData) {
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
+            }
+        }
+        return 10;
         return 10;
     } else {
         if (window.isTraining) {
@@ -506,6 +564,18 @@ function render() {
             ctx.fillStyle = col;
             ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        if (s.hasItem) {
+            ctx.font = "28px Script";
+            ctx.textAlign = "center";
+            ctx.shadowBlur = 10; ctx.shadowColor = 'white';
+            if (s.hasItem === 'crown') {
+                ctx.fillText("👑", sx, sy - 25);
+            } else if (s.hasItem === 'snowflake') {
+                ctx.fillText("❄️", sx, sy - 25);
+            }
+            ctx.shadowBlur = 0;
         }
     });
 

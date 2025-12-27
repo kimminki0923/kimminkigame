@@ -210,7 +210,7 @@ function equipStairSkin(id) {
     localStorage.setItem('currentStairSkin', id);
     localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
     }
     updateShopUI();
 }
@@ -221,7 +221,7 @@ function equipPet(id) {
     localStorage.setItem('currentPet', id);
     localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
     }
     updateShopUI();
 }
@@ -232,7 +232,7 @@ function equipMap(id) {
     localStorage.setItem('currentMap', id);
     localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
     if (window.saveData) {
-        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
+        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
     }
     updateShopUI();
 }
@@ -261,12 +261,28 @@ function bindBuyEquipButtons() {
             } else {
                 // Buy flow
                 if (price === 0) {
-                    // Check requirement for pentagon
-                    const item = (category === 'char') ? SKIN_DATA[id] : null;
-                    if (item && item.requirement && aiHighScore < item.requirement) {
-                        return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                    // Check requirement
+                    if (category === 'char') {
+                        const item = SKIN_DATA[id];
+                        if (item && item.requirement && aiHighScore < item.requirement) {
+                            return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                        }
+                    } else if (category === 'pet') {
+                        const item = PET_DATA[id];
+                        if (item && item.requirement) {
+                            if (item.requirement === 'crowns') {
+                                if ((window.pharaohCrowns || 0) < item.requirementCount) {
+                                    return alert(`🔒 파라오의 왕관이 부족합니다! (${window.pharaohCrowns || 0}/${item.requirementCount})`);
+                                }
+                            } else if (item.requirement === 'snowcrystals') {
+                                if ((window.snowCrystals || 0) < item.requirementCount) {
+                                    return alert(`🔒 눈결정이 부족합니다! (${window.snowCrystals || 0}/${item.requirementCount})`);
+                                }
+                            }
+                        }
                     }
-                    // Else free
+                    // Else free, proceed to buy (add to owned)
+                    // For price 0 items, we treat them as "buyable" for 0 gold after requirement check
                 }
 
                 if (window.totalCoins >= price) {
@@ -295,7 +311,7 @@ function bindBuyEquipButtons() {
                     }
 
                     if (window.saveData) {
-                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
+                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
                     }
 
                     alert(`✅ ${id} 구매 완료!`);
