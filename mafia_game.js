@@ -265,6 +265,16 @@ function updateGamePlayUI(data) {
             nightUI.style.display = 'block';
             renderTargetButtons('night-targets', data.players, handleNightAction);
         }
+
+        // Show Role-Specific Night Chat Rooms
+        document.getElementById('mafia-night-chat').style.display = myPlayer.role === 'MAFIA' ? 'block' : 'none';
+        document.getElementById('doctor-night-chat').style.display = myPlayer.role === 'DOCTOR' ? 'block' : 'none';
+        document.getElementById('police-night-chat').style.display = myPlayer.role === 'POLICE' ? 'block' : 'none';
+
+        // Update private chat logs
+        if (data.mafiaChat) updatePrivateChatLog('mafia-chat-log', data.mafiaChat);
+        if (data.doctorChat) updatePrivateChatLog('doctor-chat-log', data.doctorChat);
+        if (data.policeChat) updatePrivateChatLog('police-chat-log', data.policeChat);
     }
     else if (data.phase === 'DAY') {
         indicator.innerText = `☀️ ${data.dayCount}일차 낮 (토론)`;
@@ -391,6 +401,47 @@ function updateChatLog(logs) {
     });
     container.scrollTop = container.scrollHeight;
 }
+
+function updatePrivateChatLog(containerId, logs) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+    logs.forEach(l => {
+        const div = document.createElement('div');
+        div.style.marginBottom = "4px";
+        div.innerHTML = `<span style="font-weight:bold; color:#fff;">[${l.sender}]</span> ${l.msg}`;
+        container.appendChild(div);
+    });
+    container.scrollTop = container.scrollHeight;
+}
+
+// Role-specific private chat send handlers
+function sendPrivateChat(role, inputId, chatField) {
+    const input = document.getElementById(inputId);
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const myPlayer = mafiaState.players.find(p => p.id === mafiaState.myId);
+    if (!myPlayer || myPlayer.role !== role) return alert("이 채팅방을 사용할 수 없습니다.");
+
+    const chatMsg = { sender: mafiaState.myName, msg: msg, time: Date.now() };
+
+    mafiaRoomRef.update({
+        [chatField]: firebase.firestore.FieldValue.arrayUnion(chatMsg)
+    });
+    input.value = "";
+}
+
+// Event Listeners for Private Chats
+document.getElementById('mafia-private-chat-send')?.addEventListener('click', () => {
+    sendPrivateChat('MAFIA', 'mafia-private-chat-input', 'mafiaChat');
+});
+document.getElementById('doctor-private-chat-send')?.addEventListener('click', () => {
+    sendPrivateChat('DOCTOR', 'doctor-private-chat-input', 'doctorChat');
+});
+document.getElementById('police-private-chat-send')?.addEventListener('click', () => {
+    sendPrivateChat('POLICE', 'police-private-chat-input', 'policeChat');
+});
 
 // ============================================================
 // 6. Win Conditions & Result
