@@ -112,6 +112,7 @@
     <nav id="nav-bar">
         <button onclick="showPage('page-stairs')" class="nav-btn active" id="nav-stairs">Infinite Stairs</button>
         <button onclick="showPage('page-liar')" class="nav-btn" id="nav-liar">Liar Game</button>
+        <button onclick="showPage('page-mafia')" class="nav-btn" id="nav-mafia">Mafia Game</button>
     </nav>
 
     <div id="page-stairs" class="page active">
@@ -500,6 +501,144 @@
         </div>
     </div>
 
+    <!-- Mafia Game Page -->
+    <div id="page-mafia" class="page">
+        <div id="mafia-game-container">
+            <h1 style="color:#e74c3c; text-shadow:2px 2px 4px #000;">Mafia Game 🌹</h1>
+
+            <!-- Entry Screen -->
+            <div id="mafia-entry" class="fade-in">
+                <div class="rules-container" style="max-width: 450px; margin: 0 auto 30px auto;">
+                    <button id="toggle-mafia-rules-btn" class="secondary-btn"
+                        style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px;">
+                        📜 게임 규칙 보기
+                    </button>
+                    <div id="mafia-game-rules"
+                        style="display:none; text-align:left; background:rgba(0, 0, 0, 0.9); padding:20px; border-radius:16px; margin-top:10px; font-size:14px; line-height:1.6; color:#cbd5e1; border: 1px solid #e74c3c;">
+                        <strong style="color:#e74c3c; font-size:16px;">🔫 마피아 팀</strong><br>
+                        - **마피아**: 밤마다 시민을 죽입니다.<br>
+                        - **사기꾼**: 투표로 처형당하면 단독 승리합니다.<br><br>
+
+                        <strong style="color:#3498db; font-size:16px;">🛡️ 시민 팀</strong><br>
+                        - **경찰**: 밤마다 플레이어의 직업을 조사합니다.<br>
+                        - **의사**: 밤마다 플레이어를 치료하여 살립니다.<br>
+                        - **고장난 총잡이**: 낮에 한 명을 쏠 수 있습니다. (마피아면 사살, 시민이면 동반 사망)<br>
+                        - **시민**: 낮에 추리하고 투표합니다.<br><br>
+
+                        <strong style="color:#f1c40f; font-size:16px;">🏆 승리 조건</strong><br>
+                        - **시민 승리**: 모든 마피아를 찾아 처형.<br>
+                        - **마피아 승리**: 마피아 수 >= 시민 수.<br>
+                        - **사기꾼 승리**: 투표로 처형당할 시.
+                    </div>
+                </div>
+
+                <div id="mafia-controls" style="margin-top:20px;">
+                    <input type="text" id="mafia-room-id" class="room-input" placeholder="방 코드 (직접 입력 또는 랜덤)"
+                        style="width:80%; margin-bottom:15px; border-color:#e74c3c;">
+
+                    <div style="display:flex; gap:12px; justify-content:center;">
+                        <button id="mafia-create-btn" class="primary-btn" style="flex:1; background:#e74c3c;">방
+                            만들기</button>
+                        <button id="mafia-join-btn" class="secondary-btn"
+                            style="flex:1; border-color:#e74c3c; color:#e74c3c;">참가하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lobby -->
+            <div id="mafia-lobby" style="display:none;" class="fade-in">
+                <h2 style="font-size:20px; color:#94a3b8; margin-bottom:10px;">어둠의 대기실...</h2>
+                <h3 id="mafia-display-room-id"
+                    style="font-size:36px; color: #e74c3c; letter-spacing: 4px; margin:0 0 20px 0;"></h3>
+
+                <div style="background:rgba(0,0,0,0.4); border-radius:24px; padding:20px; border:1px solid #e74c3c;">
+                    <ul id="mafia-player-list"></ul>
+                    <p id="mafia-waiting-msg" class="blink" style="color:#e74c3c; font-weight:600;">희생자를 기다리는 중...
+                    </p>
+                </div>
+
+                <div id="mafia-host-controls"
+                    style="display:none; margin-top:30px; display:flex; flex-direction:column; gap:12px;">
+                    <button id="mafia-start-btn" class="primary-btn" style="padding:18px; background:#e74c3c;">🚀 게임
+                        시작</button>
+                    <div style="display:flex; gap:10px;">
+                        <button id="mafia-add-bots-btn" class="secondary-btn"
+                            style="flex:1; background:rgba(231, 76, 60, 0.2); border-color:#e74c3c; color:#e74c3c;">🤖
+                            봇 추가</button>
+                        <button id="mafia-leave-btn" class="secondary-btn"
+                            style="flex:1; background:rgba(149, 165, 166, 0.2); color:#95a5a6; border-color:#95a5a6;">나가기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Play -->
+            <div id="mafia-game-play" style="display:none;" class="fade-in">
+                <!-- Role Card -->
+                <div id="mafia-role-card"
+                    style="background: #2c3e50; padding:15px; border-radius:15px; border:2px solid; margin-bottom:20px; text-align:center;">
+                    <div id="my-role-icon" style="font-size:48px; margin-bottom:5px;"></div>
+                    <h2 id="my-role-name" style="margin:0; font-size:24px;"></h2>
+                    <p id="my-role-desc" style="margin:5px 0 0 0; font-size:14px; color:#bdc3c7;"></p>
+                </div>
+
+                <!-- Phase Indicator -->
+                <div id="game-phase-indicator"
+                    style="font-size:24px; font-weight:bold; margin-bottom:15px; padding:10px; border-radius:10px; text-shadow:1px 1px 2px #000;">
+                </div>
+
+                <!-- Night Action UI -->
+                <div id="night-action-ui" style="display:none; margin-bottom:20px;">
+                    <h3 style="color:#e74c3c; margin-bottom:10px;">🌙 밤 행동을 선택하세요</h3>
+                    <div id="night-targets"
+                        style="display:grid; grid-template-columns:repeat(auto-fit, minmax(80px, 1fr)); gap:10px;">
+                    </div>
+                </div>
+
+                <!-- Gunman Action UI (Day) -->
+                <div id="gunman-action-ui"
+                    style="display:none; margin-bottom:20px; border:1px solid #e67e22; padding:10px; border-radius:10px;">
+                    <h3 style="color:#e67e22; margin-bottom:10px;">🤠 고장난 총잡이 발동!</h3>
+                    <p style="font-size:12px; color:#aaa; margin-bottom:10px;">(주의: 시민을 쏘면 당신도 죽습니다!)</p>
+                    <div id="gunman-targets"
+                        style="display:grid; grid-template-columns:repeat(auto-fit, minmax(80px, 1fr)); gap:10px;">
+                    </div>
+                </div>
+
+                <!-- Discussion & Log -->
+                <div id="mafia-log-container"
+                    style="height:200px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px; margin-bottom:15px; text-align:left; border:1px solid #555;">
+                    <div id="mafia-game-log"></div>
+                </div>
+
+                <!-- Chat UI -->
+                <div id="mafia-chat-section">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="mafia-chat-input" class="room-input"
+                            placeholder="메시지 입력 (밤에는 마피아만 가능)..." style="flex: 1;">
+                        <button id="mafia-chat-send-btn" class="primary-btn" style="padding: 10px 20px;">전송</button>
+                    </div>
+                </div>
+
+                <!-- Vote UI -->
+                <div id="mafia-vote-ui" style="display:none; margin-top:20px;">
+                    <h3 style="color:#f1c40f;">⚖️ 처형 투표</h3>
+                    <div id="vote-targets"
+                        style="display:grid; grid-template-columns:repeat(auto-fit, minmax(80px, 1fr)); gap:10px; margin-top:10px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="mafia-result" style="display:none; padding:40px;" class="fade-in">
+                <h1 id="mafia-winner-team" style="font-size:36px; margin-bottom:20px;"></h1>
+                <div id="mafia-survivors"
+                    style="background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; margin-bottom:20px;">
+                </div>
+                <button id="mafia-home-btn" class="primary-btn" style="background:#3498db;">돌아가기</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Liar Game Page -->
     <div id="page-liar" class="page">
         <div id="liar-game-container">
@@ -724,19 +863,20 @@
     <div style="margin-top: 10px; font-size: 12px; color: #888;">
         (ONNX Model Check: AI buttons available)
     </div>
-    <script src="auth.js?v=1.9"></script>
+    <script src="auth.js?v=1.10"></script>
     <script src="common.js"></script>
     <!-- Game Logic Scripts with Cache-Busters -->
-    <script src="game/config.js?v=1.9"></script>
-    <script src="game/graphics.js?v=1.9"></script>
-    <script src="game/player.js?v=1.9"></script>
-    <script src="game/ai.js?v=1.9"></script>
-    <script src="game/shop.js?v=1.9"></script>
-    <script src="game/settings.js?v=1.9"></script>
-    <script src="game/audio.js?v=1.9"></script>
+    <script src="game/config.js?v=1.10"></script>
+    <script src="game/graphics.js?v=1.10"></script>
+    <script src="game/player.js?v=1.10"></script>
+    <script src="game/ai.js?v=1.10"></script>
+    <script src="game/shop.js?v=1.10"></script>
+    <script src="game/settings.js?v=1.10"></script>
+    <script src="game/audio.js?v=1.10"></script>
     <!-- Core Game Controller -->
-    <script src="game/core.js?v=1.9"></script>
+    <script src="game/core.js?v=1.10"></script>
     <script src="liar_game.js"></script>
+    <script src="mafia_game.js"></script>
 </body>
 
 </html>
