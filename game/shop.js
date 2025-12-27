@@ -29,47 +29,77 @@ console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 window.buyMapDirect = function (mapId, price) {
     console.log('[Shop] buyMapDirect called:', mapId, price);
 
+    // Get the correct totalCoins value - check both window and local variables
+    let coins = window.totalCoins;
+    if (typeof coins !== 'number' || isNaN(coins)) {
+        coins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
+        window.totalCoins = coins;
+    }
+    console.log('[Shop] Current totalCoins:', coins, 'window.totalCoins:', window.totalCoins);
+
     // Already owned? Equip instead
     if (window.ownedMaps && window.ownedMaps.includes(mapId)) {
+        console.log('[Shop] Map already owned, equipping instead');
         window.equipMapDirect(mapId);
         return;
     }
 
     // Check gold
-    if (window.totalCoins >= price) {
-        window.totalCoins -= price;
+    if (coins >= price) {
+        coins -= price;
+        window.totalCoins = coins;
+        // Also update the local variable if it exists
+        if (typeof totalCoins !== 'undefined') totalCoins = coins;
+
         if (!window.ownedMaps) window.ownedMaps = ['default'];
         window.ownedMaps.push(mapId);
 
-        // Save
-        localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+        // Save immediately
+        localStorage.setItem('infinite_stairs_coins', coins);
         localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
 
         // Update UI
         const coinEl = document.getElementById('coin-count');
-        if (coinEl) coinEl.innerText = window.totalCoins;
+        if (coinEl) coinEl.innerText = coins;
         const shopGold = document.getElementById('shop-gold');
-        if (shopGold) shopGold.innerText = window.totalCoins;
+        if (shopGold) shopGold.innerText = coins;
 
         alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
 
         // Auto equip
         window.equipMapDirect(mapId);
     } else {
-        alert(`❌ 골드가 부족합니다! (보유: ${window.totalCoins}G / 필요: ${price}G)`);
+        alert(`❌ 골드가 부족합니다! (보유: ${coins}G / 필요: ${price}G)`);
     }
 };
 
 window.equipMapDirect = function (mapId) {
     console.log('[Shop] equipMapDirect called:', mapId);
     window.currentMap = mapId;
+    // Also update local variable if exists
+    if (typeof currentMap !== 'undefined') currentMap = mapId;
     localStorage.setItem('currentMap', mapId);
 
-    // Update display
+    // Update "현재 장착 맵" display
     const mapDisplay = document.getElementById('current-map-display');
     if (mapDisplay && MAP_DATA[mapId]) {
         mapDisplay.innerText = MAP_DATA[mapId].icon + ' ' + MAP_DATA[mapId].name;
     }
+
+    // Update ALL map buttons to show correct state
+    document.querySelectorAll('#shop-items-map button').forEach(btn => {
+        const btnMapId = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+        if (btnMapId === mapId) {
+            btn.textContent = '장착됨';
+            btn.style.background = '#7f8c8d';
+            btn.disabled = true;
+        } else if (window.ownedMaps && window.ownedMaps.includes(btnMapId)) {
+            btn.textContent = '장착하기';
+            btn.style.background = '#2ecc71';
+            btn.disabled = false;
+            btn.setAttribute('onclick', `equipMapDirect('${btnMapId}')`);
+        }
+    });
 
     // Save to Firebase
     if (window.saveData) {
@@ -78,7 +108,7 @@ window.equipMapDirect = function (mapId) {
             window.ownedMaps, window.currentMap);
     }
 
-    alert(`🗺️ ${MAP_DATA[mapId]?.name || mapId} 맵이 장착되었습니다! 게임을 시작하면 적용됩니다.`);
+    console.log('[Shop] Map equipped:', mapId, 'window.currentMap:', window.currentMap);
 };
 
 // Component Generator for Shop Items
