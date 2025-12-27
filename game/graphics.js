@@ -73,10 +73,159 @@ function lerpColor(a, b, t) {
     return `rgb(${Math.floor(nr)}, ${Math.floor(ng)}, ${Math.floor(nb)})`;
 }
 
+// ============================================================
+// Desert Background Rendering
+// ============================================================
+function drawDesertBackground(camX, camY, score, w, h) {
+    // Desert Sky Gradient (warm orange/yellow tones)
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#f39c12');    // Warm orange top
+    grad.addColorStop(0.4, '#f1c40f');  // Golden middle
+    grad.addColorStop(0.7, '#e67e22');  // Deep orange
+    grad.addColorStop(1, '#d35400');    // Sandy bottom
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Blazing Sun
+    const sunX = w * 0.75;
+    const sunY = h * 0.15;
+    const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 120);
+    sunGrad.addColorStop(0, 'rgba(255,255,200,1)');
+    sunGrad.addColorStop(0.3, 'rgba(255,230,100,0.8)');
+    sunGrad.addColorStop(1, 'rgba(255,200,50,0)');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#fff8dc';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Distant Mountains/Dunes (parallax layer 1)
+    const duneOffset1 = (camX * 0.05) % w;
+    ctx.fillStyle = '#c0986a';
+    ctx.beginPath();
+    ctx.moveTo(-duneOffset1, h);
+    for (let x = -duneOffset1; x < w + 200; x += 100) {
+        const peakY = h * 0.6 + Math.sin(x * 0.01) * 50;
+        ctx.quadraticCurveTo(x + 50, peakY - 80, x + 100, h * 0.7);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // === PYRAMID (Large, Center-Left) ===
+    const pyramidX = w * 0.35 - (camX * 0.08) % (w * 0.5);
+    const pyramidBase = h * 0.75;
+    const pyramidHeight = 180;
+    const pyramidWidth = 200;
+
+    // Pyramid shadow
+    ctx.fillStyle = '#8B7355';
+    ctx.beginPath();
+    ctx.moveTo(pyramidX, pyramidBase);
+    ctx.lineTo(pyramidX + pyramidWidth / 2, pyramidBase - pyramidHeight);
+    ctx.lineTo(pyramidX + pyramidWidth + 30, pyramidBase);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pyramid main
+    ctx.fillStyle = '#d4a860';
+    ctx.beginPath();
+    ctx.moveTo(pyramidX, pyramidBase);
+    ctx.lineTo(pyramidX + pyramidWidth / 2, pyramidBase - pyramidHeight);
+    ctx.lineTo(pyramidX + pyramidWidth, pyramidBase);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pyramid brick lines
+    ctx.strokeStyle = 'rgba(139,115,85,0.5)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+        const lineY = pyramidBase - (pyramidHeight / 8) * i;
+        const ratio = i / 8;
+        const leftX = pyramidX + (pyramidWidth / 2) * ratio;
+        const rightX = pyramidX + pyramidWidth - (pyramidWidth / 2) * ratio;
+        ctx.beginPath();
+        ctx.moveTo(leftX, lineY);
+        ctx.lineTo(rightX, lineY);
+        ctx.stroke();
+    }
+
+    // === SPHINX (Right side) ===
+    const sphinxX = w * 0.7 - (camX * 0.12) % (w * 0.3);
+    const sphinxBase = h * 0.78;
+
+    // Sphinx body (lying lion)
+    ctx.fillStyle = '#c0986a';
+    ctx.fillRect(sphinxX, sphinxBase - 40, 80, 40);
+
+    // Sphinx head (human face)
+    ctx.fillStyle = '#d4a860';
+    ctx.beginPath();
+    ctx.arc(sphinxX + 10, sphinxBase - 60, 25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sphinx headdress
+    ctx.fillStyle = '#1e3a5f';
+    ctx.beginPath();
+    ctx.moveTo(sphinxX - 15, sphinxBase - 55);
+    ctx.lineTo(sphinxX + 10, sphinxBase - 90);
+    ctx.lineTo(sphinxX + 35, sphinxBase - 55);
+    ctx.closePath();
+    ctx.fill();
+
+    // === PHARAOH STATUE (Far right) ===
+    const statueX = w * 0.9 - (camX * 0.1) % (w * 0.4);
+    const statueBase = h * 0.76;
+
+    // Statue body
+    ctx.fillStyle = '#8B7355';
+    ctx.fillRect(statueX - 15, statueBase - 80, 30, 80);
+
+    // Statue head with crown
+    ctx.fillStyle = '#d4a860';
+    ctx.beginPath();
+    ctx.arc(statueX, statueBase - 95, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pharaoh crown (double crown)
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.moveTo(statueX - 15, statueBase - 100);
+    ctx.lineTo(statueX, statueBase - 130);
+    ctx.lineTo(statueX + 15, statueBase - 100);
+    ctx.closePath();
+    ctx.fill();
+
+    // === FOREGROUND SAND DUNES ===
+    const duneOffset2 = (camX * 0.2) % w;
+    ctx.fillStyle = '#deb887';
+    ctx.beginPath();
+    ctx.moveTo(-duneOffset2 - 100, h);
+    for (let x = -duneOffset2 - 100; x < w + 200; x += 150) {
+        const peakY = h * 0.75 + Math.sin(x * 0.008 + 1) * 30;
+        ctx.quadraticCurveTo(x + 75, peakY - 40, x + 150, h * 0.8);
+    }
+    ctx.lineTo(w + 100, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ground sand
+    ctx.fillStyle = '#e0c090';
+    ctx.fillRect(0, h * 0.85, w, h * 0.15);
+}
+
 function drawBackground(camX, camY) {
     const score = window.gameState.score;
     const w = canvas.width;
     const h = canvas.height;
+
+    // Check if using Desert Map
+    if (typeof currentMap !== 'undefined' && currentMap === 'map_desert') {
+        drawDesertBackground(camX, camY, score, w, h);
+        return;
+    }
+
     // Uses global time updated in render()
 
     // Sky Gradient (Score-based progression)

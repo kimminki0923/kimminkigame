@@ -218,6 +218,9 @@
                                 <button onclick="switchShopTab('pet')" id="tab-pet" class="shop-tab"
                                     style="flex:1; padding:12px 5px; border-radius:15px; border:none; background:#333; color:#fff; font-weight:bold; cursor:pointer; font-size:13px;">🐾
                                     펫</button>
+                                <button onclick="switchShopTab('map')" id="tab-map" class="shop-tab"
+                                    style="flex:1; padding:12px 5px; border-radius:15px; border:none; background:#333; color:#fff; font-weight:bold; cursor:pointer; font-size:13px;">🗺️
+                                    맵</button>
                             </div>
 
                             <div
@@ -404,6 +407,43 @@
                                         <button class="buy-pet-btn primary-btn" data-id="pet_pig" data-price="10000"
                                             style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
                                             10000 G
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Map/Background Section (Tab 4) -->
+                            <div id="shop-section-map" class="shop-section" style="display:none;">
+                                <div
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin-bottom:25px; border:1px solid #e67e22; box-shadow: 0 5px 15px rgba(230, 126, 34, 0.1);">
+                                    <h3 style="margin:0 0 10px 0; color:#e67e22; font-size: 16px;">🗺️ 현재 장착 맵</h3>
+                                    <div id="current-map-display" style="font-size:28px; font-weight: 800;">🌅 기본 하늘
+                                    </div>
+                                </div>
+
+                                <div
+                                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:15px;">
+                                    <!-- Default Sky -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🌅</div>
+                                        <h4 style="margin:0; color:#fff; font-size: 16px;">기본 하늘</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">오리지널 배경</p>
+                                        <button class="equip-map-btn primary-btn" data-map="default"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background:#2ecc71;">
+                                            장착하기
+                                        </button>
+                                    </div>
+
+                                    <!-- Desert Pyramid -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid #e67e22; text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🏜️</div>
+                                        <h4 style="margin:0; color:#e67e22; font-size: 16px;">사막 피라미드</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">스핑크스와 파라오!</p>
+                                        <button class="buy-map-btn primary-btn" data-id="map_desert" data-price="5000"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                            5000 G
                                         </button>
                                     </div>
                                 </div>
@@ -941,18 +981,18 @@
     <div style="margin-top: 10px; font-size: 12px; color: #888;">
         (ONNX Model Check: AI buttons available)
     </div>
-    <script src="auth.js?v=1.15"></script>
+    <script src="auth.js?v=1.16"></script>
     <script src="common.js"></script>
     <!-- Game Logic Scripts with Cache-Busters -->
-    <script src="game/config.js?v=1.15"></script>
-    <script src="game/graphics.js?v=1.15"></script>
-    <script src="game/player.js?v=1.15"></script>
-    <script src="game/ai.js?v=1.15"></script>
-    <script src="game/shop.js?v=1.15"></script>
-    <script src="game/settings.js?v=1.15"></script>
-    <script src="game/audio.js?v=1.15"></script>
+    <script src="game/config.js?v=1.16"></script>
+    <script src="game/graphics.js?v=1.16"></script>
+    <script src="game/player.js?v=1.16"></script>
+    <script src="game/ai.js?v=1.16"></script>
+    <script src="game/shop.js?v=1.16"></script>
+    <script src="game/settings.js?v=1.16"></script>
+    <script src="game/audio.js?v=1.16"></script>
     <!-- Core Game Controller -->
-    <script src="game/core.js?v=1.15"></script>
+    <script src="game/core.js?v=1.16"></script>
     <script src="liar_game.js"></script>
     <script src="mafia_game.js"></script>
 </body>

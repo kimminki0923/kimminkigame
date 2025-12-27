@@ -15,32 +15,45 @@ const PET_DATA = {
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' }
 };
 
+// Map/Background Data
+const MAP_DATA = {
+    default: { name: '기본 하늘', icon: '🌅' },
+    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' }
+};
+
+let ownedMaps = ['default'];
+let currentMap = 'default';
+
 function switchShopTab(tab) {
     const charTab = document.getElementById('tab-char');
     const stairTab = document.getElementById('tab-stair');
     const petTab = document.getElementById('tab-pet');
+    const mapTab = document.getElementById('tab-map');
     const charSec = document.getElementById('shop-section-char');
     const stairSec = document.getElementById('shop-section-stair');
     const petSec = document.getElementById('shop-section-pet');
-
-    if (!charTab || !stairTab || !charSec || !stairSec || !petTab || !petSec) return;
+    const mapSec = document.getElementById('shop-section-map');
 
     // Reset all
-    [charSec, stairSec, petSec].forEach(s => s.style.display = 'none');
-    [charTab, stairTab, petTab].forEach(t => { t.style.background = '#333'; t.style.color = '#fff'; });
+    [charSec, stairSec, petSec, mapSec].forEach(s => { if (s) s.style.display = 'none'; });
+    [charTab, stairTab, petTab, mapTab].forEach(t => { if (t) { t.style.background = '#333'; t.style.color = '#fff'; } });
 
-    if (tab === 'char') {
+    if (tab === 'char' && charSec) {
         charSec.style.display = 'block';
         charTab.style.background = '#f1c40f';
         charTab.style.color = '#000';
-    } else if (tab === 'stair') {
+    } else if (tab === 'stair' && stairSec) {
         stairSec.style.display = 'block';
         stairTab.style.background = '#f1c40f';
         stairTab.style.color = '#000';
-    } else if (tab === 'pet') {
+    } else if (tab === 'pet' && petSec) {
         petSec.style.display = 'block';
         petTab.style.background = '#f1c40f';
         petTab.style.color = '#000';
+    } else if (tab === 'map' && mapSec) {
+        mapSec.style.display = 'block';
+        mapTab.style.background = '#f1c40f';
+        mapTab.style.color = '#000';
     }
 }
 
@@ -90,6 +103,13 @@ function equipPet(petId) {
     localStorage.setItem('currentPet', petId);
     updateShopUI();
     console.log(`Equipped pet: ${petId}`);
+}
+
+function equipMap(mapId) {
+    currentMap = mapId;
+    localStorage.setItem('currentMap', mapId);
+    updateShopUI();
+    console.log(`Equipped map: ${mapId}`);
 }
 
 function bindBuyEquipButtons() {
@@ -211,6 +231,45 @@ function bindBuyEquipButtons() {
             equipPet(petId);
         };
     });
+
+    // Buy Maps
+    document.querySelectorAll('.buy-map-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const mapId = this.dataset.id;
+            const price = parseInt(this.dataset.price);
+
+            if (ownedMaps.includes(mapId)) {
+                equipMap(mapId);
+                return;
+            }
+
+            if (totalCoins >= price) {
+                totalCoins -= price;
+                ownedMaps.push(mapId);
+                localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
+                if (coinEl) coinEl.innerText = totalCoins;
+                updateShopUI();
+                if (window.saveData) {
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                }
+                alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
+                equipMap(mapId);
+                bindBuyEquipButtons();
+            } else {
+                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+            }
+        };
+    });
+
+    // Equip Maps
+    document.querySelectorAll('.equip-map-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const mapId = this.dataset.map || this.dataset.id;
+            equipMap(mapId);
+        };
+    });
 }
 
 function updateShopUI() {
@@ -314,6 +373,37 @@ function updateShopUI() {
             btn.style.background = '#7f8c8d';
             btn.disabled = true;
         } else if (ownedPets.includes(petId) || petId === 'none') {
+            btn.innerText = '장착하기';
+            btn.style.background = '#2ecc71';
+            btn.disabled = false;
+        }
+    });
+
+    // Map Display Update
+    const currentMapDisplay = document.getElementById('current-map-display');
+    if (currentMapDisplay && MAP_DATA[currentMap]) {
+        currentMapDisplay.innerText = `${MAP_DATA[currentMap].icon} ${MAP_DATA[currentMap].name}`;
+    }
+
+    // Map UI update
+    document.querySelectorAll('.buy-map-btn').forEach(btn => {
+        const mapId = btn.dataset.id;
+        if (ownedMaps.includes(mapId)) {
+            btn.innerText = currentMap === mapId ? '✓ 장착중' : '장착하기';
+            btn.style.background = currentMap === mapId ? '#7f8c8d' : '#2ecc71';
+            btn.disabled = currentMap === mapId;
+            btn.classList.add('equip-map-btn');
+            btn.classList.remove('buy-map-btn');
+        }
+    });
+
+    document.querySelectorAll('.equip-map-btn').forEach(btn => {
+        const mapId = btn.dataset.map || btn.dataset.id;
+        if (mapId === currentMap) {
+            btn.innerText = '✓ 장착중';
+            btn.style.background = '#7f8c8d';
+            btn.disabled = true;
+        } else if (ownedMaps.includes(mapId) || mapId === 'default') {
             btn.innerText = '장착하기';
             btn.style.background = '#2ecc71';
             btn.disabled = false;
