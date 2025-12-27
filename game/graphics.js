@@ -1,6 +1,7 @@
-// ============================================================
 // game/graphics.js - Background and Rendering
 // ============================================================
+
+let time = 0;
 
 function initBackgroundObjects() {
     buildings.length = 0;
@@ -75,7 +76,7 @@ function drawBackground(camX, camY) {
     const score = window.gameState.score;
     const w = canvas.width;
     const h = canvas.height;
-    const time = Date.now() * 0.001;
+    // Uses global time updated in render()
 
     // Sky Gradient (Score-based progression)
     let keys = [
@@ -268,7 +269,7 @@ function drawBackground(camX, camY) {
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const time = Date.now() * 0.001;
+    time = Date.now() * 0.001;
 
     // Camera & Player Interpolation
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
