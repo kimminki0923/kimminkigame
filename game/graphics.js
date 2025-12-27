@@ -276,7 +276,7 @@ function render() {
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
-    const offset = window.gameState.isReverseMode ? -100 : 100;
+    const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode
     const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
 
     // Background
@@ -351,6 +351,7 @@ function render() {
     // Player
     const px = camX + window.gameState.renderPlayer.x * STAIR_W;
     const py = camY - window.gameState.renderPlayer.y * STAIR_H;
+    ctx.globalAlpha = 1.0; // Ensure full opacity for player
     drawPlayerWithSkin(ctx, px, py, window.gameState.playerDir);
 
     // Direction Arrow
