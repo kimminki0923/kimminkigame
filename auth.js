@@ -249,6 +249,8 @@ function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStai
     }).catch(e => console.error("Cloud Save Failed", e));
 }
 
+// Cloud Save Debounce
+let cloudSaveTimeout;
 window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
@@ -262,7 +264,10 @@ window.saveData = function (score, coins, skins, currentSkin, stairSkins, curren
     if (currentMap) localStorage.setItem('currentMap', currentMap);
 
     if (currentUser && isCloudEnabled) {
-        saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap);
+        clearTimeout(cloudSaveTimeout);
+        cloudSaveTimeout = setTimeout(() => {
+            saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap);
+        }, 2000); // 2-second debounce
     }
 }
 

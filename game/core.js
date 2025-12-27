@@ -245,10 +245,7 @@ function performAction(action) {
                 const shopGold = document.getElementById('shop-gold');
                 if (shopGold) shopGold.innerText = totalCoins;
 
-                // Immediate cloud save for coins
-                if (window.saveData && isDataLoaded) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
-                }
+                // Cloud save removed to save bandwidth - only local save here
             } else {
                 coinEl.innerText = "(AI)";
             }
