@@ -268,6 +268,7 @@ function drawBackground(camX, camY) {
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const time = Date.now() * 0.001;
 
     // Camera & Player Interpolation
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
