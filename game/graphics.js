@@ -272,6 +272,7 @@ function drawPet(ctx, px, py, petType, playerDir) {
     if (!petType || petType === 'none') return;
 
     ctx.save();
+    ctx.globalAlpha = 1.0; // FORCE full opacity immediately
 
     // Target position calculation
     let targetX, targetY;
@@ -301,23 +302,28 @@ function drawPet(ctx, px, py, petType, playerDir) {
     const petY = py - (petRenderPos.y - window.gameState.renderPlayer.y) * STAIR_H;
 
     ctx.translate(petX, petY);
-    if (playerDir === -1) ctx.scale(-1, 1); // Flip pet based on dir
+
+    // Flip pet to face the direction of movement (same as player)
+    if (playerDir === -1) {
+        ctx.scale(-1, 1);
+    }
 
     const bounce = Math.sin(time * 10) * 3;
     const petIcon = PET_DATA[petType]?.icon || '❓';
 
-    ctx.font = "42px Arial"; // Size match to character
+    // LARGER SIZE: 48px to match character
+    ctx.font = "48px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.globalAlpha = 1.0; // Ensure NO transparency
 
     // Draw shadow for pet
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.beginPath();
-    ctx.ellipse(0, 15, 12, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 20, 16, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw Pet icon
+    // Draw Pet icon (fully opaque)
+    ctx.fillStyle = "#ffffff"; // Ensure text color is solid
     ctx.fillText(petIcon, 0, bounce);
 
     ctx.restore();
