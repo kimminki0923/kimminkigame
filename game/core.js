@@ -42,6 +42,7 @@ function setupEnvironment(isReverse = false) {
     window.gameState.stairs = [];
     window.gameState.timer = MAX_TIMER;
     particles.length = 0;
+    isFalling = false;
 
     // Handle Reverse Mode title/status
     if (window.gameState.isReverseMode) {
