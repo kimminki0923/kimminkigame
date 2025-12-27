@@ -559,77 +559,229 @@ function drawPet(ctx, px, py, petType, playerDir) {
 // Desert Background Rendering (Premium Art Version)
 // ============================================================
 function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
-    // 1. Mystical Sky Gradient (Royal Purple to Golden Sunset)
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0.0, '#2c3e50');     // Midnight Blue (Top)
-    grad.addColorStop(0.4, '#4a69bd');     // Deep Sky Blue
-    grad.addColorStop(0.6, '#e58e26');     // Burnt Orange sunset
-    grad.addColorStop(0.8, '#f6e58d');     // Pale Gold
-    grad.addColorStop(1.0, '#d1ccc0');     // Hazy Horizon
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+    const isReverse = window.gameState.isReverseMode;
 
-    // 2. Stars (Subtle twinkling)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    for (let i = 0; i < 20; i++) {
-        const starX = (i * 137 + time * 0.5) % w;
-        const starY = (i * 93) % (h * 0.4);
-        const size = Math.random() * 1.5;
-        ctx.globalAlpha = 0.5 + Math.sin(time + i) * 0.5;
-        ctx.beginPath();
-        ctx.arc(starX, starY, size, 0, Math.PI * 2);
-        ctx.fill();
+    // Reverse Mode: The Hidden Tomb
+    if (isReverse) {
+        drawDesertPhaseTomb(ctx, camX, camY, w, h);
+        return;
     }
-    ctx.globalAlpha = 1.0;
 
-    // 3. Huge Setting Sun (Bloom Effect)
-    const sunX = w * 0.5;
-    const sunY = h * 0.65;
-    const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 300);
-    sunGrad.addColorStop(0, 'rgba(255, 100, 50, 0.4)');
-    sunGrad.addColorStop(0.4, 'rgba(255, 200, 50, 0.1)');
-    sunGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = sunGrad;
+    // Normal Mode: Altitude-based Phases
+    // score 0   -> scale 0 (Ground)
+    // score 150 -> scale 1 (Ascent)
+    // score 400 -> scale 2 (Summit)
+    // score 800 -> scale 3 (Celestial)
+
+    let altitude = Math.max(0, score);
+    if (altitude < 150) {
+        let t = altitude / 150;
+        drawDesertPhaseGround(ctx, camX, camY, w, h, t);
+    } else if (altitude < 400) {
+        let t = (altitude - 150) / 250;
+        drawDesertPhaseAscent(ctx, camX, camY, w, h, t, altitude);
+    } else if (altitude < 800) {
+        let t = (altitude - 400) / 400;
+        drawDesertPhaseSummit(ctx, camX, camY, w, h, t, altitude);
+    } else {
+        let t = Math.min(1.0, (altitude - 800) / 400);
+        drawDesertPhaseCelestial(ctx, camX, camY, w, h, t, altitude);
+    }
+}
+
+// --- Phase 1: Ground ---
+function drawDesertPhaseGround(ctx, camX, camY, w, h, t) {
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#0a3d62');
+    skyGrad.addColorStop(1, '#fad390');
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
 
-    // Sun Body
-    ctx.fillStyle = '#eb4d4b';
+    // Parallax
+    const p1 = (camX * 0.05) % w;
+    const p2 = (camX * 0.15) % w;
+    const p3 = (camX * 0.3) % w;
+
+    // Transitioning Y: Objects sink as we climb
+    const sink = t * h * 0.5;
+
+    drawArtisticPyramid(ctx, (w * 0.2 + p1 + w) % w, h + sink, 400, 350, '#535c68', '#2f3542');
+    drawCalculusDunes(ctx, p2, h + sink, w, '#cd6133', 100, 0.003);
+
+    const pSphinx = (camX * 0.4) % (w * 2);
+    drawArtisticSphinx(ctx, (w * 0.5 + pSphinx + w * 2) % (w * 2) - w * 0.5, h * 0.82 + sink, 0.9);
+
+    drawCalculusDunes(ctx, p3, h + 20 + sink, w + 200, '#e58e26', 150, 0.005);
+}
+
+// --- Phase 2: Ascent (Scaling the side) ---
+function drawDesertPhaseAscent(ctx, camX, camY, w, h, t, altitude) {
+    // Darker Sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#051937');
+    skyGrad.addColorStop(1, '#004d7a');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw Giant Pyramid Surface
+    ctx.fillStyle = '#2d3436';
+    ctx.fillRect(0, 0, w, h);
+
+    // Stone Brick Pattern Parallax
+    const brickW = 120;
+    const brickH = 60;
+    const offX = (camX * 0.8) % brickW;
+    const offY = (altitude * 5) % brickH; // Vertical movement feel
+
+    ctx.strokeStyle = 'rgba(255,215,0,0.1)';
+    ctx.lineWidth = 2;
+    for (let i = -2; i < w / brickW + 2; i++) {
+        for (let j = -2; j < h / brickH + 2; j++) {
+            let px = i * brickW + offX;
+            let py = j * brickH + offY;
+            ctx.strokeRect(px, py, brickW, brickH);
+            // Texture inside
+            if ((i + j) % 7 === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.02)';
+                ctx.fillRect(px + 5, py + 5, brickW - 10, brickH - 10);
+            }
+        }
+    }
+
+    // Atmospheric "Looking Down" Fading at bottom
+    const fade = ctx.createLinearGradient(0, h * 0.7, 0, h);
+    fade.addColorStop(0, 'transparent');
+    fade.addColorStop(1, 'rgba(250, 211, 144, ' + (1 - t) + ')');
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, h * 0.7, w, h * 0.3);
+}
+
+// --- Phase 3: Summit ---
+function drawDesertPhaseSummit(ctx, camX, camY, w, h, t, altitude) {
+    // Epic Twilight Sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#2c3e50');
+    skyGrad.addColorStop(1, '#000000');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // The Golden Point (Apex)
+    const apexY = h * 0.4 + (1 - t) * h * 0.3;
+    const pX = (camX * 0.1) % w;
+
+    // Glowing Capstone
+    const grad = ctx.createRadialGradient(w / 2, apexY, 0, w / 2, apexY, w * 0.8);
+    grad.addColorStop(0, 'rgba(255, 215, 0, 0.2)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(sunX, sunY + 50, 80, 0, Math.PI * 2);
+    ctx.arc(w / 2, apexY, w * 0.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. Parallax Layer 1: Distant Silhouettes (Slower = More Stable)
-    const p1 = (camX * 0.05) % w; // Increased slightly for visibility
-    ctx.save();
-    ctx.translate(0, h * 0.05);
+    // Draw the actual point below stairs
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 200, h);
+    ctx.lineTo(w / 2, apexY);
+    ctx.lineTo(w / 2 + 200, h);
+    ctx.closePath();
+    ctx.fill();
 
-    // Distant Pyramid 1
-    const dp1X = (w * 0.2 + p1 + w) % w; // Corrected direction
-    drawArtisticPyramid(ctx, dp1X, h, 400, 350, '#535c68', '#2f3542');
+    // Distant Earth/Desert Curve at bottom
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h + 100, w * 1.5, 300, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
 
-    // Distant Pyramid 2
-    const dp2X = (w * 0.6 + p1 + w) % w; // Corrected direction
-    drawArtisticPyramid(ctx, dp2X, h, 250, 200, '#667687', '#2f3542');
+// --- Phase 4: Celestial ---
+function drawDesertPhaseCelestial(ctx, camX, camY, w, h, t, altitude) {
+    // Space Background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
 
-    ctx.restore();
+    // Nebulae (Artistic Clouds)
+    const time = Date.now() * 0.0005;
+    for (let i = 0; i < 3; i++) {
+        let x = w * (0.5 + Math.sin(time + i) * 0.3);
+        let y = h * (0.4 + Math.cos(time * 0.8 + i) * 0.2);
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, 400);
+        grad.addColorStop(0, i === 0 ? 'rgba(155, 89, 182, 0.1)' : 'rgba(41, 128, 185, 0.1)');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, 400, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // 5. Parallax Layer 2: Mid-Range Dunes
-    const p2 = (camX * 0.15) % w;
-    drawCalculusDunes(ctx, p2, h, w, '#cd6133', 100, 0.003);
+    // Pharaoh Constellations (Golden Lines)
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+    ctx.lineWidth = 1;
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        let ang = (i * Math.PI * 2 / 6) + time * 0.1;
+        ctx.moveTo(cx + Math.cos(ang) * 200, cy + Math.sin(ang) * 200);
+        ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
 
-    // 6. Featured Monuments (Detailed Sphinx) - FULLY GROUNDED
-    const pSphinx = (camX * 0.4) % (w * 2); // Increased factor for groundedness
-    const monX = (w * 0.5 + pSphinx + w * 2) % (w * 2) - w * 0.5;
-    drawArtisticSphinx(ctx, monX, h * 0.82, 0.9);
+    // Twinkling Stars
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 100; i++) {
+        let rx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
+        let ry = (Math.cos(i * 44) * 0.5 + 0.5) * h;
+        let s = (Math.sin(time * 2 + i) * 0.5 + 0.5) * 2;
+        ctx.fillRect(rx, ry, s, s);
+    }
+}
 
-    // 7. Parallax Layer 3: Foreground Dunes
-    const p3 = (camX * 0.3) % w;
-    drawCalculusDunes(ctx, p3, h + 20, w + 200, '#e58e26', 150, 0.005);
+// --- REVERSE MODE: The Hidden Tomb ---
+function drawDesertPhaseTomb(ctx, camX, camY, w, h) {
+    // Deep Dark Walls
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, w, h);
 
-    // 8. Ground Detail
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    for (let i = 0; i < w; i += 4) {
-        if (Math.random() > 0.5) ctx.fillRect(i, h * 0.85 + Math.random() * h * 0.15, 2, 2);
+    // Wall Hieroglyphs Pattern
+    const pX = (camX * 1.2) % 400;
+    const pY = (score * 5) % 400;
+
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.05)';
+    ctx.font = '40px Arial';
+    for (let i = -1; i < w / 200 + 1; i++) {
+        for (let j = -1; j < h / 200 + 1; j++) {
+            ctx.fillText('𓀀 𓋹 𓅓', i * 200 + pX, j * 200 + pY);
+        }
+    }
+
+    // Torch Lighting (Flickering)
+    const flicker = Math.sin(Date.now() * 0.01) * 20;
+    const torchX = w * 0.5;
+    const torchY = h * 0.5;
+    const light = ctx.createRadialGradient(torchX, torchY, 50, torchX, torchY, 600 + flicker);
+    light.addColorStop(0, 'rgba(255, 100, 0, 0.2)');
+    light.addColorStop(0.5, 'rgba(100, 50, 0, 0.05)');
+    light.addColorStop(1, 'transparent');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, w, h);
+
+    // Gold Piles at the edges
+    drawTombGold(ctx, 0, h, 300, 200);
+    drawTombGold(ctx, w, h, -300, 200);
+}
+
+function drawTombGold(ctx, x, y, width, height) {
+    ctx.fillStyle = '#d4af37'; // Antique Gold
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + width * 0.5, y - height, x + width, y);
+    ctx.closePath();
+    ctx.fill();
+    // Shiny bits
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    for (let i = 0; i < 10; i++) {
+        ctx.fillRect(x + Math.random() * width, y - Math.random() * height * 0.5, 4, 4);
     }
 }
 
