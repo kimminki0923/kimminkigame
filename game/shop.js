@@ -202,7 +202,8 @@ function equipMap(id) {
     if (window.saveData) {
         window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
     }
-    updateShopUI();
+    alert('맵이 변경되었습니다! 확인을 누르면 적용됩니다. ❄️');
+    location.reload(); // Force reload to apply map changes cleanly
 }
 
 function bindBuyEquipButtons() {
