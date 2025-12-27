@@ -222,7 +222,7 @@ function drawBackground(camX, camY) {
 
     // Check if using Desert Map
     if (typeof currentMap !== 'undefined' && currentMap === 'map_desert') {
-        drawDesertBackground(camX, camY, score, w, h);
+        drawDesertBackgroundArtistic(camX, camY, score, w, h);
         return;
     }
 
@@ -547,6 +547,184 @@ function drawPet(ctx, px, py, petType, playerDir) {
     // Reset shadow
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
+
+    ctx.restore();
+}
+
+// ============================================================
+// Desert Background Rendering (Premium Art Version)
+// ============================================================
+function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
+    // 1. Mystical Sky Gradient (Royal Purple to Golden Sunset)
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0.0, '#2c3e50');     // Midnight Blue (Top)
+    grad.addColorStop(0.4, '#4a69bd');     // Deep Sky Blue
+    grad.addColorStop(0.6, '#e58e26');     // Burnt Orange sunset
+    grad.addColorStop(0.8, '#f6e58d');     // Pale Gold
+    grad.addColorStop(1.0, '#d1ccc0');     // Hazy Horizon
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Stars (Subtle twinkling)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 20; i++) {
+        const starX = (i * 137 + time * 0.5) % w;
+        const starY = (i * 93) % (h * 0.4);
+        const size = Math.random() * 1.5;
+        ctx.globalAlpha = 0.5 + Math.sin(time + i) * 0.5;
+        ctx.beginPath();
+        ctx.arc(starX, starY, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    // 3. Huge Setting Sun (Bloom Effect)
+    const sunX = w * 0.5;
+    const sunY = h * 0.65;
+    const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 300);
+    sunGrad.addColorStop(0, 'rgba(255, 100, 50, 0.4)');
+    sunGrad.addColorStop(0.4, 'rgba(255, 200, 50, 0.1)');
+    sunGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Sun Body
+    ctx.fillStyle = '#eb4d4b';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY + 50, 80, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Parallax Layer 1: Distant Silhouettes
+    const p1 = (camX * 0.05) % w;
+    ctx.save();
+    ctx.translate(0, h * 0.05);
+
+    // Distant Pyramid 1
+    const dp1X = w * 0.2 - p1;
+    drawArtisticPyramid(ctx, dp1X, h, 400, 350, '#535c68', '#2f3542');
+
+    // Distant Pyramid 2
+    const dp2X = w * 0.6 - p1;
+    drawArtisticPyramid(ctx, dp2X, h, 250, 200, '#667687', '#2f3542');
+
+    ctx.restore();
+
+    // 5. Parallax Layer 2: Mid-Range Dunes
+    const p2 = (camX * 0.15) % w;
+    drawArtisticDunes(ctx, -p2, h, w, '#cd6133', 100, 50);
+
+    // 6. Featured Monuments (Detailed Sphinx)
+    const p25 = (camX * 0.2) % (w * 1.5);
+    const monX = w * 0.8 - p25;
+    drawArtisticSphinx(ctx, monX, h * 0.82, 0.8);
+
+    // 7. Parallax Layer 3: Foreground Dunes
+    const p3 = (camX * 0.4) % w;
+    drawArtisticDunes(ctx, -p3, h + 20, w + 200, '#e58e26', 150, 80);
+
+    // 8. Ground Detail
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let i = 0; i < w; i += 4) {
+        if (Math.random() > 0.5) ctx.fillRect(i, h * 0.85 + Math.random() * h * 0.15, 2, 2);
+    }
+}
+
+function drawArtisticPyramid(ctx, x, y, width, height, colorLight, colorDark) {
+    if (x < -width || x > ctx.canvas.width + width) return;
+    const baseY = y * 0.85;
+
+    // Dark side
+    ctx.fillStyle = colorDark;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.lineTo(x + width / 2, baseY - height);
+    ctx.lineTo(x + width, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Light side
+    ctx.fillStyle = colorLight;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.lineTo(x + width / 2, baseY - height);
+    ctx.lineTo(x + width / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Golden Capstone
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2 - 15, baseY - height + 30);
+    ctx.lineTo(x + width / 2, baseY - height);
+    ctx.lineTo(x + width / 2 + 15, baseY - height + 30);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawArtisticDunes(ctx, startX, bottomY, width, color, waveHeight, waveFreq) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(startX - 200, bottomY);
+    const endX = startX + width + 400;
+    for (let x = startX - 200; x < endX; x += 50) {
+        const y = bottomY * 0.85 - Math.sin(x * 0.005) * waveHeight + Math.cos(x * 0.02) * (waveHeight * 0.3);
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(endX, bottomY);
+    ctx.lineTo(startX - 200, bottomY);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawArtisticSphinx(ctx, x, y, scale = 1) {
+    if (x < -300 || x > ctx.canvas.width + 300) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Body
+    ctx.fillStyle = '#b3844f';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(20, -40, 90, -40, 110, 0);
+    ctx.lineTo(130, 0);
+    ctx.lineTo(130, 40);
+    ctx.lineTo(-20, 40);
+    ctx.closePath();
+    ctx.fill();
+
+    // Paws
+    ctx.fillStyle = '#d6a86d';
+    ctx.fillRect(-20, 20, 50, 20);
+
+    // Head
+    ctx.fillStyle = '#d6a86d';
+    ctx.beginPath();
+    ctx.arc(0, -35, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nemes
+    ctx.fillStyle = '#273c75';
+    ctx.beginPath();
+    ctx.moveTo(-28, -45);
+    ctx.lineTo(28, -45);
+    ctx.lineTo(40, 15);
+    ctx.lineTo(-40, 15);
+    ctx.closePath();
+    ctx.fill();
+
+    // Face Detail
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.arc(0, -33, 18, 0, Math.PI, false);
+    ctx.fill();
+
+    // Cobra
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(0, -50, 5, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
 }
