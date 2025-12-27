@@ -216,6 +216,10 @@ function drawDesertBackground(camX, camY, score, w, h) {
 }
 
 function drawBackground(camX, camY) {
+    // High-Quality Anti-Aliasing Enforcement
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     const score = window.gameState.score;
     const w = canvas.width;
     const h = canvas.height;
@@ -613,8 +617,8 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
     const p2 = (camX * 0.1) % w;
     drawCalculusDunes(ctx, -p2, h, w, '#cd6133', 100, 0.003);
 
-    // 6. Featured Monuments (Detailed Sphinx)
-    const p25 = (camX * 0.6) % (w * 1.5);
+    // 6. Featured Monuments (Detailed Sphinx) - Grounded in world
+    const p25 = (camX * 0.9) % (w * 1.5);
     const monX = w * 0.8 - p25;
     drawArtisticSphinx(ctx, monX, h * 0.82, 0.8);
 

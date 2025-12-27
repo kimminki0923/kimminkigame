@@ -110,6 +110,9 @@ function equipMap(mapId) {
     localStorage.setItem('currentMap', mapId);
     updateShopUI();
     console.log(`Equipped map: ${mapId}`);
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+    }
 }
 
 function bindBuyEquipButtons() {

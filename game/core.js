@@ -499,7 +499,7 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 
 // Data Bridge for Firebase
 // Data Bridge for Firebase
-window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet) {
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap) {
     console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
     aiHighScore = parseInt(score || 0);
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
@@ -511,6 +511,8 @@ window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSki
     if (cStairSkin) currentStairSkin = cStairSkin;
     if (pets) ownedPets = pets;
     if (cPet) currentPet = cPet;
+    if (maps) ownedMaps = maps;
+    if (cMap) currentMap = cMap;
     isDataLoaded = true;
     updateShopUI();
     updateUnlockStatus(); // Fix: Ensure Reverse Mode button unlocks on refresh

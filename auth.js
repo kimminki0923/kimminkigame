@@ -125,6 +125,8 @@ async function loadCloudData(uid) {
         const localStairSkin = localStorage.getItem('currentStairSkin') || 'default';
         const localPets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
         const localPet = localStorage.getItem('currentPet') || 'none';
+        const localMaps = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
+        const localMap = localStorage.getItem('currentMap') || 'default';
 
         let finalScore = localScore;
         let finalCoins = localCoins;
@@ -134,6 +136,8 @@ async function loadCloudData(uid) {
         let finalStairSkin = localStairSkin;
         let finalPets = localPets;
         let finalPet = localPet;
+        let finalMaps = localMaps;
+        let finalMap = localMap;
         let needSync = false;
 
         if (doc.exists) {
@@ -143,6 +147,7 @@ async function loadCloudData(uid) {
             const cloudSkins = data.ownedSkins || ['default'];
             const cloudStairSkins = data.ownedStairSkins || ['default'];
             const cloudPets = data.ownedPets || ['none'];
+            const cloudMaps = data.ownedMaps || ['default'];
 
             // Merge Strategy: MAX
             if (cloudScore > finalScore) finalScore = cloudScore;
