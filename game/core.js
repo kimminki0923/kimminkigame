@@ -422,17 +422,32 @@ window.addEventListener('keydown', (e) => {
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
         if (cheatBuffer.endsWith('kimminki')) {
-            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000...");
-            if (window.gameState.running) {
-                // Bulk add stairs to prevent crash
-                const needed = 1000 - window.gameState.score;
-                if (needed > 0) {
-                    for (let i = 0; i < needed; i++) addStair();
-                    window.gameState.score = 1000;
-                    scoreEl.innerText = window.gameState.score;
-                    window.gameState.timer = MAX_TIMER;
-                }
+            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 10,000G reward.");
+
+            // 1. Jump to 1000 steps
+            const needed = 1000 - window.gameState.score;
+            if (needed > 0) {
+                for (let i = 0; i < needed; i++) addStair();
+                window.gameState.score = 1000;
+                if (scoreEl) scoreEl.innerText = window.gameState.score;
             }
+
+            // 2. Grant 10,000 gold
+            totalCoins += 10000;
+            if (coinEl) coinEl.innerText = totalCoins;
+            const shopGold = document.getElementById('shop-gold');
+            if (shopGold) shopGold.innerText = totalCoins;
+
+            // 3. UI feedback & Timer reset
+            window.gameState.timer = MAX_TIMER;
+            if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
+
+            // 4. Persistence
+            if (window.saveData && isDataLoaded) {
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+            }
+
+            alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!");
             cheatBuffer = "";
         }
     }

@@ -428,6 +428,10 @@ function render() {
         }
     });
 
+    // Player
+    const px = camX + window.gameState.renderPlayer.x * STAIR_W;
+    const py = camY - window.gameState.renderPlayer.y * STAIR_H;
+
     // Pet
     drawPet(ctx, px, py, currentPet, window.gameState.playerDir);
 
