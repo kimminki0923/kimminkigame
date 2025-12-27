@@ -43,7 +43,7 @@ function equipSkin(skinId) {
     updateShopUI();
     console.log(`Equipped skin: ${skinId}`);
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
 }
 

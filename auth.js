@@ -286,7 +286,18 @@ function updateUI_LoggedIn(user) {
             localStorage.setItem('infinite_stairs_highScore', '1000');
             if (window.saveData) {
                 // This will sync to both localStorage and Firebase
-                window.saveData(1000, parseInt(localStorage.getItem('infinite_stairs_coins') || 0), JSON.parse(localStorage.getItem('ownedSkins') || '["default"]'), localStorage.getItem('currentSkin') || 'default');
+                window.saveData(
+                    1000,
+                    parseInt(localStorage.getItem('infinite_stairs_coins') || 0),
+                    JSON.parse(localStorage.getItem('ownedSkins') || '["default"]'),
+                    localStorage.getItem('currentSkin') || 'default',
+                    JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]'),
+                    localStorage.getItem('currentStairSkin') || 'default',
+                    JSON.parse(localStorage.getItem('ownedPets') || '["none"]'),
+                    localStorage.getItem('currentPet') || 'none',
+                    JSON.parse(localStorage.getItem('ownedMaps') || '["default"]'),
+                    localStorage.getItem('currentMap') || 'default'
+                );
             }
             // Update local display if initialized
             const hsEl = document.getElementById('high-score');

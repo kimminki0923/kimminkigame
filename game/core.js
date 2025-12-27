@@ -247,7 +247,7 @@ function performAction(action) {
 
                 // Immediate cloud save for coins
                 if (window.saveData && isDataLoaded) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
                 }
             } else {
                 coinEl.innerText = "(AI)";
@@ -354,12 +354,7 @@ function gameOver() {
     }
 
     if (window.saveData && isDataLoaded) {
-        // Update: saveData also needs to handle reverseHighScore if we want cloud sync
-        // For now, let's keep it primarily local for the new mode unless we update auth.js
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
-
-        // Let's also save reverse score to a separate field if we can, 
-        // but for now local storage is safer since saveData signature is fixed.
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
 
     statusEl.innerText = "Game Over!";
@@ -475,7 +470,7 @@ window.addEventListener('keydown', (e) => {
 
             // 5. Cloud Persistence
             if (window.saveData && isDataLoaded) {
-                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
             }
 
             alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
@@ -539,14 +534,10 @@ if (window.initAuth) window.initAuth();
 
 // Save data when page closes/refreshes
 window.addEventListener('beforeunload', () => {
-    if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
-    }
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
 });
 
 // Periodic save (every 30 seconds)
 setInterval(() => {
-    if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
-    }
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
 }, 30000);

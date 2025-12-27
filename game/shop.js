@@ -41,13 +41,13 @@ function createShopItemElement(id, data, category) {
     div.innerHTML = `
         <div style="font-size: 40px; margin-bottom: 10px;">${data.icon}</div>
         <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
-        ${!isOwned ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
+        ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
         <button id="btn-${id}" 
             class="${isOwned ? 'equip-btn' : 'buy-btn'}"
             style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold;
-            background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : '#e67e22'};
+            background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')};
             color: #fff;">
-            ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : '구매하기'}
+            ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
         </button>
     `;
 
@@ -55,25 +55,28 @@ function createShopItemElement(id, data, category) {
 }
 
 function checkOwnership(id, category) {
+    if (category === 'char') return ownedSkins.includes(id);
     if (category === 'stair') return ownedStairSkins.includes(id);
     if (category === 'pet') return ownedPets.includes(id);
     if (category === 'map') return ownedMaps.includes(id);
-    if (category === 'char') return ownedSkins.includes(id);
     return false;
 }
 
 function checkEquipped(id, category) {
+    if (category === 'char') return currentSkin === id;
     if (category === 'stair') return currentStairSkin === id;
     if (category === 'pet') return currentPet === id;
     if (category === 'map') return currentMap === id;
-    if (category === 'char') return currentSkin === id;
     return false;
 }
 
-let ownedMaps = ['default'];
-let currentMap = 'default';
-
 function updateShopUI() {
+    const shopGold = document.getElementById('shop-gold');
+    if (shopGold) shopGold.innerText = totalCoins;
+
+    const coinDisplays = document.querySelectorAll('.total-coins-display');
+    coinDisplays.forEach(el => el.innerText = totalCoins);
+
     // Dynamic Shop Sections
     const sections = {
         'char': { data: SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
@@ -84,361 +87,175 @@ function updateShopUI() {
 
     // Update Current Equipped Displays
     const skinDisplay = document.getElementById('current-skin-display');
-    if (skinDisplay) skinDisplay.innerText = SKIN_DATA[currentSkin]?.icon + ' ' + SKIN_DATA[currentSkin]?.name;
+    if (skinDisplay && SKIN_DATA[currentSkin]) skinDisplay.innerText = SKIN_DATA[currentSkin].icon + ' ' + SKIN_DATA[currentSkin].name;
 
     const stairDisplay = document.getElementById('current-stair-display');
-    if (stairDisplay) stairDisplay.innerText = STAIR_SKIN_DATA[currentStairSkin]?.icon + ' ' + STAIR_SKIN_DATA[currentStairSkin]?.name;
+    if (stairDisplay && STAIR_SKIN_DATA[currentStairSkin]) stairDisplay.innerText = STAIR_SKIN_DATA[currentStairSkin].icon + ' ' + STAIR_SKIN_DATA[currentStairSkin].name;
 
     const petDisplay = document.getElementById('current-pet-display');
-    if (petDisplay) petDisplay.innerText = PET_DATA[currentPet]?.icon + ' ' + PET_DATA[currentPet]?.name;
+    if (petDisplay && PET_DATA[currentPet]) petDisplay.innerText = PET_DATA[currentPet].icon + ' ' + PET_DATA[currentPet].name;
 
     const mapDisplay = document.getElementById('current-map-display');
-    if (mapDisplay) mapDisplay.innerText = MAP_DATA[currentMap]?.icon + ' ' + MAP_DATA[currentMap]?.name;
+    if (mapDisplay && MAP_DATA[currentMap]) mapDisplay.innerText = MAP_DATA[currentMap].icon + ' ' + MAP_DATA[currentMap].name;
 
     for (const key in sections) {
-        const section = sections[key];
-        const container = document.getElementById(section.containerId);
-        if (container) {
-            container.innerHTML = ''; // Clear existing items
-            for (const itemId in section.data) {
-                if (itemId === 'default' && section.category !== 'stair' && section.category !== 'map') continue; // Skip 'default' for char/pet if it's not a real item
-                if (itemId === 'none' && section.category !== 'pet') continue; // Skip 'none' for char/stair/map if it's not a real item
+        const config = sections[key];
+        const container = document.getElementById(config.containerId);
+        if (!container) continue;
 
-                const itemData = section.data[itemId];
-                const itemElement = createShopItemElement(itemId, itemData, section.category);
+        container.innerHTML = '';
+        const listDiv = document.createElement('div');
+        listDiv.style.display = 'flex';
+        listDiv.style.flexWrap = 'wrap';
+        listDiv.style.justifyContent = 'center';
 
-                // Add dataset attributes for purchase/equip logic
-                const button = itemElement.querySelector('button');
-                if (button) {
-                    button.dataset.id = itemId;
-                    button.dataset.price = itemData.price || 0;
-                    // Add specific classes for easier targeting in bindBuyEquipButtons
-                    if (section.category === 'char') {
-                        button.classList.add('buy-char-btn', 'equip-char-btn');
-                    } else if (section.category === 'stair') {
-                        button.classList.add('buy-stair-btn', 'equip-stair-btn');
-                    } else if (section.category === 'pet') {
-                        button.classList.add('buy-pet-btn', 'equip-pet-btn');
-                    } else if (section.category === 'map') {
-                        button.classList.add('buy-map-btn', 'equip-map-btn');
-                    }
-                }
-                container.appendChild(itemElement);
+        for (const id in config.data) {
+            // Skip default for char if it's not useful to show twice (usually included)
+            if (id === 'default' && config.category === 'char') {
+                if (!ownedSkins.includes('default')) ownedSkins.push('default');
             }
+
+            const itemEl = createShopItemElement(id, config.data[id], config.category);
+
+            // Add attributes to buttons for binding
+            const btn = itemEl.querySelector('button');
+            btn.dataset.id = id;
+            btn.dataset.category = config.category;
+            btn.dataset.price = config.data[id].price || 0;
+
+            listDiv.appendChild(itemEl);
         }
+        container.appendChild(listDiv);
     }
-    bindBuyEquipButtons(); // Rebind buttons after updating UI
+
+    bindBuyEquipButtons();
 }
 
 function switchShopTab(tab) {
-    const charTab = document.getElementById('tab-char');
-    const stairTab = document.getElementById('tab-stair');
-    const petTab = document.getElementById('tab-pet');
-    const mapTab = document.getElementById('tab-map');
-    const charSec = document.getElementById('shop-section-char');
-    const stairSec = document.getElementById('shop-section-stair');
-    const petSec = document.getElementById('shop-section-pet');
-    const mapSec = document.getElementById('shop-section-map');
+    const tabs = ['char', 'stair', 'pet', 'map'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const sec = document.getElementById(`shop-section-${t}`);
+        if (btn) {
+            btn.style.background = (t === tab) ? '#f1c40f' : '#333';
+            btn.style.color = (t === tab) ? '#000' : '#fff';
+        }
+        if (sec) sec.style.display = (t === tab) ? 'block' : 'none';
+    });
 
-    // Reset all
-    [charSec, stairSec, petSec, mapSec].forEach(s => { if (s) s.style.display = 'none'; });
-    [charTab, stairTab, petTab, mapTab].forEach(t => { if (t) { t.style.background = '#333'; t.style.color = '#fff'; } });
-
-    if (tab === 'char' && charSec) {
-        charSec.style.display = 'block';
-        charTab.style.background = '#f1c40f';
-        charTab.style.color = '#000';
-    } else if (tab === 'stair' && stairSec) {
-        stairSec.style.display = 'block';
-        stairTab.style.background = '#f1c40f';
-        stairTab.style.color = '#000';
-    } else if (tab === 'pet' && petSec) {
-        petSec.style.display = 'block';
-        petTab.style.background = '#f1c40f';
-        petTab.style.color = '#000';
-    } else if (tab === 'map' && mapSec) {
-        mapSec.style.display = 'block';
-        mapTab.style.background = '#f1c40f';
-        mapTab.style.color = '#000';
-    }
-
-    updateShopUI(); // Refresh items for selected tab
+    updateShopUI();
 }
 
 function bindShopEvents() {
-    // Open Button
     const openBtn = document.getElementById('shop-open-btn');
+    const overlay = document.getElementById('shop-overlay');
+    const closeBtns = [document.getElementById('close-shop-btn'), document.getElementById('close-shop-btn-bottom')];
+
     if (openBtn) {
         openBtn.onclick = () => {
-            const overlay = document.getElementById('shop-overlay');
-            if (overlay) {
-                overlay.style.display = 'flex';
-                updateShopUI();
-                switchShopTab('char'); // Default to character tab
-                bindBuyEquipButtons();
-            }
+            overlay.style.display = 'flex';
+            updateShopUI();
+            switchShopTab('char');
         };
     }
 
-    // Close Button (top)
-    const closeBtn = document.getElementById('close-shop-btn');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            const overlay = document.getElementById('shop-overlay');
-            if (overlay) overlay.style.display = 'none';
-        };
-    }
+    closeBtns.forEach(btn => {
+        if (btn) btn.onclick = () => overlay.style.display = 'none';
+    });
 
-    // Close Button (bottom)
-    const closeBtnBottom = document.getElementById('close-shop-btn-bottom');
-    if (closeBtnBottom) {
-        closeBtnBottom.onclick = () => {
-            const overlay = document.getElementById('shop-overlay');
-            if (overlay) overlay.style.display = 'none';
-        };
-    }
+    ['char', 'stair', 'pet', 'map'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) btn.onclick = () => switchShopTab(t);
+    });
 }
 
-function equipStairSkin(stairId) {
-    currentStairSkin = stairId;
-    localStorage.setItem('currentStairSkin', stairId);
-    updateShopUI();
-    console.log(`Equipped stair skin: ${stairId}`);
-}
-
-function equipPet(petId) {
-    currentPet = petId;
-    localStorage.setItem('currentPet', petId);
-    updateShopUI();
-    console.log(`Equipped pet: ${petId}`);
-}
-
-function equipMap(mapId) {
-    currentMap = mapId;
-    localStorage.setItem('currentMap', mapId);
-    updateShopUI();
-    console.log(`Equipped map: ${mapId}`);
+function equipStairSkin(id) {
+    currentStairSkin = id;
+    localStorage.setItem('currentStairSkin', id);
     if (window.saveData) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
+    updateShopUI();
+}
+
+function equipPet(id) {
+    currentPet = id;
+    localStorage.setItem('currentPet', id);
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+    }
+    updateShopUI();
+}
+
+function equipMap(id) {
+    currentMap = id;
+    localStorage.setItem('currentMap', id);
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+    }
+    updateShopUI();
 }
 
 function bindBuyEquipButtons() {
-    // Buy Character Skins
-    document.querySelectorAll('.buy-btn').forEach(btn => {
-        btn.onclick = function (e) {
+    document.querySelectorAll('.shop-item button').forEach(btn => {
+        btn.onclick = (e) => {
             e.stopPropagation();
-            const skinId = this.dataset.id;
-            const price = parseInt(this.dataset.price);
+            const id = btn.dataset.id;
+            const category = btn.dataset.category;
+            const price = parseInt(btn.dataset.price);
 
-            if (ownedSkins.includes(skinId)) {
-                equipSkin(skinId);
-                return;
-            }
+            const isOwned = checkOwnership(id, category);
 
-            const skin = SKIN_DATA[skinId];
-            const isRequirementMet = skin && (!skin.requirement || parseInt(aiHighScore) >= parseInt(skin.requirement));
-
-            if (totalCoins >= price && isRequirementMet) {
-                if (price > 0) totalCoins -= price;
-                ownedSkins.push(skinId);
-                if (coinEl) coinEl.innerText = totalCoins;
-                updateShopUI();
-                if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+            if (isOwned) {
+                // Equip flow
+                if (category === 'char') {
+                    if (typeof equipSkin === 'function') equipSkin(id);
+                } else if (category === 'stair') {
+                    equipStairSkin(id);
+                } else if (category === 'pet') {
+                    equipPet(id);
+                } else if (category === 'map') {
+                    equipMap(id);
                 }
-                alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 획득 완료!`);
-                equipSkin(skinId);
-                bindBuyEquipButtons();
-            } else if (!isRequirementMet) {
-                alert(`🔒 아직 잠겨있습니다! (필요 기록: ${skin.requirement}계단)`);
             } else {
-                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
-            }
-        };
-    });
-
-    // Equip Character Skins
-    document.querySelectorAll('.equip-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const skinId = this.dataset.skin || this.dataset.id;
-            equipSkin(skinId);
-        };
-    });
-
-    // Buy Stair Skins
-    document.querySelectorAll('.buy-stair-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const stairId = this.dataset.id;
-            const price = parseInt(this.dataset.price);
-
-            if (ownedStairSkins.includes(stairId)) {
-                equipStairSkin(stairId);
-                return;
-            }
-
-            if (totalCoins >= price) {
-                totalCoins -= price;
-                ownedStairSkins.push(stairId);
-                if (coinEl) coinEl.innerText = totalCoins;
-                updateShopUI();
-                if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                // Buy flow
+                if (price === 0) {
+                    // Check requirement for pentagon
+                    const item = (category === 'char') ? SKIN_DATA[id] : null;
+                    if (item && item.requirement && aiHighScore < item.requirement) {
+                        return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                    }
+                    // Else free
                 }
-                alert(`✅ ${STAIR_SKIN_DATA[stairId]?.name || stairId} 구매 완료!`);
-                equipStairSkin(stairId);
-                bindBuyEquipButtons();
-            } else {
-                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
-            }
-        };
-    });
 
-    // Equip Stair Skins
-    document.querySelectorAll('.equip-stair-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const stairId = this.dataset.stair || this.dataset.id;
-            equipStairSkin(stairId);
-        };
-    });
+                if (totalCoins >= price) {
+                    totalCoins -= price;
 
-    // Buy Pets
-    document.querySelectorAll('.buy-pet-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const petId = this.dataset.id;
-            const price = parseInt(this.dataset.price);
+                    if (category === 'char') ownedSkins.push(id);
+                    else if (category === 'stair') ownedStairSkins.push(id);
+                    else if (category === 'pet') ownedPets.push(id);
+                    else if (category === 'map') ownedMaps.push(id);
 
-            if (ownedPets.includes(petId)) {
-                equipPet(petId);
-                return;
-            }
+                    if (window.saveData) {
+                        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                    }
 
-            if (totalCoins >= price) {
-                totalCoins -= price;
-                ownedPets.push(petId);
-                if (coinEl) coinEl.innerText = totalCoins;
-                updateShopUI();
-                if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                    alert(`✅ ${id} 구매 완료!`);
+
+                    // Auto equip after buy
+                    if (category === 'char') {
+                        if (typeof equipSkin === 'function') equipSkin(id);
+                    } else if (category === 'stair') {
+                        equipStairSkin(id);
+                    } else if (category === 'pet') {
+                        equipPet(id);
+                    } else if (category === 'map') {
+                        equipMap(id);
+                    }
+                } else {
+                    alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
                 }
-                alert(`✅ ${PET_DATA[petId]?.name || petId} 입양 완료!`);
-                equipPet(petId);
-                bindBuyEquipButtons();
-            } else {
-                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
             }
-        };
-    });
-
-    // Equip Pets
-    document.querySelectorAll('.equip-pet-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const petId = this.dataset.pet || this.dataset.id;
-            equipPet(petId);
-        };
-    });
-
-    // Buy Maps
-    document.querySelectorAll('.buy-map-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const mapId = this.dataset.id;
-            const price = parseInt(this.dataset.price);
-
-            if (ownedMaps.includes(mapId)) {
-                equipMap(mapId);
-                return;
-            }
-
-            if (totalCoins >= price) {
-                totalCoins -= price;
-                ownedMaps.push(mapId);
-                localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
-                if (coinEl) coinEl.innerText = totalCoins;
-                updateShopUI();
-                if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
-                }
-                alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
-                equipMap(mapId);
-                bindBuyEquipButtons();
-            } else {
-                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
-            }
-        };
-    });
-
-    // Equip Maps
-    document.querySelectorAll('.equip-map-btn').forEach(btn => {
-        btn.onclick = function (e) {
-            e.stopPropagation();
-            const mapId = this.dataset.map || this.dataset.id;
-            equipMap(mapId);
         };
     });
 }
-
-function updateShopUI() {
-    const shopGold = document.getElementById('shop-gold');
-    if (shopGold) shopGold.innerText = totalCoins;
-
-    const currentDisplay = document.getElementById('current-skin-display');
-    if (currentDisplay && SKIN_DATA[currentSkin]) {
-        currentDisplay.innerText = `${SKIN_DATA[currentSkin].icon} ${SKIN_DATA[currentSkin].name}`;
-    }
-
-    const currentStairDisplay = document.getElementById('current-stair-display');
-    if (currentStairDisplay && STAIR_SKIN_DATA[currentStairSkin]) {
-        currentStairDisplay.innerText = `${STAIR_SKIN_DATA[currentStairSkin].icon} ${STAIR_SKIN_DATA[currentStairSkin].name}`;
-    }
-
-    const currentPetDisplay = document.getElementById('current-pet-display');
-    if (currentPetDisplay && PET_DATA[currentPet]) {
-        currentPetDisplay.innerText = `${PET_DATA[currentPet].icon} ${PET_DATA[currentPet].name}`;
-    }
-
-    // Character Skins UI update
-    document.querySelectorAll('.char-section .buy-btn, #shop-section-char .buy-btn').forEach(btn => {
-        const skinId = btn.dataset.id;
-        const skin = SKIN_DATA[skinId];
-
-        if (ownedSkins.includes(skinId)) {
-            btn.innerText = currentSkin === skinId ? '✓ 장착중' : '장착하기';
-            btn.style.background = currentSkin === skinId ? '#7f8c8d' : '#2ecc71';
-            btn.disabled = currentSkin === skinId;
-            btn.classList.add('equip-btn');
-            btn.classList.remove('buy-btn');
-        } else if (skin && skin.requirement) {
-            const isUnlocked = parseInt(aiHighScore) >= parseInt(skin.requirement);
-            if (isUnlocked) {
-                btn.innerText = 'FREE 취득';
-                btn.style.background = '#3498db';
-                btn.disabled = false;
-            } else {
-                btn.innerText = `Locked (${skin.requirement})`;
-                btn.style.background = '#7f8c8d';
-                btn.disabled = true;
-            }
-        }
-    });
-
-    document.querySelectorAll('.equip-btn').forEach(btn => {
-        const skinId = btn.dataset.skin || btn.dataset.id;
-        const mapId = btn.dataset.map || btn.dataset.id;
-        if (mapId === currentMap) {
-            btn.innerText = '✓ 장착중';
-            btn.style.background = '#7f8c8d';
-            btn.disabled = true;
-        } else if (ownedMaps.includes(mapId) || mapId === 'default') {
-            btn.innerText = '장착하기';
-            btn.style.background = '#2ecc71';
-            btn.disabled = false;
-        }
-    });
-}
-
