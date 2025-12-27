@@ -303,13 +303,14 @@ function drawPet(ctx, px, py, petType, playerDir) {
 
     ctx.translate(petX, petY);
 
-    // Flip pet to face the direction of movement (same as player)
-    if (playerDir === -1) {
+    // Flip pet to face the direction of movement
+    // playerDir === 1 means facing RIGHT, playerDir === -1 means facing LEFT
+    // By default emojis face right, so we flip when going left
+    if (playerDir !== 1) {
         ctx.scale(-1, 1);
     }
 
     const bounce = Math.sin(time * 10) * 3;
-    const petIcon = PET_DATA[petType]?.icon || '❓';
 
     // LARGER SIZE: 48px to match character
     ctx.font = "48px Arial";
@@ -322,17 +323,77 @@ function drawPet(ctx, px, py, petType, playerDir) {
     ctx.ellipse(0, 20, 16, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Golden Pig: Add shining golden glow effect
+    // Special rendering for Golden Pig - draw as actual golden shape
     if (petType === 'pet_pig') {
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = '#ffd700'; // Gold color
-        // Pulsing glow effect
+        // Pulsing golden glow
         ctx.shadowBlur = 20 + Math.sin(time * 5) * 10;
-    }
+        ctx.shadowColor = '#ffd700';
 
-    // Draw Pet icon (fully opaque)
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(petIcon, 0, bounce);
+        // Golden body (main circle)
+        const gradient = ctx.createRadialGradient(0, bounce, 5, 0, bounce, 20);
+        gradient.addColorStop(0, '#fff7cc'); // Light gold center
+        gradient.addColorStop(0.5, '#ffd700'); // Gold
+        gradient.addColorStop(1, '#cc9900'); // Dark gold edge
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(0, bounce, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Snout (pink circle)
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffb6c1';
+        ctx.beginPath();
+        ctx.ellipse(12, bounce + 2, 8, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nostrils
+        ctx.fillStyle = '#ff69b4';
+        ctx.beginPath();
+        ctx.arc(10, bounce + 1, 2, 0, Math.PI * 2);
+        ctx.arc(14, bounce + 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-5, bounce - 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye shine
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-4, bounce - 6, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears (golden triangles)
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(-12, bounce - 15);
+        ctx.lineTo(-8, bounce - 8);
+        ctx.lineTo(-16, bounce - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(2, bounce - 15);
+        ctx.lineTo(6, bounce - 8);
+        ctx.lineTo(-2, bounce - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sparkle effect
+        ctx.fillStyle = '#fff';
+        const sparkleSize = 3 + Math.sin(time * 8) * 2;
+        ctx.beginPath();
+        ctx.arc(-15, bounce - 10, sparkleSize, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Other pets: use emoji icon
+        const petIcon = PET_DATA[petType]?.icon || '❓';
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(petIcon, 0, bounce);
+    }
 
     // Reset shadow
     ctx.shadowBlur = 0;
