@@ -31,32 +31,24 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-// Initialize Game
-function initGame(isReverse = false) {
+// Initialize Game Environment (without starting)
+function setupEnvironment(isReverse = false) {
     window.gameState.isReverseMode = isReverse;
     window.gameState.score = 0;
     window.gameState.coinCount = 0;
-    window.gameState.running = true;
+    window.gameState.running = false;
     window.gameState.gameOver = false;
     window.gameState.playerDir = 1;
     window.gameState.stairs = [];
     window.gameState.timer = MAX_TIMER;
     particles.length = 0;
 
-    menuOverlay.style.display = 'none';
-    if (window.isTraining || window.isAutoPlaying) {
-        stopBtn.style.display = 'inline-block';
-    } else {
-        stopBtn.style.display = 'none';
-        timerBar.parentElement.style.opacity = 1;
-    }
-
-    // New: Handle Reverse Mode title/status
+    // Handle Reverse Mode title/status
     if (window.gameState.isReverseMode) {
         statusEl.innerText = "REVERSE MODE";
-        statusEl.style.color = "#8e44ad";
+        statusEl.style.color = "#a29bfe";
     } else {
-        statusEl.innerText = "";
+        statusEl.innerText = "Normal Mode";
         statusEl.style.color = "white";
     }
 
@@ -69,18 +61,35 @@ function initGame(isReverse = false) {
     initBackgroundObjects();
 
     scoreEl.innerText = 0;
-    if (!window.gameState.isReverseMode) statusEl.innerText = "";
-
-    // Initial UI Update from loaded config
     const currentHighScore = window.gameState.isReverseMode ? reverseHighScore : aiHighScore;
     if (highScoreEl) highScoreEl.innerText = currentHighScore;
     if (coinEl) coinEl.innerText = totalCoins;
+
     updateShopUI();
-    updateUnlockStatus(); // Check if Reverse Mode should be unlocked
+    updateUnlockStatus();
+}
+
+// Actual Game Start
+function initGame(forceReverse = null) {
+    if (forceReverse !== null) window.gameState.isReverseMode = forceReverse;
+
+    // Reset state but keep mode
+    const mode = window.gameState.isReverseMode;
+    setupEnvironment(mode);
+
+    window.gameState.running = true;
+    menuOverlay.style.display = 'none';
+
+    if (window.isTraining || window.isAutoPlaying) {
+        stopBtn.style.display = 'inline-block';
+    } else {
+        stopBtn.style.display = 'none';
+        timerBar.parentElement.style.opacity = 1;
+    }
 
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
-            statusEl.innerText = "Robot Playing...";
+            statusEl.innerText = mode ? "Reverse Robot..." : "Robot Playing...";
         }
         aiTick();
     }
@@ -246,10 +255,18 @@ function gameOver() {
     window.gameState.gameOver = true;
 
     if (window.isTraining) {
-        if (window.gameState.score > aiHighScore) aiHighScore = window.gameState.score;
+        const isReverse = window.gameState.isReverseMode;
+        const currentScore = window.gameState.score;
+
+        if (isReverse) {
+            if (currentScore > reverseHighScore) reverseHighScore = currentScore;
+        } else {
+            if (currentScore > aiHighScore) aiHighScore = currentScore;
+        }
+
         episode++;
         episodeCountEl.innerText = episode;
-        learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${aiHighScore}`;
+        learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${isReverse ? reverseHighScore : aiHighScore}`;
         if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
         setTimeout(initGame, 20);
         return;
@@ -322,8 +339,9 @@ startBtn.addEventListener('click', () => {
     if (window.resumeAudio) window.resumeAudio();
     window.isTraining = false;
     window.isAutoPlaying = false;
-    initGame();
+    initGame(); // Uses currently selected mode in window.gameState.isReverseMode
 });
+
 trainBtn.addEventListener('click', () => {
     window.isTraining = !window.isTraining;
     window.isAutoPlaying = false;
@@ -335,11 +353,23 @@ trainBtn.addEventListener('click', () => {
         stopGame();
     }
 });
-autoPlayBtn.addEventListener('click', () => { window.isAutoPlaying = true; window.isTraining = false; initGame(); });
-document.getElementById('reverse-start-btn').addEventListener('click', () => {
+
+autoPlayBtn.addEventListener('click', () => {
+    window.isAutoPlaying = true;
     window.isTraining = false;
-    window.isAutoPlaying = false;
-    initGame(true); // Start as Reverse Mode
+    initGame();
+});
+
+document.getElementById('reverse-start-btn').addEventListener('click', () => {
+    const nextMode = !window.gameState.isReverseMode;
+    console.log(`[Mode] Switching to ${nextMode ? 'REVERSE' : 'NORMAL'}`);
+    setupEnvironment(nextMode);
+
+    // Update button text to show what's selected
+    const btn = document.getElementById('reverse-start-btn');
+    if (btn) {
+        btn.innerText = nextMode ? "🔼 일반 모드로 변경" : "🔽 리버스 모드 변경";
+    }
 });
 resetAiBtn.addEventListener('click', () => {
     if (confirm("AI Reset?")) {
