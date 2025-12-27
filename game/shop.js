@@ -29,16 +29,14 @@ console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 window.buyMapDirect = function (mapId, price) {
     console.log('[Shop] buyMapDirect called:', mapId, price);
 
-    // Get the correct totalCoins value - check both window and local variables
-    let coins = window.totalCoins;
-    if (typeof coins !== 'number' || isNaN(coins)) {
-        coins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
-        window.totalCoins = coins;
-    }
-    console.log('[Shop] Current totalCoins:', coins, 'window.totalCoins:', window.totalCoins);
+    // ALWAYS read from localStorage as source of truth
+    let coins = parseInt(localStorage.getItem('infinite_stairs_coins') || '0');
+    let owned = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
+
+    console.log('[Shop] localStorage coins:', coins, 'owned maps:', owned);
 
     // Already owned? Equip instead
-    if (window.ownedMaps && window.ownedMaps.includes(mapId)) {
+    if (owned.includes(mapId)) {
         console.log('[Shop] Map already owned, equipping instead');
         window.equipMapDirect(mapId);
         return;
@@ -47,16 +45,17 @@ window.buyMapDirect = function (mapId, price) {
     // Check gold
     if (coins >= price) {
         coins -= price;
+        owned.push(mapId);
+
+        // Update global variables
         window.totalCoins = coins;
-        // Also update the local variable if it exists
+        window.ownedMaps = owned;
         if (typeof totalCoins !== 'undefined') totalCoins = coins;
+        if (typeof ownedMaps !== 'undefined') ownedMaps = owned;
 
-        if (!window.ownedMaps) window.ownedMaps = ['default'];
-        window.ownedMaps.push(mapId);
-
-        // Save immediately
-        localStorage.setItem('infinite_stairs_coins', coins);
-        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
+        // Save to localStorage immediately
+        localStorage.setItem('infinite_stairs_coins', coins.toString());
+        localStorage.setItem('ownedMaps', JSON.stringify(owned));
 
         // Update UI
         const coinEl = document.getElementById('coin-count');
