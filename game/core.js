@@ -349,7 +349,30 @@ resetAiBtn.addEventListener('click', () => {
 });
 stopBtn.addEventListener('click', stopGame);
 
+// Cheat Code System
+let cheatBuffer = "";
 window.addEventListener('keydown', (e) => {
+    // Collect keys for cheat code
+    if (e.key.length === 1) {
+        cheatBuffer += e.key.toLowerCase();
+        if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
+
+        if (cheatBuffer.endsWith('kimminki')) {
+            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000...");
+            if (window.gameState.running) {
+                // Bulk add stairs to prevent crash
+                const needed = 1000 - window.gameState.score;
+                if (needed > 0) {
+                    for (let i = 0; i < needed; i++) addStair();
+                    window.gameState.score = 1000;
+                    scoreEl.innerText = window.gameState.score;
+                    window.gameState.timer = MAX_TIMER;
+                }
+            }
+            cheatBuffer = "";
+        }
+    }
+
     // Use custom key bindings from settings
     const jumpKey = window.getKeyBinding ? window.getKeyBinding('jump') : 'KeyJ';
     const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
