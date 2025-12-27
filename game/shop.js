@@ -23,6 +23,8 @@ const MAP_DATA = {
     map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!' }
 };
 
+console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
+
 // Component Generator for Shop Items
 function createShopItemElement(id, data, category) {
     const isOwned = checkOwnership(id, category);
@@ -239,6 +241,12 @@ function bindBuyEquipButtons() {
                     window.totalCoins -= price;
                     localStorage.setItem('infinite_stairs_coins', window.totalCoins);
 
+                    // Update UI immediately
+                    const coinEls = document.querySelectorAll('.total-coins-display');
+                    coinEls.forEach(el => el.innerText = window.totalCoins);
+                    const shopGold = document.getElementById('shop-gold');
+                    if (shopGold) shopGold.innerText = window.totalCoins;
+
                     if (category === 'char') {
                         window.ownedSkins.push(id);
                         localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
@@ -249,6 +257,7 @@ function bindBuyEquipButtons() {
                         window.ownedPets.push(id);
                         localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
                     } else if (category === 'map') {
+                        console.log('[Shop] Buying map:', id);
                         window.ownedMaps.push(id);
                         localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
                     }
@@ -259,7 +268,8 @@ function bindBuyEquipButtons() {
 
                     alert(`✅ ${id} 구매 완료!`);
 
-                    // Auto equip after buy
+                    // Force UI refresh
+                    updateShopUI();
                     if (category === 'char') {
                         if (typeof equipSkin === 'function') equipSkin(id);
                     } else if (category === 'stair') {
