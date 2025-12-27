@@ -170,6 +170,83 @@ function bindShopEvents() {
         const btn = document.getElementById(`tab-${t}`);
         if (btn) btn.onclick = () => switchShopTab(t);
     });
+
+    // EVENT DELEGATION: Handle ALL shop button clicks in one place
+    if (overlay) {
+        overlay.addEventListener('click', function (e) {
+            const btn = e.target.closest('.shop-item button');
+            if (!btn) return;
+
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const category = btn.dataset.category;
+            const price = parseInt(btn.dataset.price) || 0;
+
+            console.log('[Shop Event Delegation] Button clicked!', { id, category, price });
+
+            if (!id || !category) {
+                console.error('[Shop] Missing data attributes!', btn);
+                return;
+            }
+
+            const isOwned = checkOwnership(id, category);
+            console.log('[Shop] Ownership:', isOwned, 'ownedMaps:', window.ownedMaps);
+
+            if (isOwned) {
+                // Equip flow
+                if (category === 'char') {
+                    if (typeof equipSkin === 'function') equipSkin(id);
+                } else if (category === 'stair') {
+                    equipStairSkin(id);
+                } else if (category === 'pet') {
+                    equipPet(id);
+                } else if (category === 'map') {
+                    equipMap(id);
+                }
+            } else {
+                // Buy flow
+                if (window.totalCoins >= price) {
+                    window.totalCoins -= price;
+                    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+
+                    if (category === 'char') {
+                        window.ownedSkins.push(id);
+                        localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
+                    } else if (category === 'stair') {
+                        window.ownedStairSkins.push(id);
+                        localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
+                    } else if (category === 'pet') {
+                        window.ownedPets.push(id);
+                        localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+                    } else if (category === 'map') {
+                        console.log('[Shop] Buying map:', id);
+                        window.ownedMaps.push(id);
+                        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
+                    }
+
+                    if (window.saveData) {
+                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
+                    }
+
+                    alert(`✅ ${id} 구매 완료!`);
+                    updateShopUI();
+
+                    // Auto equip after buy
+                    if (category === 'char') {
+                        if (typeof equipSkin === 'function') equipSkin(id);
+                    } else if (category === 'stair') {
+                        equipStairSkin(id);
+                    } else if (category === 'pet') {
+                        equipPet(id);
+                    } else if (category === 'map') {
+                        equipMap(id);
+                    }
+                } else {
+                    alert(`❌ 골드가 부족합니다! (${window.totalCoins}G / ${price}G)`);
+                }
+            }
+        });
+    }
 }
 
 function equipStairSkin(id) {
