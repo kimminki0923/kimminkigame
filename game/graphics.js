@@ -273,12 +273,20 @@ function drawPet(ctx, px, py, petType, playerDir) {
 
     ctx.save();
 
-    // Smoothly interpolate pet position
-    let followOffset = { x: -playerDir * 0.4, y: 0.1 }; // one step behind
-    if (petType === 'pet_eagle') followOffset = { x: 0, y: -1.0 }; // above head
+    // Target position calculation
+    let targetX, targetY;
 
-    const targetX = window.gameState.renderPlayer.x + followOffset.x;
-    const targetY = window.gameState.renderPlayer.y + followOffset.y;
+    if (petType === 'pet_eagle') {
+        // Eagle: Hover directly above player's current render position
+        targetX = window.gameState.renderPlayer.x;
+        targetY = window.gameState.renderPlayer.y + 1.8; // Clearly above head
+    } else {
+        // Ground Pets: Follow exactly one step behind
+        const prevIdx = Math.max(0, window.gameState.score - 1);
+        const prevStair = window.gameState.stairs[prevIdx] || { x: 0, y: 0 };
+        targetX = prevStair.x;
+        targetY = prevStair.y + 0.1; // Slightly above the stair surface
+    }
 
     // Initialize if jump
     if (Math.abs(petRenderPos.x - targetX) > 5) {
@@ -298,9 +306,10 @@ function drawPet(ctx, px, py, petType, playerDir) {
     const bounce = Math.sin(time * 10) * 3;
     const petIcon = PET_DATA[petType]?.icon || '❓';
 
-    ctx.font = "32px Arial";
+    ctx.font = "42px Arial"; // Size match to character
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.globalAlpha = 1.0; // Ensure NO transparency
 
     // Draw shadow for pet
     ctx.fillStyle = "rgba(0,0,0,0.2)";

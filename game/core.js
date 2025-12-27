@@ -227,25 +227,45 @@ function performAction(action) {
         }
 
         if (next.hasCoin) {
-            window.gameState.coinCount += next.coinVal;
+            let actualCoinVal = next.coinVal;
+            const isPigActive = (typeof currentPet !== 'undefined' && currentPet === 'pet_pig');
+
+            if (isPigActive) {
+                actualCoinVal *= 2;
+                console.log(`[BONUS] Golden Pig doubled coin: ${next.coinVal} -> ${actualCoinVal}`);
+            }
+
+            window.gameState.coinCount += actualCoinVal;
             if (!window.isTraining && !window.isAutoPlaying) {
-                totalCoins += next.coinVal;
+                totalCoins += actualCoinVal;
                 coinEl.innerText = totalCoins;
                 localStorage.setItem('infinite_stairs_coins', totalCoins);
                 const shopGold = document.getElementById('shop-gold');
                 if (shopGold) shopGold.innerText = totalCoins;
+
                 // Immediate cloud save for coins
                 if (window.saveData && isDataLoaded) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
                 }
             } else {
                 coinEl.innerText = "(AI)";
             }
             next.hasCoin = false;
+
             let col = '#ffd700';
             if (next.coinVal === 5) col = '#00d2d3';
             if (next.coinVal === 10) col = '#ff6b6b';
-            particles.push({ type: 'text', val: '+' + next.coinVal, x: next.x, y: next.y, life: 1.0, color: col, dy: -3 });
+            if (isPigActive) col = '#f1c40f'; // Bright golden for bonus
+
+            particles.push({
+                type: 'text',
+                val: (isPigActive ? '🐷x2 ' : '+') + actualCoinVal,
+                x: next.x,
+                y: next.y,
+                life: 1.0,
+                color: col,
+                dy: -3
+            });
         }
         return 10;
     } else {
