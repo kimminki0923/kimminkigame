@@ -594,8 +594,8 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
     ctx.arc(sunX, sunY + 50, 80, 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. Parallax Layer 1: Distant Silhouettes
-    const p1 = (camX * 0.05) % w;
+    // 4. Parallax Layer 1: Distant Silhouettes (Slower = More Stable)
+    const p1 = (camX * 0.02) % w;
     ctx.save();
     ctx.translate(0, h * 0.05);
 
@@ -609,18 +609,18 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
 
     ctx.restore();
 
-    // 5. Parallax Layer 2: Mid-Range Dunes
-    const p2 = (camX * 0.15) % w;
-    drawArtisticDunes(ctx, -p2, h, w, '#cd6133', 100, 50);
+    // 5. Parallax Layer 2: Mid-Range Dunes (Smoother Motion)
+    const p2 = (camX * 0.1) % w;
+    drawCalculusDunes(ctx, -p2, h, w, '#cd6133', 100, 0.003);
 
     // 6. Featured Monuments (Detailed Sphinx)
-    const p25 = (camX * 0.2) % (w * 1.5);
+    const p25 = (camX * 0.15) % (w * 1.5);
     const monX = w * 0.8 - p25;
     drawArtisticSphinx(ctx, monX, h * 0.82, 0.8);
 
-    // 7. Parallax Layer 3: Foreground Dunes
-    const p3 = (camX * 0.4) % w;
-    drawArtisticDunes(ctx, -p3, h + 20, w + 200, '#e58e26', 150, 80);
+    // 7. Parallax Layer 3: Foreground Dunes (Calculus Curves)
+    const p3 = (camX * 0.25) % w;
+    drawCalculusDunes(ctx, -p3, h + 20, w + 200, '#e58e26', 150, 0.005);
 
     // 8. Ground Detail
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
@@ -877,4 +877,46 @@ function render() {
         ctx.fillText(p.val, ppx, ppy);
         ctx.globalAlpha = 1.0;
     }
+}
+
+// Helper: Calculus-based Smooth Dunes (Cubic Bezier)
+function drawCalculusDunes(ctx, startX, bottomY, width, color, waveHeight, frequency) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    // Start well before screen to ensure continuity
+    const ext = 600;
+    const step = 40; // Sampling step for derivatives
+    const startObj = startX - ext;
+    const endX = startX + width + ext;
+
+    ctx.moveTo(startObj, bottomY);
+
+    // Initial Point
+    let px = startObj;
+    // f(x) = bottomY * 0.85 - sin(freq*x)*H + cos(freq*2.5*x)*(H*0.2)
+    // We use numeric points for Bezier, but conceptually this models a smooth function
+    let py = bottomY * 0.85 - Math.sin(px * frequency) * waveHeight + Math.cos(px * frequency * 2.5) * (waveHeight * 0.2);
+
+    ctx.lineTo(px, py);
+
+    for (let x = px + step; x <= endX; x += step) {
+        let ny = bottomY * 0.85 - Math.sin(x * frequency) * waveHeight + Math.cos(x * frequency * 2.5) * (waveHeight * 0.2);
+
+        // Control Points using Catmull-Rom like tension (0.5)
+        // Or simple midpoint for smooth quadratic-like cubic
+        let cp1x = px + step * 0.5;
+        let cp1y = py;
+        let cp2x = x - step * 0.5;
+        let cp2y = ny;
+
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, ny);
+
+        px = x;
+        py = ny;
+    }
+
+    ctx.lineTo(endX, bottomY);
+    ctx.lineTo(startObj, bottomY);
+    ctx.closePath();
+    ctx.fill();
 }
