@@ -5,6 +5,9 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
+// SFX Toggle state
+window.sfxEnabled = localStorage.getItem('sfx_enabled') !== 'false'; // Default to true
+
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new AudioContext();
@@ -20,6 +23,8 @@ function initAudio() {
  * @param {string} skinType - 'circle', 'square', 'triangle', 'diamond'
  */
 window.playStepSound = function (skinType = 'circle') {
+    if (!window.sfxEnabled) return; // Skip if disabled
+
     console.log(`[SFX] Playing: ${skinType}`);
     if (!audioCtx) initAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();

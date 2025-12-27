@@ -670,6 +670,10 @@ button:active {
 }
 
 @media (max-width: 480px) {
+    #scoreboard {
+        display: none !important;
+    }
+
     #score {
         font-size: 48px;
         top: 50px;

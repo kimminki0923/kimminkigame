@@ -37,6 +37,34 @@ function updateSettingsUI() {
     const turnKeyDisplay = document.getElementById('current-turn-key');
     if (jumpKeyDisplay) jumpKeyDisplay.innerText = keyCodeToName(keyBindings.jump);
     if (turnKeyDisplay) turnKeyDisplay.innerText = keyCodeToName(keyBindings.turn);
+
+    updateSFXUI();
+}
+
+function updateSFXUI() {
+    const sfxStatus = document.getElementById('sfx-status');
+    const sfxBtn = document.getElementById('toggle-sfx-btn');
+
+    if (sfxStatus && sfxBtn) {
+        if (window.sfxEnabled) {
+            sfxStatus.innerText = 'ON';
+            sfxStatus.style.color = '#2ecc71';
+            sfxBtn.innerText = '끄기';
+            sfxBtn.style.background = '#e74c3c';
+        } else {
+            sfxStatus.innerText = 'OFF';
+            sfxStatus.style.color = '#e74c3c';
+            sfxBtn.innerText = '켜기';
+            sfxBtn.style.background = '#2ecc71';
+        }
+    }
+}
+
+function toggleSFX() {
+    window.sfxEnabled = !window.sfxEnabled;
+    localStorage.setItem('sfx_enabled', window.sfxEnabled);
+    updateSFXUI();
+    console.log(`[Settings] SFX Toggled: ${window.sfxEnabled}`);
 }
 
 // Start listening for a new key
@@ -131,6 +159,13 @@ function bindSettingsEvents() {
         e.stopPropagation();
         resetKeyBindings();
         alert('키 설정이 초기화되었습니다.');
+    };
+
+    // SFX toggle button
+    const sfxBtn = document.getElementById('toggle-sfx-btn');
+    if (sfxBtn) sfxBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleSFX();
     };
 
     // Key capture listener
