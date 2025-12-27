@@ -876,11 +876,54 @@ function gameOver() {
     document.getElementById('high-score').innerText = aiHighScore;
 }
 
+// --- Easter Egg ---
+let inputBuffer = "";
+const EASTER_EGG_KEY = "kimminki";
+
 window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyJ') handleInput(0);
     if (e.code === 'KeyF') handleInput(1);
     if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
+
+    // Easter egg check
+    if (e.key.length === 1) {
+        inputBuffer += e.key.toLowerCase();
+        if (inputBuffer.length > 20) inputBuffer = inputBuffer.substring(1);
+
+        if (inputBuffer.includes(EASTER_EGG_KEY)) {
+            inputBuffer = "";
+            applyEasterEgg();
+        }
+    }
 });
+
+function applyEasterEgg() {
+    if (!window.gameState.running) initGame();
+
+    // 1. Jump to 1000 steps
+    while (window.gameState.stairs.length <= 1005) {
+        addStair();
+    }
+    window.gameState.score = 1000;
+    window.gameState.renderPlayer.x = window.gameState.stairs[1000].x;
+    window.gameState.renderPlayer.y = window.gameState.stairs[1000].y;
+    scoreEl.innerText = window.gameState.score;
+
+    // 2. Add 10000 gold
+    totalCoins += 10000;
+    coinEl.innerText = totalCoins;
+    const shopGold = document.getElementById('shop-gold');
+    if (shopGold) shopGold.innerText = totalCoins;
+
+    if (window.saveData) {
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+    }
+
+    statusEl.innerText = "✨ KIMMINKI POWER! ✨";
+    particles.push({ type: 'text', val: 'SECRET UNLOCKED!', x: window.gameState.stairs[1000].x, y: window.gameState.stairs[1000].y, life: 2.0, color: '#f1c40f', dy: -5 });
+
+    alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!");
+}
 
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
 btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(0); });
