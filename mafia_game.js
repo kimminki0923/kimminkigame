@@ -36,6 +36,10 @@ let mafiaUnsubscribe = null;
 // 1. Room Management (Lobby)
 // ============================================================
 
+function generateRandomId() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 document.getElementById('mafia-create-btn').addEventListener('click', createMafiaRoom);
 document.getElementById('mafia-join-btn').addEventListener('click', joinMafiaRoom);
 document.getElementById('mafia-start-btn').addEventListener('click', startMafiaGame);
