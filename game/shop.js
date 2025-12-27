@@ -25,6 +25,62 @@ const MAP_DATA = {
 
 console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 
+// SIMPLE GLOBAL FUNCTIONS FOR MAP PURCHASE (bypass all the complex binding)
+window.buyMapDirect = function (mapId, price) {
+    console.log('[Shop] buyMapDirect called:', mapId, price);
+
+    // Already owned? Equip instead
+    if (window.ownedMaps && window.ownedMaps.includes(mapId)) {
+        window.equipMapDirect(mapId);
+        return;
+    }
+
+    // Check gold
+    if (window.totalCoins >= price) {
+        window.totalCoins -= price;
+        if (!window.ownedMaps) window.ownedMaps = ['default'];
+        window.ownedMaps.push(mapId);
+
+        // Save
+        localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
+
+        // Update UI
+        const coinEl = document.getElementById('coin-count');
+        if (coinEl) coinEl.innerText = window.totalCoins;
+        const shopGold = document.getElementById('shop-gold');
+        if (shopGold) shopGold.innerText = window.totalCoins;
+
+        alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
+
+        // Auto equip
+        window.equipMapDirect(mapId);
+    } else {
+        alert(`❌ 골드가 부족합니다! (보유: ${window.totalCoins}G / 필요: ${price}G)`);
+    }
+};
+
+window.equipMapDirect = function (mapId) {
+    console.log('[Shop] equipMapDirect called:', mapId);
+    window.currentMap = mapId;
+    localStorage.setItem('currentMap', mapId);
+
+    // Update display
+    const mapDisplay = document.getElementById('current-map-display');
+    if (mapDisplay && MAP_DATA[mapId]) {
+        mapDisplay.innerText = MAP_DATA[mapId].icon + ' ' + MAP_DATA[mapId].name;
+    }
+
+    // Save to Firebase
+    if (window.saveData) {
+        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin,
+            window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet,
+            window.ownedMaps, window.currentMap);
+    }
+
+    alert(`🗺️ ${MAP_DATA[mapId]?.name || mapId} 맵이 장착되었습니다! 게임을 시작하면 적용됩니다.`);
+};
+
 // Component Generator for Shop Items
 function createShopItemElement(id, data, category) {
     const isOwned = checkOwnership(id, category);

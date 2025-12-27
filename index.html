@@ -336,8 +336,8 @@
                                         <div style="font-size:48px; margin-bottom:12px;">🌅</div>
                                         <h4 style="margin:0; color:#fff; font-size: 16px;">기본 하늘</h4>
                                         <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">오리지널 배경</p>
-                                        <button class="primary-btn" data-id="default" data-category="map" data-price="0"
-                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background:#2ecc71;">
+                                        <button onclick="equipMapDirect('default')"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background:#2ecc71; color:#fff; border:none; cursor:pointer;">
                                             장착하기
                                         </button>
                                     </div>
@@ -348,9 +348,8 @@
                                         <div style="font-size:48px; margin-bottom:12px;">🏜️</div>
                                         <h4 style="margin:0; color:#e67e22; font-size: 16px;">사막 피라미드</h4>
                                         <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">스핑크스와 파라오!</p>
-                                        <button class="primary-btn" data-id="map_desert" data-category="map"
-                                            data-price="5000"
-                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                        <button onclick="buyMapDirect('map_desert', 5000)"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000; border:none; cursor:pointer;">
                                             5000 G
                                         </button>
                                     </div>
@@ -361,9 +360,8 @@
                                         <div style="font-size:48px; margin-bottom:12px;">❄️</div>
                                         <h4 style="margin:0; color:#00bcd4; font-size: 16px;">겨울 왕국</h4>
                                         <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">북극, 펭귄, 오로라!</p>
-                                        <button class="primary-btn" data-id="map_winter" data-category="map"
-                                            data-price="5000"
-                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                        <button onclick="buyMapDirect('map_winter', 5000)"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000; border:none; cursor:pointer;">
                                             5000 G
                                         </button>
                                     </div>
@@ -902,18 +900,18 @@
     <div style="margin-top: 10px; font-size: 12px; color: #888;">
         (ONNX Model Check: AI buttons available)
     </div>
-    <script src="auth.js?v=1.37"></script>
+    <script src="auth.js?v=1.38"></script>
     <script src="common.js"></script>
     <!-- Game Logic Scripts with Cache-Busters -->
-    <script src="game/config.js?v=1.37"></script>
-    <script src="game/graphics.js?v=1.37"></script>
-    <script src="game/player.js?v=1.37"></script>
-    <script src="game/ai.js?v=1.37"></script>
-    <script src="game/shop.js?v=1.37"></script>
-    <script src="game/settings.js?v=1.37"></script>
-    <script src="game/audio.js?v=1.37"></script>
+    <script src="game/config.js?v=1.38"></script>
+    <script src="game/graphics.js?v=1.38"></script>
+    <script src="game/player.js?v=1.38"></script>
+    <script src="game/ai.js?v=1.38"></script>
+    <script src="game/shop.js?v=1.38"></script>
+    <script src="game/settings.js?v=1.38"></script>
+    <script src="game/audio.js?v=1.38"></script>
     <!-- Core Game Controller -->
-    <script src="game/core.js?v=1.37"></script>
+    <script src="game/core.js?v=1.38"></script>
     <script src="liar_game.js"></script>
     <script src="mafia_game.js"></script>
 </body>
