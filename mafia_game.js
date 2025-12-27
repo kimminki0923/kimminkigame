@@ -40,17 +40,17 @@ function generateRandomId() {
     return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-document.getElementById('mafia-create-btn').addEventListener('click', createMafiaRoom);
-document.getElementById('mafia-join-btn').addEventListener('click', joinMafiaRoom);
-document.getElementById('mafia-start-btn').addEventListener('click', startMafiaGame);
-document.getElementById('mafia-leave-btn').addEventListener('click', leaveMafiaRoom);
-document.getElementById('mafia-add-bots-btn').addEventListener('click', addMafiaBots);
-document.getElementById('mafia-chat-send-btn').addEventListener('click', sendMafiaChat);
+document.getElementById('mafia-create-btn')?.addEventListener('click', createMafiaRoom);
+document.getElementById('mafia-join-btn')?.addEventListener('click', joinMafiaRoom);
+document.getElementById('mafia-start-btn')?.addEventListener('click', startMafiaGame);
+document.getElementById('mafia-leave-btn')?.addEventListener('click', leaveMafiaRoom);
+document.getElementById('mafia-add-bots-btn')?.addEventListener('click', addMafiaBots);
+document.getElementById('mafia-chat-send-btn')?.addEventListener('click', sendMafiaChat);
 
 // Rules Toggle
-document.getElementById('toggle-mafia-rules-btn').addEventListener('click', () => {
+document.getElementById('toggle-mafia-rules-btn')?.addEventListener('click', () => {
     const rules = document.getElementById('mafia-game-rules');
-    rules.style.display = rules.style.display === 'none' ? 'block' : 'none';
+    if (rules) rules.style.display = rules.style.display === 'none' ? 'block' : 'none';
 });
 
 function createMafiaRoom() {
@@ -167,33 +167,45 @@ function startMafiaGame() {
         phase: 'NIGHT', // Start with Night 1 usually, or Day 1 for introductions
         dayCount: 1,
         nightActions: {},
-        votes: {}
+        votes: {},
+        mafiaChat: [],
+        doctorChat: [],
+        policeChat: []
     });
 }
 
 function assignRoles(players) {
-    // Basic Distribution Logic
-    // 4p: 1 Mafia, 1 Doctor, 2 Citizen
-    // 5p: 1 Mafia, 1 Doctor, 1 Police, 2 Citizen
-    // 6p: 1 Mafia, 1 Fraudster, 1 Doctor, 1 Police, 2 Citizen
-    // 7p: 2 Mafia, 1 Doctor, 1 Police, 3 Citizen
-    // 8p: 2 Mafia, 1 Gunman, 1 Doctor, 1 Police, 1 Fraudster, 2 Citizen
+    // Read custom role counts from UI (host settings)
+    const mafiaCount = parseInt(document.getElementById('role-mafia-count')?.value || 1);
+    const doctorCount = parseInt(document.getElementById('role-doctor-count')?.value || 1);
+    const policeCount = parseInt(document.getElementById('role-police-count')?.value || 1);
+    const fraudsterCount = parseInt(document.getElementById('role-fraudster-count')?.value || 0);
+    const gunmanCount = parseInt(document.getElementById('role-gunman-count')?.value || 0);
 
-    const count = players.length;
     let roles = [];
 
-    if (count <= 4) roles = ['MAFIA', 'DOCTOR', 'CITIZEN', 'CITIZEN'];
-    else if (count === 5) roles = ['MAFIA', 'DOCTOR', 'POLICE', 'CITIZEN', 'CITIZEN'];
-    else if (count === 6) roles = ['MAFIA', 'FRAUDSTER', 'DOCTOR', 'POLICE', 'CITIZEN', 'CITIZEN'];
-    else if (count === 7) roles = ['MAFIA', 'MAFIA', 'DOCTOR', 'POLICE', 'CITIZEN', 'CITIZEN', 'CITIZEN'];
-    else roles = ['MAFIA', 'MAFIA', 'BROKEN_GUNMAN', 'FRAUDSTER', 'DOCTOR', 'POLICE', 'CITIZEN', 'CITIZEN'];
+    // Add specified roles
+    for (let i = 0; i < mafiaCount; i++) roles.push('MAFIA');
+    for (let i = 0; i < doctorCount; i++) roles.push('DOCTOR');
+    for (let i = 0; i < policeCount; i++) roles.push('POLICE');
+    for (let i = 0; i < fraudsterCount; i++) roles.push('FRAUDSTER');
+    for (let i = 0; i < gunmanCount; i++) roles.push('BROKEN_GUNMAN');
+
+    // Fill remaining with Citizens
+    const remainingCount = players.length - roles.length;
+    for (let i = 0; i < remainingCount; i++) roles.push('CITIZEN');
+
+    // Validate: must have at least 1 mafia and total roles should match player count
+    if (roles.length > players.length) {
+        alert(`직업 수(${roles.length})가 플레이어 수(${players.length})보다 많습니다! 설정을 조정해주세요.`);
+        return null;
+    }
 
     // Shuffle roles
     roles = roles.sort(() => Math.random() - 0.5);
 
     // Assign to players
     return players.map((p, i) => {
-        // If roles run (should match size), default Citizen
         const rKey = roles[i] || 'CITIZEN';
         return { ...p, role: rKey, isAlive: true };
     });

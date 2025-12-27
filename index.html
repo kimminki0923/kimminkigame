@@ -559,6 +559,41 @@
 
                 <div id="mafia-host-controls"
                     style="display:none; margin-top:30px; display:flex; flex-direction:column; gap:12px;">
+
+                    <!-- Role Configuration Panel -->
+                    <div id="role-config-panel"
+                        style="background:rgba(0,0,0,0.3); padding:15px; border-radius:15px; border:1px solid #e74c3c; margin-bottom:10px;">
+                        <h4 style="margin:0 0 15px 0; color:#e74c3c;">⚙️ 직업 설정</h4>
+                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; font-size:14px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#e74c3c;">🔫 마피아</span>
+                                <input type="number" id="role-mafia-count" value="1" min="1" max="3"
+                                    style="width:50px; padding:5px; border-radius:5px; border:1px solid #e74c3c; background:#222; color:white; text-align:center;">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#2ecc71;">🩺 의사</span>
+                                <input type="number" id="role-doctor-count" value="1" min="0" max="2"
+                                    style="width:50px; padding:5px; border-radius:5px; border:1px solid #2ecc71; background:#222; color:white; text-align:center;">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#3498db;">👮 경찰</span>
+                                <input type="number" id="role-police-count" value="1" min="0" max="2"
+                                    style="width:50px; padding:5px; border-radius:5px; border:1px solid #3498db; background:#222; color:white; text-align:center;">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#f1c40f;">🤡 사기꾼</span>
+                                <input type="number" id="role-fraudster-count" value="0" min="0" max="1"
+                                    style="width:50px; padding:5px; border-radius:5px; border:1px solid #f1c40f; background:#222; color:white; text-align:center;">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#e67e22;">🤠 총잡이</span>
+                                <input type="number" id="role-gunman-count" value="0" min="0" max="1"
+                                    style="width:50px; padding:5px; border-radius:5px; border:1px solid #e67e22; background:#222; color:white; text-align:center;">
+                            </div>
+                        </div>
+                        <p style="margin:10px 0 0 0; font-size:11px; color:#888;">나머지는 자동으로 시민으로 배정됩니다.</p>
+                    </div>
+
                     <button id="mafia-start-btn" class="primary-btn" style="padding:18px; background:#e74c3c;">🚀 게임
                         시작</button>
                     <div style="display:flex; gap:10px;">
@@ -906,18 +941,18 @@
     <div style="margin-top: 10px; font-size: 12px; color: #888;">
         (ONNX Model Check: AI buttons available)
     </div>
-    <script src="auth.js?v=1.13"></script>
+    <script src="auth.js?v=1.14"></script>
     <script src="common.js"></script>
     <!-- Game Logic Scripts with Cache-Busters -->
-    <script src="game/config.js?v=1.13"></script>
-    <script src="game/graphics.js?v=1.13"></script>
-    <script src="game/player.js?v=1.13"></script>
-    <script src="game/ai.js?v=1.13"></script>
-    <script src="game/shop.js?v=1.13"></script>
-    <script src="game/settings.js?v=1.13"></script>
-    <script src="game/audio.js?v=1.13"></script>
+    <script src="game/config.js?v=1.14"></script>
+    <script src="game/graphics.js?v=1.14"></script>
+    <script src="game/player.js?v=1.14"></script>
+    <script src="game/ai.js?v=1.14"></script>
+    <script src="game/shop.js?v=1.14"></script>
+    <script src="game/settings.js?v=1.14"></script>
+    <script src="game/audio.js?v=1.14"></script>
     <!-- Core Game Controller -->
-    <script src="game/core.js?v=1.13"></script>
+    <script src="game/core.js?v=1.14"></script>
     <script src="liar_game.js"></script>
     <script src="mafia_game.js"></script>
 </body>
