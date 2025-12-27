@@ -452,22 +452,31 @@ window.addEventListener('keydown', (e) => {
                 if (scoreEl) scoreEl.innerText = window.gameState.score;
             }
 
-            // 2. Grant 10,000 gold
+            // 2. Update high score if new score is higher
+            if (window.gameState.score > aiHighScore) {
+                aiHighScore = window.gameState.score;
+                localStorage.setItem('infinite_stairs_highScore', aiHighScore);
+                const hsEl = document.getElementById('highscore-display');
+                if (hsEl) hsEl.innerText = aiHighScore;
+            }
+
+            // 3. Grant 10,000 gold and save to localStorage
             totalCoins += 10000;
+            localStorage.setItem('infinite_stairs_coins', totalCoins);
             if (coinEl) coinEl.innerText = totalCoins;
             const shopGold = document.getElementById('shop-gold');
             if (shopGold) shopGold.innerText = totalCoins;
 
-            // 3. UI feedback & Timer reset
+            // 4. UI feedback & Timer reset
             window.gameState.timer = MAX_TIMER;
             if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
 
-            // 4. Persistence
+            // 5. Cloud Persistence
             if (window.saveData && isDataLoaded) {
                 window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
             }
 
-            alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!");
+            alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
             cheatBuffer = "";
         }
     }
