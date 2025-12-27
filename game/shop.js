@@ -4,7 +4,9 @@
 
 const STAIR_SKIN_DATA = {
     default: { name: '기본 계단', icon: '🏢' },
-    stair_glass: { name: '유리 계단', icon: '🧊', price: 1000, type: 'glass' }
+    stair_glass: { name: '유리 계단', icon: '🧊', price: 3000, type: 'glass' },
+    stair_pharaoh: { name: '파라오의 황금 계단', icon: '👑', price: 3000, type: 'pharaoh' },
+    stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' }
 };
 
 const PET_DATA = {
@@ -15,14 +17,118 @@ const PET_DATA = {
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' }
 };
 
-// Map/Background Data
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
     map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' }
 };
 
+// Component Generator for Shop Items
+function createShopItemElement(id, data, category) {
+    const isOwned = checkOwnership(id, category);
+    const isEquipped = checkEquipped(id, category);
+
+    const div = document.createElement('div');
+    div.className = 'shop-item card-3d';
+    div.style.padding = '15px';
+    div.style.margin = '10px';
+    div.style.background = isEquipped ? '#f1c40f22' : '#222';
+    div.style.border = isEquipped ? '2px solid #f1c40f' : '1px solid #444';
+    div.style.borderRadius = '12px';
+    div.style.position = 'relative';
+    div.style.minWidth = '140px';
+    div.style.textAlign = 'center';
+
+    div.innerHTML = `
+        <div style="font-size: 40px; margin-bottom: 10px;">${data.icon}</div>
+        <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
+        ${!isOwned ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
+        <button id="btn-${id}" 
+            class="${isOwned ? 'equip-btn' : 'buy-btn'}"
+            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold;
+            background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : '#e67e22'};
+            color: #fff;">
+            ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : '구매하기'}
+        </button>
+    `;
+
+    return div;
+}
+
+function checkOwnership(id, category) {
+    if (category === 'stair') return ownedStairSkins.includes(id);
+    if (category === 'pet') return ownedPets.includes(id);
+    if (category === 'map') return ownedMaps.includes(id);
+    if (category === 'char') return ownedSkins.includes(id);
+    return false;
+}
+
+function checkEquipped(id, category) {
+    if (category === 'stair') return currentStairSkin === id;
+    if (category === 'pet') return currentPet === id;
+    if (category === 'map') return currentMap === id;
+    if (category === 'char') return currentSkin === id;
+    return false;
+}
+
 let ownedMaps = ['default'];
 let currentMap = 'default';
+
+function updateShopUI() {
+    // Dynamic Shop Sections
+    const sections = {
+        'char': { data: SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
+        'stair': { data: STAIR_SKIN_DATA, containerId: 'shop-items-stair', category: 'stair' },
+        'pet': { data: PET_DATA, containerId: 'shop-items-pet', category: 'pet' },
+        'map': { data: MAP_DATA, containerId: 'shop-items-map', category: 'map' }
+    };
+
+    // Update Current Equipped Displays
+    const skinDisplay = document.getElementById('current-skin-display');
+    if (skinDisplay) skinDisplay.innerText = SKIN_DATA[currentSkin]?.icon + ' ' + SKIN_DATA[currentSkin]?.name;
+
+    const stairDisplay = document.getElementById('current-stair-display');
+    if (stairDisplay) stairDisplay.innerText = STAIR_SKIN_DATA[currentStairSkin]?.icon + ' ' + STAIR_SKIN_DATA[currentStairSkin]?.name;
+
+    const petDisplay = document.getElementById('current-pet-display');
+    if (petDisplay) petDisplay.innerText = PET_DATA[currentPet]?.icon + ' ' + PET_DATA[currentPet]?.name;
+
+    const mapDisplay = document.getElementById('current-map-display');
+    if (mapDisplay) mapDisplay.innerText = MAP_DATA[currentMap]?.icon + ' ' + MAP_DATA[currentMap]?.name;
+
+    for (const key in sections) {
+        const section = sections[key];
+        const container = document.getElementById(section.containerId);
+        if (container) {
+            container.innerHTML = ''; // Clear existing items
+            for (const itemId in section.data) {
+                if (itemId === 'default' && section.category !== 'stair' && section.category !== 'map') continue; // Skip 'default' for char/pet if it's not a real item
+                if (itemId === 'none' && section.category !== 'pet') continue; // Skip 'none' for char/stair/map if it's not a real item
+
+                const itemData = section.data[itemId];
+                const itemElement = createShopItemElement(itemId, itemData, section.category);
+
+                // Add dataset attributes for purchase/equip logic
+                const button = itemElement.querySelector('button');
+                if (button) {
+                    button.dataset.id = itemId;
+                    button.dataset.price = itemData.price || 0;
+                    // Add specific classes for easier targeting in bindBuyEquipButtons
+                    if (section.category === 'char') {
+                        button.classList.add('buy-char-btn', 'equip-char-btn');
+                    } else if (section.category === 'stair') {
+                        button.classList.add('buy-stair-btn', 'equip-stair-btn');
+                    } else if (section.category === 'pet') {
+                        button.classList.add('buy-pet-btn', 'equip-pet-btn');
+                    } else if (section.category === 'map') {
+                        button.classList.add('buy-map-btn', 'equip-map-btn');
+                    }
+                }
+                container.appendChild(itemElement);
+            }
+        }
+    }
+    bindBuyEquipButtons(); // Rebind buttons after updating UI
+}
 
 function switchShopTab(tab) {
     const charTab = document.getElementById('tab-char');
@@ -55,6 +161,8 @@ function switchShopTab(tab) {
         mapTab.style.background = '#f1c40f';
         mapTab.style.color = '#000';
     }
+
+    updateShopUI(); // Refresh items for selected tab
 }
 
 function bindShopEvents() {
@@ -321,86 +429,6 @@ function updateShopUI() {
 
     document.querySelectorAll('.equip-btn').forEach(btn => {
         const skinId = btn.dataset.skin || btn.dataset.id;
-        if (skinId === currentSkin) {
-            btn.innerText = '✓ 장착중';
-            btn.style.background = '#7f8c8d';
-            btn.disabled = true;
-        } else if (ownedSkins.includes(skinId)) {
-            btn.innerText = '장착하기';
-            btn.style.background = '#2ecc71';
-            btn.disabled = false;
-        }
-    });
-
-    // Stair Skins UI update
-    document.querySelectorAll('.buy-stair-btn').forEach(btn => {
-        const stairId = btn.dataset.id;
-        if (ownedStairSkins.includes(stairId)) {
-            btn.innerText = currentStairSkin === stairId ? '✓ 장착중' : '장착하기';
-            btn.style.background = currentStairSkin === stairId ? '#7f8c8d' : '#2ecc71';
-            btn.disabled = currentStairSkin === stairId;
-            btn.classList.add('equip-stair-btn');
-            btn.classList.remove('buy-stair-btn');
-        }
-    });
-
-    document.querySelectorAll('.equip-stair-btn').forEach(btn => {
-        const stairId = btn.dataset.stair || btn.dataset.id;
-        if (stairId === currentStairSkin) {
-            btn.innerText = '✓ 장착중';
-            btn.style.background = '#7f8c8d';
-            btn.disabled = true;
-        } else if (ownedStairSkins.includes(stairId)) {
-            btn.innerText = '장착하기';
-            btn.style.background = '#2ecc71';
-            btn.disabled = false;
-        }
-    });
-
-    // Pet UI update
-    document.querySelectorAll('.buy-pet-btn').forEach(btn => {
-        const petId = btn.dataset.id;
-        if (ownedPets.includes(petId)) {
-            btn.innerText = currentPet === petId ? '✓ 장착중' : '장착하기';
-            btn.style.background = currentPet === petId ? '#7f8c8d' : '#2ecc71';
-            btn.disabled = currentPet === petId;
-            btn.classList.add('equip-pet-btn');
-            btn.classList.remove('buy-pet-btn');
-        }
-    });
-
-    document.querySelectorAll('.equip-pet-btn').forEach(btn => {
-        const petId = btn.dataset.pet || btn.dataset.id;
-        if (petId === currentPet) {
-            btn.innerText = '✓ 장착중';
-            btn.style.background = '#7f8c8d';
-            btn.disabled = true;
-        } else if (ownedPets.includes(petId) || petId === 'none') {
-            btn.innerText = '장착하기';
-            btn.style.background = '#2ecc71';
-            btn.disabled = false;
-        }
-    });
-
-    // Map Display Update
-    const currentMapDisplay = document.getElementById('current-map-display');
-    if (currentMapDisplay && MAP_DATA[currentMap]) {
-        currentMapDisplay.innerText = `${MAP_DATA[currentMap].icon} ${MAP_DATA[currentMap].name}`;
-    }
-
-    // Map UI update
-    document.querySelectorAll('.buy-map-btn').forEach(btn => {
-        const mapId = btn.dataset.id;
-        if (ownedMaps.includes(mapId)) {
-            btn.innerText = currentMap === mapId ? '✓ 장착중' : '장착하기';
-            btn.style.background = currentMap === mapId ? '#7f8c8d' : '#2ecc71';
-            btn.disabled = currentMap === mapId;
-            btn.classList.add('equip-map-btn');
-            btn.classList.remove('buy-map-btn');
-        }
-    });
-
-    document.querySelectorAll('.equip-map-btn').forEach(btn => {
         const mapId = btn.dataset.map || btn.dataset.id;
         if (mapId === currentMap) {
             btn.innerText = '✓ 장착중';
@@ -413,3 +441,4 @@ function updateShopUI() {
         }
     });
 }
+
