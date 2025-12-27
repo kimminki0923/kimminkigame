@@ -45,6 +45,19 @@ function initBackgroundObjects() {
             phase: Math.random() * Math.PI * 2
         });
     }
+
+    minerals.length = 0;
+    const mColors = ['#9b59b6', '#3498db', '#2ecc71', '#f1c40f', '#e67e22'];
+    for (let i = 0; i < 50; i++) {
+        minerals.push({
+            x: Math.random() * 3000 - 1500,
+            y: Math.random() * 5000,
+            size: 5 + Math.random() * 15,
+            color: mColors[Math.floor(Math.random() * mColors.length)],
+            angle: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.05
+        });
+    }
 }
 
 function lerpColor(a, b, t) {
@@ -65,7 +78,7 @@ function drawBackground(camX, camY) {
     const time = Date.now() * 0.001;
 
     // Sky Gradient (Score-based progression)
-    const keys = [
+    let keys = [
         { scores: 0, top: '#ff9a9e', bot: '#fecfef' },
         { scores: 200, top: '#89f7fe', bot: '#66a6ff' },
         { scores: 500, top: '#2c3e50', bot: '#fd746c' },
@@ -73,6 +86,19 @@ function drawBackground(camX, camY) {
         { scores: 1000, top: '#000000', bot: '#1c1c1c' },
         { scores: 10000, top: '#ffffff', bot: '#dcdde1' }
     ];
+
+    // Version 2: Reverse Mode Specific Themes
+    if (window.gameState.isReverseMode) {
+        keys = [
+            { scores: 0, top: '#ff9a9e', bot: '#fecfef' },   // Surface
+            { scores: 100, top: '#5d4037', bot: '#3e2723' }, // Entering Soil
+            { scores: 500, top: '#212121', bot: '#000000' }, // Deep Underground
+            { scores: 800, top: '#e64a19', bot: '#bf360c' }, // Outer Core (Lava)
+            { scores: 1200, top: '#ffeb3b', bot: '#f57f17' }, // Inner Core (White Hot)
+            { scores: 1500, top: '#0f0c29', bot: '#302b63' }, // Emerging Other Side (Space)
+            { scores: 10000, top: '#00d2ff', bot: '#3a7bd5' } // Blue Sky again?
+        ];
+    }
 
     let k1 = keys[0], k2 = keys[keys.length - 1];
     for (let i = 0; i < keys.length - 1; i++) {
@@ -188,6 +214,42 @@ function drawBackground(camX, camY) {
         });
         ctx.globalAlpha = 1;
     }
+
+    // Minerals (Underground Version 2)
+    const mineralAlpha = (window.gameState.isReverseMode && score > 150) ? Math.min(1, (score - 150) / 100) : 0;
+    if (mineralAlpha > 0) {
+        ctx.globalAlpha = mineralAlpha;
+        minerals.forEach(m => {
+            const mx = (camX * 0.15 + m.x + 5000) % 3000 - 1500;
+            const mineralYMove = -(score * 4); // Fast upward move for minerals
+            const my = (m.y + mineralYMove + 10000) % 5000;
+
+            ctx.save();
+            ctx.translate(mx, my);
+            ctx.rotate(time * 0.5 + m.angle);
+
+            // Draw a crystalline shape
+            ctx.fillStyle = m.color;
+            ctx.beginPath();
+            ctx.moveTo(0, -m.size);
+            ctx.lineTo(m.size * 0.8, 0);
+            ctx.lineTo(0, m.size);
+            ctx.lineTo(-m.size * 0.8, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Shininess
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(0, -m.size);
+            ctx.lineTo(m.size * 0.4, 0);
+            ctx.lineTo(0, m.size * 0.2);
+            ctx.fill();
+
+            ctx.restore();
+        });
+        ctx.globalAlpha = 1;
+    }
 }
 
 function render() {
@@ -200,7 +262,8 @@ function render() {
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
-    const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + 100;
+    const offset = window.gameState.isReverseMode ? -150 : 100;
+    const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
 
     // Background
     drawBackground(camX, camY);

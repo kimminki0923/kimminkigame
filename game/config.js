@@ -40,6 +40,7 @@ const clouds = [];
 const planets = [];
 const stars = [];
 const particles = [];
+const minerals = []; // New: Underground objects
 
 // Persistent State (loaded from storage/Firebase)
 let epsilon = 1.0;
