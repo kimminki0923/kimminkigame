@@ -276,7 +276,7 @@ function render() {
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
-    const offset = window.gameState.isReverseMode ? -200 : 100;
+    const offset = window.gameState.isReverseMode ? -100 : 100;
     const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
 
     // Background
