@@ -150,8 +150,10 @@ function switchShopTab(tab) {
 }
 
 function bindShopEvents() {
+    console.log('[Shop] Binding shop events...');
     const openBtn = document.getElementById('shop-open-btn');
     const overlay = document.getElementById('shop-overlay');
+    console.log('[Shop] Overlay found:', !!overlay);
     const closeBtns = [document.getElementById('close-shop-btn'), document.getElementById('close-shop-btn-bottom')];
 
     if (openBtn) {
