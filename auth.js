@@ -121,11 +121,15 @@ async function loadCloudData(uid) {
         const localCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
         const localSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
         const localSkin = localStorage.getItem('currentSkin') || 'default';
+        const localStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
+        const localStairSkin = localStorage.getItem('currentStairSkin') || 'default';
 
         let finalScore = localScore;
         let finalCoins = localCoins;
         let finalSkins = localSkins;
         let finalSkin = localSkin;
+        let finalStairSkins = localStairSkins;
+        let finalStairSkin = localStairSkin;
         let needSync = false;
 
         if (doc.exists) {
@@ -133,6 +137,7 @@ async function loadCloudData(uid) {
             const cloudScore = data.highScore || 0;
             const cloudCoins = data.coinCount || 0;
             const cloudSkins = data.ownedSkins || ['default'];
+            const cloudStairSkins = data.ownedStairSkins || ['default'];
 
             // Merge Strategy: MAX
             if (cloudScore > finalScore) finalScore = cloudScore;
@@ -142,18 +147,18 @@ async function loadCloudData(uid) {
             const skinSet = new Set([...finalSkins, ...cloudSkins]);
             finalSkins = Array.from(skinSet);
 
-            // Prefer Cloud Skin if different, unless local changed recently? 
-            // Stick to cloud skin to be safe, or local? 
-            // If cloud has a skin we don't own locally, we should probably equip it if cloud says so.
-            // But usually user wants 'current' state. Let's trust local skin if it's in the owned list.
+            const stairSkinSet = new Set([...finalStairSkins, ...cloudStairSkins]);
+            finalStairSkins = Array.from(stairSkinSet);
+
+            // Prefer Cloud Skin if different
             if (data.currentSkin && finalSkins.includes(data.currentSkin)) {
                 finalSkin = data.currentSkin;
             }
+            if (data.currentStairSkin && finalStairSkins.includes(data.currentStairSkin)) {
+                finalStairSkin = data.currentStairSkin;
+            }
 
-            // If Local was ahead, or we merged, we might want to sync back later?
-            // Actually, if Local < Cloud, we update Local.
-            // If Local > Cloud, we MUST update Cloud immediately.
-            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length) {
+            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length || finalStairSkins.length > cloudStairSkins.length) {
                 needSync = true;
             }
         } else {
@@ -163,10 +168,10 @@ async function loadCloudData(uid) {
 
         if (needSync) {
             console.log("☁️ Syncing Local Progress to Cloud...");
-            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin);
+            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin);
         }
 
-        applyGameData(finalScore, finalCoins, finalSkins, finalSkin);
+        applyGameData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin);
 
     } catch (e) {
         console.error("Load Cloud Error:", e);
@@ -179,14 +184,16 @@ function loadLocalData() {
     const c = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
     const skins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
     const skin = localStorage.getItem('currentSkin') || 'default';
-    applyGameData(s, c, skins, skin);
+    const stairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
+    const stairSkin = localStorage.getItem('currentStairSkin') || 'default';
+    applyGameData(s, c, skins, skin, stairSkins, stairSkin);
 }
 
 // --- Apply to Game (Bridge) ---
-function applyGameData(score, coins, skins, currentSkin) {
+function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
     const trySet = (attempts = 0) => {
         if (window.setGameData) {
-            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default');
+            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default', stairSkins || ['default'], currentStairSkin || 'default');
         } else if (attempts < 20) {
             setTimeout(() => trySet(attempts + 1), 200);
         }
@@ -195,38 +202,33 @@ function applyGameData(score, coins, skins, currentSkin) {
 }
 
 // --- Save Data ---
-function saveCloudData(score, coins, skins, currentSkin) {
+function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
     if (!db || !currentUser) return;
-
-    // Safety: Don't overwrite with empty/zero data if it looks like a reset error
-    // (e.g., if we inadvertently try to save before loading)
-    if (score === 0 && coins === 0 && (!skins || (skins.length === 1 && skins[0] === 'default'))) {
-        // If it's a new user, this is fine. But if it's an existing user, it's bad.
-        // We rely on 'merge: true' but that still overwrites fields.
-        // We will trust the caller (core.js) which checks isDataLoaded.
-    }
 
     db.collection('users').doc(currentUser.uid).set({
         highScore: score,
         coinCount: coins,
         ownedSkins: skins,
         currentSkin: currentSkin,
+        ownedStairSkins: stairSkins || ['default'],
+        currentStairSkin: currentStairSkin || 'default',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
         console.log("☁️ Cloud Save Success");
-        // Trigger leaderboard refresh immediately after saving a score
         loadLeaderboard();
     }).catch(e => console.error("Cloud Save Failed", e));
 }
 
-window.saveData = function (score, coins, skins, currentSkin) {
+window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
     if (skins) localStorage.setItem('ownedSkins', JSON.stringify(skins));
     if (currentSkin) localStorage.setItem('currentSkin', currentSkin);
+    if (stairSkins) localStorage.setItem('ownedStairSkins', JSON.stringify(stairSkins));
+    if (currentStairSkin) localStorage.setItem('currentStairSkin', currentStairSkin);
 
     if (currentUser && isCloudEnabled) {
-        saveCloudData(score, coins, skins, currentSkin);
+        saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin);
     }
 }
 

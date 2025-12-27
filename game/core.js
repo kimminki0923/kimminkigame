@@ -452,7 +452,8 @@ btnTurn.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(1
 btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0); });
 
 // Data Bridge for Firebase
-window.setGameData = function (score, coins, skins, cSkin) {
+// Data Bridge for Firebase
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin) {
     console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
     aiHighScore = parseInt(score || 0);
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
@@ -460,6 +461,8 @@ window.setGameData = function (score, coins, skins, cSkin) {
     if (coinEl) coinEl.innerText = totalCoins;
     if (skins) ownedSkins = skins;
     if (cSkin) currentSkin = cSkin;
+    if (stairSkins) ownedStairSkins = stairSkins;
+    if (cStairSkin) currentStairSkin = cStairSkin;
     isDataLoaded = true;
     updateShopUI();
     updateUnlockStatus(); // Fix: Ensure Reverse Mode button unlocks on refresh
@@ -487,13 +490,13 @@ if (window.initAuth) window.initAuth();
 // Save data when page closes/refreshes
 window.addEventListener('beforeunload', () => {
     if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin);
     }
 });
 
 // Periodic save (every 30 seconds)
 setInterval(() => {
     if (window.saveData && isDataLoaded && !window.isTraining && !window.isAutoPlaying) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin);
     }
 }, 30000);

@@ -206,81 +206,130 @@
                         <!-- Scrollable Content Section -->
                         <div id="shop-scroll-area" class="shop-content-scroll"
                             style="flex:1; overflow-y:auto; padding:30px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+                            <!-- Shop Tabs -->
+                            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                                <button onclick="switchShopTab('char')" id="tab-char" class="shop-tab active"
+                                    style="flex:1; padding:12px; border-radius:15px; border:none; background:#f1c40f; color:#000; font-weight:bold; cursor:pointer;">👤
+                                    캐릭터</button>
+                                <button onclick="switchShopTab('stair')" id="tab-stair" class="shop-tab"
+                                    style="flex:1; padding:12px; border-radius:15px; border:none; background:#333; color:#fff; font-weight:bold; cursor:pointer;">🪜
+                                    계단 스킨</button>
+                            </div>
+
                             <div
                                 style="font-size:18px; color:#f1c40f; margin-bottom:20px; background:rgba(255,255,255,0.1); padding:10px 25px; border-radius:30px; display:inline-block; border: 1px solid rgba(241, 196, 15, 0.3);">
                                 🪙 <span id="shop-gold">0</span> Gold
                             </div>
 
-                            <!-- Current Skin Section -->
-                            <div
-                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin-bottom:25px; border:1px solid #2ecc71; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.1);">
-                                <h3 style="margin:0 0 10px 0; color:#2ecc71; font-size: 16px;">🎮 현재 장착 스킨</h3>
-                                <div id="current-skin-display" style="font-size:28px; font-weight: 800;">⚪ 기본</div>
+                            <!-- Character Skin Section (Tab 1) -->
+                            <div id="shop-section-char" class="shop-section">
+                                <div
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin-bottom:25px; border:1px solid #2ecc71; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.1);">
+                                    <h3 style="margin:0 0 10px 0; color:#2ecc71; font-size: 16px;">🎮 현재 장착 캐릭터</h3>
+                                    <div id="current-skin-display" style="font-size:28px; font-weight: 800;">⚪ 기본</div>
+                                </div>
+
+                                <div
+                                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:15px;">
+                                    <!-- Default Skin (Free) -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">⚪</div>
+                                        <h4 style="margin:0; color:#fff; font-size: 16px;">기본 (원형)</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">클래식 캐릭터</p>
+                                        <button class="equip-btn primary-btn" data-skin="default"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px;">
+                                            장착하기
+                                        </button>
+                                    </div>
+
+                                    <!-- Square Skin -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🟧</div>
+                                        <h4 style="margin:0; color:#e67e22; font-size: 16px;">사각형</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">재빠른 큐브</p>
+                                        <button class="buy-btn primary-btn" data-id="skin_square" data-price="1000"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                            1000 G
+                                        </button>
+                                    </div>
+
+                                    <!-- Triangle Skin -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🔺</div>
+                                        <h4 style="margin:0; color:#e74c3c; font-size: 16px;">삼각형</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">날카로운 각도</p>
+                                        <button class="buy-btn primary-btn" data-id="skin_triangle" data-price="5000"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                            5000 G
+                                        </button>
+                                    </div>
+
+                                    <!-- Diamond Skin -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">💎</div>
+                                        <h4 style="margin:0; color:#3498db; font-size: 16px;">다이아몬드</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">반짝이는 보석</p>
+                                        <button class="buy-btn primary-btn" data-id="skin_diamond" data-price="10000"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                            10000 G
+                                        </button>
+                                    </div>
+
+                                    <!-- Pentagon Skin (Unlocked by 1000 steps) -->
+                                    <div class="shop-item" id="shop-skin-pentagon"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">⬠</div>
+                                        <h4 style="margin:0; color:#2ecc71; font-size: 16px;">오각형 (전설)</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">하이점퍼의 상징</p>
+                                        <button class="buy-btn primary-btn" id="btn-skin-pentagon"
+                                            data-id="skin_pentagon" data-price="0"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #7f8c8d; color: #fff;"
+                                            disabled>
+                                            Locked (1000계단)
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Skin Grid -->
-                            <div
-                                style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:15px;">
-                                <!-- Default Skin (Free) -->
-                                <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
-                                    <div style="font-size:48px; margin-bottom:12px;">⚪</div>
-                                    <h4 style="margin:0; color:#fff; font-size: 16px;">기본 (원형)</h4>
-                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">클래식 캐릭터</p>
-                                    <button class="equip-btn primary-btn" data-skin="default"
-                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px;">
-                                        장착하기
-                                    </button>
+                            <!-- Stair Skin Section (Tab 2) -->
+                            <div id="shop-section-stair" class="shop-section" style="display:none;">
+                                <div
+                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin-bottom:25px; border:1px solid #3498db; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.1);">
+                                    <h3 style="margin:0 0 10px 0; color:#3498db; font-size: 16px;">🪜 현재 장착 계단</h3>
+                                    <div id="current-stair-display" style="font-size:28px; font-weight: 800;">🏢 기본 계단
+                                    </div>
                                 </div>
 
-                                <!-- Square Skin -->
-                                <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
-                                    <div style="font-size:48px; margin-bottom:12px;">🟧</div>
-                                    <h4 style="margin:0; color:#e67e22; font-size: 16px;">사각형</h4>
-                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">재빠른 큐브</p>
-                                    <button class="buy-btn primary-btn" data-id="skin_square" data-price="1000"
-                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
-                                        1000 G
-                                    </button>
-                                </div>
+                                <div
+                                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:15px;">
+                                    <!-- Default Stairs -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🏢</div>
+                                        <h4 style="margin:0; color:#fff; font-size: 16px;">기본 계단</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">오리지널 스타일</p>
+                                        <button class="equip-stair-btn primary-btn" data-stair="default"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px;">
+                                            장착하기
+                                        </button>
+                                    </div>
 
-                                <!-- Triangle Skin -->
-                                <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
-                                    <div style="font-size:48px; margin-bottom:12px;">🔺</div>
-                                    <h4 style="margin:0; color:#e74c3c; font-size: 16px;">삼각형</h4>
-                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">날카로운 각도</p>
-                                    <button class="buy-btn primary-btn" data-id="skin_triangle" data-price="5000"
-                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
-                                        5000 G
-                                    </button>
-                                </div>
-
-                                <!-- Diamond Skin -->
-                                <div class="shop-item"
-                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
-                                    <div style="font-size:48px; margin-bottom:12px;">💎</div>
-                                    <h4 style="margin:0; color:#3498db; font-size: 16px;">다이아몬드</h4>
-                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">반짝이는 보석</p>
-                                    <button class="buy-btn primary-btn" data-id="skin_diamond" data-price="10000"
-                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
-                                        10000 G
-                                    </button>
-                                </div>
-
-                                <!-- Pentagon Skin (Unlocked by 1000 steps) -->
-                                <div class="shop-item" id="shop-skin-pentagon"
-                                    style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
-                                    <div style="font-size:48px; margin-bottom:12px;">⬠</div>
-                                    <h4 style="margin:0; color:#2ecc71; font-size: 16px;">오각형 (전설)</h4>
-                                    <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">하이점퍼의 상징</p>
-                                    <button class="buy-btn primary-btn" id="btn-skin-pentagon" data-id="skin_pentagon"
-                                        data-price="0"
-                                        style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #7f8c8d; color: #fff;"
-                                        disabled>
-                                        Locked (1000계단)
-                                    </button>
+                                    <!-- Glass Stairs -->
+                                    <div class="shop-item"
+                                        style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); text-align: center;">
+                                        <div style="font-size:48px; margin-bottom:12px;">🧊</div>
+                                        <h4 style="margin:0; color:#74b9ff; font-size: 16px;">유리 계단</h4>
+                                        <p style="color:#aaa; font-size:12px; margin:8px 0 15px;">투명하고 영롱함</p>
+                                        <button class="buy-stair-btn primary-btn" data-id="stair_glass"
+                                            data-price="1000"
+                                            style="width: 100%; border-radius: 12px; font-size: 14px; padding: 10px; background: #f1c40f; color: #000;">
+                                            1000 G
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 

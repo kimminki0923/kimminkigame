@@ -296,13 +296,31 @@ function render() {
 
         // Stair body
         const sGrad = ctx.createLinearGradient(sx, sy, sx, sy + STAIR_H);
-        if (i === window.gameState.score) {
-            sGrad.addColorStop(0, '#ffffff'); sGrad.addColorStop(1, '#dfe6e9');
+
+        if (currentStairSkin === 'stair_glass') {
+            // Glass Skin: Transparent with cyan/white border
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; // semi-transparent
+            ctx.strokeStyle = '#00d2d3'; // cyan border
+            ctx.lineWidth = 2;
+            ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+            ctx.strokeRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+
+            // Inner shine for glass
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.moveTo(sx - STAIR_W / 2 + 5, sy + 5);
+            ctx.lineTo(sx + STAIR_W / 2 - 5, sy + 5);
+            ctx.stroke();
         } else {
-            sGrad.addColorStop(0, '#a29bfe'); sGrad.addColorStop(1, '#6c5ce7');
+            // Default Skin
+            if (i === window.gameState.score) {
+                sGrad.addColorStop(0, '#ffffff'); sGrad.addColorStop(1, '#dfe6e9');
+            } else {
+                sGrad.addColorStop(0, '#a29bfe'); sGrad.addColorStop(1, '#6c5ce7');
+            }
+            ctx.fillStyle = sGrad;
+            ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
         }
-        ctx.fillStyle = sGrad;
-        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
 
         // Highlight
         ctx.fillStyle = 'rgba(255,255,255,0.4)';

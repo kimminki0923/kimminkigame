@@ -50,6 +50,8 @@ let reverseHighScore = parseInt(localStorage.getItem('infinite_stairs_reverseHig
 let totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
 let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+let currentStairSkin = localStorage.getItem('currentStairSkin') || 'default';
+let ownedStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
 let skinRotation = 0;
 let isDataLoaded = false;
 
