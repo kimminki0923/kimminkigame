@@ -43,7 +43,14 @@ document.getElementById('mafia-leave-btn').addEventListener('click', leaveMafiaR
 document.getElementById('mafia-add-bots-btn').addEventListener('click', addMafiaBots);
 document.getElementById('mafia-chat-send-btn').addEventListener('click', sendMafiaChat);
 
+// Rules Toggle
+document.getElementById('toggle-mafia-rules-btn').addEventListener('click', () => {
+    const rules = document.getElementById('mafia-game-rules');
+    rules.style.display = rules.style.display === 'none' ? 'block' : 'none';
+});
+
 function createMafiaRoom() {
+    if (!db) return alert("데이터베이스 연결 중입니다... 잠시 후 다시 시도해주세요.");
     const roomId = document.getElementById('mafia-room-id').value.toUpperCase() || generateRandomId();
     const user = firebase.auth().currentUser;
     const userName = user ? user.displayName : `Player-${Math.floor(Math.random() * 1000)}`;
