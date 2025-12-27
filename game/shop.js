@@ -171,8 +171,10 @@ function bindShopEvents() {
 }
 
 function equipStairSkin(id) {
+    console.log('[Shop] Equipping stair skin:', id);
     currentStairSkin = id;
     localStorage.setItem('currentStairSkin', id);
+    localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
     if (window.saveData) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
@@ -180,8 +182,10 @@ function equipStairSkin(id) {
 }
 
 function equipPet(id) {
+    console.log('[Shop] Equipping pet:', id);
     currentPet = id;
     localStorage.setItem('currentPet', id);
+    localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
     if (window.saveData) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
@@ -189,8 +193,10 @@ function equipPet(id) {
 }
 
 function equipMap(id) {
+    console.log('[Shop] Equipping map:', id);
     currentMap = id;
     localStorage.setItem('currentMap', id);
+    localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
     if (window.saveData) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
@@ -231,11 +237,21 @@ function bindBuyEquipButtons() {
 
                 if (totalCoins >= price) {
                     totalCoins -= price;
+                    localStorage.setItem('infinite_stairs_coins', totalCoins);
 
-                    if (category === 'char') ownedSkins.push(id);
-                    else if (category === 'stair') ownedStairSkins.push(id);
-                    else if (category === 'pet') ownedPets.push(id);
-                    else if (category === 'map') ownedMaps.push(id);
+                    if (category === 'char') {
+                        ownedSkins.push(id);
+                        localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+                    } else if (category === 'stair') {
+                        ownedStairSkins.push(id);
+                        localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
+                    } else if (category === 'pet') {
+                        ownedPets.push(id);
+                        localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
+                    } else if (category === 'map') {
+                        ownedMaps.push(id);
+                        localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
+                    }
 
                     if (window.saveData) {
                         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);

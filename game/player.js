@@ -36,13 +36,14 @@ function updateSkinRotation() {
 }
 
 function equipSkin(skinId) {
+    console.log('[Player] Equipping skin:', skinId);
     currentSkin = skinId;
     localStorage.setItem('currentSkin', skinId);
+    localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
     // Reset rotation when changing skins
     targetSkinRotation = 0;
     currentSkinRotation = 0;
     updateShopUI();
-    console.log(`Equipped skin: ${skinId}`);
     if (window.saveData) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
