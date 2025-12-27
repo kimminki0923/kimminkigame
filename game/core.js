@@ -32,7 +32,8 @@ function resize() {
 window.addEventListener('resize', resize);
 
 // Initialize Game
-function initGame() {
+function initGame(isReverse = false) {
+    window.gameState.isReverseMode = isReverse;
     window.gameState.score = 0;
     window.gameState.coinCount = 0;
     window.gameState.running = true;
@@ -50,6 +51,15 @@ function initGame() {
         timerBar.parentElement.style.opacity = 1;
     }
 
+    // New: Handle Reverse Mode title/status
+    if (window.gameState.isReverseMode) {
+        statusEl.innerText = "REVERSE MODE";
+        statusEl.style.color = "#8e44ad";
+    } else {
+        statusEl.innerText = "";
+        statusEl.style.color = "white";
+    }
+
     window.gameState.stairs.push({ x: 0, y: 0, dir: 1, hasCoin: false, coinVal: 0 });
     window.gameState.renderPlayer = { x: 0, y: 0 };
 
@@ -59,18 +69,35 @@ function initGame() {
     initBackgroundObjects();
 
     scoreEl.innerText = 0;
-    statusEl.innerText = "";
+    if (!window.gameState.isReverseMode) statusEl.innerText = "";
 
     // Initial UI Update from loaded config
-    if (highScoreEl) highScoreEl.innerText = aiHighScore;
+    const currentHighScore = window.gameState.isReverseMode ? reverseHighScore : aiHighScore;
+    if (highScoreEl) highScoreEl.innerText = currentHighScore;
     if (coinEl) coinEl.innerText = totalCoins;
     updateShopUI();
+    updateUnlockStatus(); // Check if Reverse Mode should be unlocked
 
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
             statusEl.innerText = "Robot Playing...";
         }
         aiTick();
+    }
+}
+
+function updateUnlockStatus() {
+    const reverseBtn = document.getElementById('reverse-start-btn');
+    if (reverseBtn) {
+        if (aiHighScore >= 1000) {
+            reverseBtn.disabled = false;
+            reverseBtn.style.opacity = 1;
+            reverseBtn.innerText = "🔽 리버스 모드 진입";
+        } else {
+            reverseBtn.disabled = true;
+            reverseBtn.style.opacity = 0.5;
+            reverseBtn.innerText = "🔽 리버스 모드 (Lv.1000 해금)";
+        }
     }
 }
 
@@ -93,8 +120,9 @@ function addStair() {
     const last = window.gameState.stairs[window.gameState.stairs.length - 1];
 
     if (window.gameState.stairs.length < 6) {
+        const yInc = window.gameState.isReverseMode ? -1 : 1;
         window.gameState.stairs.push({
-            x: last.x + 1, y: last.y + 1, dir: 1, hasCoin: false, coinVal: 0
+            x: last.x + 1, y: last.y + yInc, dir: 1, hasCoin: false, coinVal: 0
         });
         return;
     }
@@ -110,9 +138,11 @@ function addStair() {
         if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
     }
 
+    const yInc = window.gameState.isReverseMode ? -1 : 1;
+
     window.gameState.stairs.push({
         x: last.x + (nextDir === 1 ? 1 : -1),
-        y: last.y + 1,
+        y: last.y + yInc,
         dir: nextDir,
         hasCoin: hasCoin,
         coinVal: coinVal
@@ -231,20 +261,39 @@ function gameOver() {
         return;
     }
 
-    if (window.gameState.score > aiHighScore) {
-        aiHighScore = window.gameState.score;
-        highScoreEl.innerText = aiHighScore;
+    const isReverse = window.gameState.isReverseMode;
+    const currentScore = window.gameState.score;
+
+    if (isReverse) {
+        if (currentScore > reverseHighScore) {
+            reverseHighScore = currentScore;
+            localStorage.setItem('infinite_stairs_reverseHighScore', reverseHighScore);
+        }
+    } else {
+        if (currentScore > aiHighScore) {
+            aiHighScore = currentScore;
+            localStorage.setItem('infinite_stairs_highScore', aiHighScore);
+        }
+    }
+
+    if (highScoreEl) {
+        highScoreEl.innerText = isReverse ? reverseHighScore : aiHighScore;
     }
 
     if (window.saveData && isDataLoaded) {
+        // Update: saveData also needs to handle reverseHighScore if we want cloud sync
+        // For now, let's keep it primarily local for the new mode unless we update auth.js
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
+
+        // Let's also save reverse score to a separate field if we can, 
+        // but for now local storage is safer since saveData signature is fixed.
     }
 
     statusEl.innerText = "Game Over!";
     menuOverlay.style.display = 'block';
     startBtn.style.display = 'inline-block';
     stopBtn.style.display = 'none';
-    document.getElementById('high-score').innerText = aiHighScore;
+    updateUnlockStatus(); // Check if newly achieved 1000 unlocks Reverse Mode
 }
 
 // Main Game Loop
@@ -287,6 +336,11 @@ trainBtn.addEventListener('click', () => {
     }
 });
 autoPlayBtn.addEventListener('click', () => { window.isAutoPlaying = true; window.isTraining = false; initGame(); });
+document.getElementById('reverse-start-btn').addEventListener('click', () => {
+    window.isTraining = false;
+    window.isAutoPlaying = false;
+    initGame(true); // Start as Reverse Mode
+});
 resetAiBtn.addEventListener('click', () => {
     if (confirm("AI Reset?")) {
         window.qTable = {}; episode = 0; epsilon = 1.0; aiHighScore = 0;

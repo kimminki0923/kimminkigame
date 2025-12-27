@@ -25,7 +25,8 @@ window.gameState = {
     stairs: [],
     gameOver: false,
     timer: 100,
-    renderPlayer: { x: 0, y: 0 }
+    renderPlayer: { x: 0, y: 0 },
+    isReverseMode: false // New: Version 2
 };
 
 // AI State
@@ -44,6 +45,7 @@ const particles = [];
 let epsilon = 1.0;
 let episode = 0;
 let aiHighScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+let reverseHighScore = parseInt(localStorage.getItem('infinite_stairs_reverseHighScore') || 0); // New: Version 2
 let totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
 let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');

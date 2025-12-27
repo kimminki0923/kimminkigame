@@ -92,7 +92,8 @@ function drawBackground(camX, camY) {
     ctx.fillRect(0, 0, w, h);
 
     // Sun
-    const sunY = h * 0.2 + (score * 0.5);
+    const sunMove = window.gameState.isReverseMode ? -(score * 0.5) : (score * 0.5);
+    const sunY = h * 0.2 + sunMove;
     if (sunY < h + 100 && score < 8000) {
         const sunGrad = ctx.createRadialGradient(w / 2, sunY, 0, w / 2, sunY, 150);
         sunGrad.addColorStop(0, 'rgba(255, 255, 200, 0.4)');
@@ -125,7 +126,8 @@ function drawBackground(camX, camY) {
         ctx.globalAlpha = buildAlpha;
         buildings.forEach(b => {
             const bx = (camX * 0.3 + b.x + 50000) % 3000 - 1000;
-            const by = h - b.height + (score * 3);
+            const buildYMove = window.gameState.isReverseMode ? -(score * 3) : (score * 3);
+            const by = h - b.height + buildYMove;
             ctx.fillStyle = b.color;
             ctx.fillRect(bx, by, b.width, b.height);
             if (b.windows) {
@@ -146,7 +148,8 @@ function drawBackground(camX, camY) {
         ctx.globalAlpha = cloudAlpha * 0.7;
         clouds.forEach(c => {
             const cx = (camX * 0.1 + c.x + time * c.speed * 50 + 50000) % 4000 - 1000;
-            const cy = h * 0.5 + c.y + (score * 2) - 300;
+            const cloudYMove = window.gameState.isReverseMode ? -(score * 2) : (score * 2);
+            const cy = h * 0.5 + c.y + cloudYMove - 300;
             ctx.fillStyle = '#fff';
             ctx.beginPath();
             ctx.arc(cx, cy, c.size, 0, Math.PI * 2);
@@ -163,7 +166,8 @@ function drawBackground(camX, camY) {
         ctx.globalAlpha = planetAlpha;
         planets.forEach((p) => {
             const px = (camX * 0.02 + p.x) % 5000 - 1000;
-            const py = p.y - (score * 1.0) + 1000;
+            const planetYMove = window.gameState.isReverseMode ? (score * 1.0) : -(score * 1.0);
+            const py = p.y + planetYMove + 1000;
             ctx.fillStyle = p.color;
             ctx.beginPath();
             ctx.arc(px, py, p.size, 0, Math.PI * 2);
