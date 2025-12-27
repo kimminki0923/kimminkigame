@@ -5,6 +5,8 @@
 // DOM Elements
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
 const scoreEl = document.getElementById('score');
 const statusEl = document.getElementById('status');
 const timerBar = document.getElementById('timer-bar');

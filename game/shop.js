@@ -134,7 +134,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
                 }
                 alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 획득 완료!`);
                 equipSkin(skinId);
@@ -174,7 +174,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
                 }
                 alert(`✅ ${STAIR_SKIN_DATA[stairId]?.name || stairId} 구매 완료!`);
                 equipStairSkin(stairId);
@@ -212,7 +212,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
                 }
                 alert(`✅ ${PET_DATA[petId]?.name || petId} 입양 완료!`);
                 equipPet(petId);
@@ -251,7 +251,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
                 }
                 alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
                 equipMap(mapId);

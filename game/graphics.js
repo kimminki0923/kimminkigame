@@ -614,7 +614,7 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
     drawCalculusDunes(ctx, -p2, h, w, '#cd6133', 100, 0.003);
 
     // 6. Featured Monuments (Detailed Sphinx)
-    const p25 = (camX * 0.15) % (w * 1.5);
+    const p25 = (camX * 0.6) % (w * 1.5);
     const monX = w * 0.8 - p25;
     drawArtisticSphinx(ctx, monX, h * 0.82, 0.8);
 
