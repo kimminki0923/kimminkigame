@@ -305,8 +305,8 @@ function drawPet(ctx, px, py, petType, playerDir) {
 
     // Flip pet to face the direction of movement
     // playerDir === 1 means facing RIGHT, playerDir === 0 means facing LEFT
-    // By default emojis/drawings face right, so we flip horizontally when going left
-    if (playerDir === 0 || playerDir === -1) {
+    // Most emojis (🦅🐕🐈🐷) naturally face LEFT, so we flip horizontally when going RIGHT
+    if (playerDir === 1) {
         ctx.scale(-1, 1);
     }
 
