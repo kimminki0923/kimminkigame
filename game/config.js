@@ -44,21 +44,22 @@ const minerals = []; // Underground objects
 const snowParticles = []; // Winter map snow
 
 // Persistent State (loaded from storage/Firebase)
-let epsilon = 1.0;
-let episode = 0;
-let aiHighScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
-let reverseHighScore = parseInt(localStorage.getItem('infinite_stairs_reverseHighScore') || 0); // New: Version 2
-let totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
-let currentSkin = localStorage.getItem('currentSkin') || 'default';
-let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
-let currentStairSkin = localStorage.getItem('currentStairSkin') || 'default';
-let ownedStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
-let currentPet = localStorage.getItem('currentPet') || 'none';
-let ownedPets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
-let currentMap = localStorage.getItem('currentMap') || 'default';
-let ownedMaps = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
-let skinRotation = 0;
-let isDataLoaded = false;
+// Persistent State (loaded from storage/Firebase)
+window.epsilon = 1.0;
+window.episode = 0;
+window.aiHighScore = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
+window.reverseHighScore = parseInt(localStorage.getItem('infinite_stairs_reverseHighScore') || 0);
+window.totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
+window.currentSkin = localStorage.getItem('currentSkin') || 'default';
+window.ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+window.currentStairSkin = localStorage.getItem('currentStairSkin') || 'default';
+window.ownedStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
+window.currentPet = localStorage.getItem('currentPet') || 'none';
+window.ownedPets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
+window.currentMap = localStorage.getItem('currentMap') || 'default';
+window.ownedMaps = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
+window.skinRotation = 0;
+window.isDataLoaded = false;
 
 // Fall Animation State
 let isFalling = false;

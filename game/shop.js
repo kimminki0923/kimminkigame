@@ -56,18 +56,18 @@ function createShopItemElement(id, data, category) {
 }
 
 function checkOwnership(id, category) {
-    if (category === 'char') return ownedSkins.includes(id);
-    if (category === 'stair') return ownedStairSkins.includes(id);
-    if (category === 'pet') return ownedPets.includes(id);
-    if (category === 'map') return ownedMaps.includes(id);
+    if (category === 'char') return window.ownedSkins.includes(id);
+    if (category === 'stair') return window.ownedStairSkins.includes(id);
+    if (category === 'pet') return window.ownedPets.includes(id);
+    if (category === 'map') return window.ownedMaps.includes(id);
     return false;
 }
 
 function checkEquipped(id, category) {
-    if (category === 'char') return currentSkin === id;
-    if (category === 'stair') return currentStairSkin === id;
-    if (category === 'pet') return currentPet === id;
-    if (category === 'map') return currentMap === id;
+    if (category === 'char') return window.currentSkin === id;
+    if (category === 'stair') return window.currentStairSkin === id;
+    if (category === 'pet') return window.currentPet === id;
+    if (category === 'map') return window.currentMap === id;
     return false;
 }
 
@@ -88,16 +88,16 @@ function updateShopUI() {
 
     // Update Current Equipped Displays
     const skinDisplay = document.getElementById('current-skin-display');
-    if (skinDisplay && SKIN_DATA[currentSkin]) skinDisplay.innerText = SKIN_DATA[currentSkin].icon + ' ' + SKIN_DATA[currentSkin].name;
+    if (skinDisplay && SKIN_DATA[window.currentSkin]) skinDisplay.innerText = SKIN_DATA[window.currentSkin].icon + ' ' + SKIN_DATA[window.currentSkin].name;
 
     const stairDisplay = document.getElementById('current-stair-display');
-    if (stairDisplay && STAIR_SKIN_DATA[currentStairSkin]) stairDisplay.innerText = STAIR_SKIN_DATA[currentStairSkin].icon + ' ' + STAIR_SKIN_DATA[currentStairSkin].name;
+    if (stairDisplay && STAIR_SKIN_DATA[window.currentStairSkin]) stairDisplay.innerText = STAIR_SKIN_DATA[window.currentStairSkin].icon + ' ' + STAIR_SKIN_DATA[window.currentStairSkin].name;
 
     const petDisplay = document.getElementById('current-pet-display');
-    if (petDisplay && PET_DATA[currentPet]) petDisplay.innerText = PET_DATA[currentPet].icon + ' ' + PET_DATA[currentPet].name;
+    if (petDisplay && PET_DATA[window.currentPet]) petDisplay.innerText = PET_DATA[window.currentPet].icon + ' ' + PET_DATA[window.currentPet].name;
 
     const mapDisplay = document.getElementById('current-map-display');
-    if (mapDisplay && MAP_DATA[currentMap]) mapDisplay.innerText = MAP_DATA[currentMap].icon + ' ' + MAP_DATA[currentMap].name;
+    if (mapDisplay && MAP_DATA[window.currentMap]) mapDisplay.innerText = MAP_DATA[window.currentMap].icon + ' ' + MAP_DATA[window.currentMap].name;
 
     for (const key in sections) {
         const config = sections[key];
@@ -194,11 +194,11 @@ function equipPet(id) {
 
 function equipMap(id) {
     console.log('[Shop] Equipping map:', id);
-    currentMap = id;
+    window.currentMap = id;
     localStorage.setItem('currentMap', id);
-    localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
+    localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
     }
     updateShopUI();
 }
@@ -235,26 +235,26 @@ function bindBuyEquipButtons() {
                     // Else free
                 }
 
-                if (totalCoins >= price) {
-                    totalCoins -= price;
-                    localStorage.setItem('infinite_stairs_coins', totalCoins);
+                if (window.totalCoins >= price) {
+                    window.totalCoins -= price;
+                    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
 
                     if (category === 'char') {
-                        ownedSkins.push(id);
-                        localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+                        window.ownedSkins.push(id);
+                        localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
                     } else if (category === 'stair') {
-                        ownedStairSkins.push(id);
-                        localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
+                        window.ownedStairSkins.push(id);
+                        localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
                     } else if (category === 'pet') {
-                        ownedPets.push(id);
-                        localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
+                        window.ownedPets.push(id);
+                        localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
                     } else if (category === 'map') {
-                        ownedMaps.push(id);
-                        localStorage.setItem('ownedMaps', JSON.stringify(ownedMaps));
+                        window.ownedMaps.push(id);
+                        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
                     }
 
                     if (window.saveData) {
-                        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
                     }
 
                     alert(`✅ ${id} 구매 완료!`);

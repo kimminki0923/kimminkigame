@@ -220,18 +220,21 @@ function drawBackground(camX, camY) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
+    // Debug Map State (Throttle logs)
+    if (Math.random() < 0.01) console.log('[Graphics] Drawing Background. Current Map:', window.currentMap);
+
     const score = window.gameState.score;
     const w = canvas.width;
     const h = canvas.height;
 
     // Check if using Winter Map
-    if (typeof currentMap !== 'undefined' && currentMap === 'map_winter') {
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
         drawWinterBackground(camX, camY, score, w, h);
         return;
     }
 
     // Check if using Desert Map
-    if (typeof currentMap !== 'undefined' && currentMap === 'map_desert') {
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_desert') {
         drawDesertBackgroundArtistic(camX, camY, score, w, h);
         return;
     }
