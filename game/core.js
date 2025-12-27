@@ -492,24 +492,20 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 // Data Bridge for Firebase
 // Data Bridge for Firebase
 window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap) {
-    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}, Map: ${cMap}`);
-    window.aiHighScore = parseInt(score || 0);
-    aiHighScore = window.aiHighScore;
-    if (highScoreEl) highScoreEl.innerText = window.aiHighScore;
-    window.totalCoins = parseInt(coins || 0);
-    totalCoins = window.totalCoins;
-    if (coinEl) coinEl.innerText = window.totalCoins;
-    if (skins) { window.ownedSkins = skins; ownedSkins = skins; }
-    if (cSkin) { window.currentSkin = cSkin; currentSkin = cSkin; }
-    if (stairSkins) { window.ownedStairSkins = stairSkins; ownedStairSkins = stairSkins; }
-    if (cStairSkin) { window.currentStairSkin = cStairSkin; currentStairSkin = cStairSkin; }
-    if (pets) { window.ownedPets = pets; ownedPets = pets; }
-    if (cPet) { window.currentPet = cPet; currentPet = cPet; }
-    if (maps) { window.ownedMaps = maps; ownedMaps = maps; }
-    if (cMap) { window.currentMap = cMap; currentMap = cMap; }
-    console.log('[Core] window.currentMap set to:', window.currentMap);
+    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
+    aiHighScore = parseInt(score || 0);
+    if (highScoreEl) highScoreEl.innerText = aiHighScore;
+    totalCoins = parseInt(coins || 0);
+    if (coinEl) coinEl.innerText = totalCoins;
+    if (skins) ownedSkins = skins;
+    if (cSkin) currentSkin = cSkin;
+    if (stairSkins) ownedStairSkins = stairSkins;
+    if (cStairSkin) currentStairSkin = cStairSkin;
+    if (pets) ownedPets = pets;
+    if (cPet) currentPet = cPet;
+    if (maps) ownedMaps = maps;
+    if (cMap) currentMap = cMap;
     isDataLoaded = true;
-    window.isDataLoaded = true;
     updateShopUI();
     updateUnlockStatus(); // Fix: Ensure Reverse Mode button unlocks on refresh
 }

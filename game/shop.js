@@ -25,91 +25,6 @@ const MAP_DATA = {
 
 console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 
-// SIMPLE GLOBAL FUNCTIONS FOR MAP PURCHASE (bypass all the complex binding)
-window.buyMapDirect = function (mapId, price) {
-    console.log('[Shop] buyMapDirect called:', mapId, price);
-
-    // ALWAYS read from localStorage as source of truth
-    let coins = parseInt(localStorage.getItem('infinite_stairs_coins') || '0');
-    let owned = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
-
-    console.log('[Shop] localStorage coins:', coins, 'owned maps:', owned);
-
-    // Already owned? Equip instead
-    if (owned.includes(mapId)) {
-        console.log('[Shop] Map already owned, equipping instead');
-        window.equipMapDirect(mapId);
-        return;
-    }
-
-    // Check gold
-    if (coins >= price) {
-        coins -= price;
-        owned.push(mapId);
-
-        // Update global variables
-        window.totalCoins = coins;
-        window.ownedMaps = owned;
-        if (typeof totalCoins !== 'undefined') totalCoins = coins;
-        if (typeof ownedMaps !== 'undefined') ownedMaps = owned;
-
-        // Save to localStorage immediately
-        localStorage.setItem('infinite_stairs_coins', coins.toString());
-        localStorage.setItem('ownedMaps', JSON.stringify(owned));
-
-        // Update UI
-        const coinEl = document.getElementById('coin-count');
-        if (coinEl) coinEl.innerText = coins;
-        const shopGold = document.getElementById('shop-gold');
-        if (shopGold) shopGold.innerText = coins;
-
-        alert(`✅ ${MAP_DATA[mapId]?.name || mapId} 구매 완료!`);
-
-        // Auto equip
-        window.equipMapDirect(mapId);
-    } else {
-        alert(`❌ 골드가 부족합니다! (보유: ${coins}G / 필요: ${price}G)`);
-    }
-};
-
-window.equipMapDirect = function (mapId) {
-    console.log('[Shop] equipMapDirect called:', mapId);
-    window.currentMap = mapId;
-    // Also update local variable if exists
-    if (typeof currentMap !== 'undefined') currentMap = mapId;
-    localStorage.setItem('currentMap', mapId);
-
-    // Update "현재 장착 맵" display
-    const mapDisplay = document.getElementById('current-map-display');
-    if (mapDisplay && MAP_DATA[mapId]) {
-        mapDisplay.innerText = MAP_DATA[mapId].icon + ' ' + MAP_DATA[mapId].name;
-    }
-
-    // Update ALL map buttons to show correct state
-    document.querySelectorAll('#shop-items-map button').forEach(btn => {
-        const btnMapId = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-        if (btnMapId === mapId) {
-            btn.textContent = '장착됨';
-            btn.style.background = '#7f8c8d';
-            btn.disabled = true;
-        } else if (window.ownedMaps && window.ownedMaps.includes(btnMapId)) {
-            btn.textContent = '장착하기';
-            btn.style.background = '#2ecc71';
-            btn.disabled = false;
-            btn.setAttribute('onclick', `equipMapDirect('${btnMapId}')`);
-        }
-    });
-
-    // Save to Firebase
-    if (window.saveData) {
-        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin,
-            window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet,
-            window.ownedMaps, window.currentMap);
-    }
-
-    console.log('[Shop] Map equipped:', mapId, 'window.currentMap:', window.currentMap);
-};
-
 // Component Generator for Shop Items
 function createShopItemElement(id, data, category) {
     const isOwned = checkOwnership(id, category);
@@ -235,10 +150,8 @@ function switchShopTab(tab) {
 }
 
 function bindShopEvents() {
-    console.log('[Shop] Binding shop events...');
     const openBtn = document.getElementById('shop-open-btn');
     const overlay = document.getElementById('shop-overlay');
-    console.log('[Shop] Overlay found:', !!overlay);
     const closeBtns = [document.getElementById('close-shop-btn'), document.getElementById('close-shop-btn-bottom')];
 
     if (openBtn) {
@@ -257,83 +170,6 @@ function bindShopEvents() {
         const btn = document.getElementById(`tab-${t}`);
         if (btn) btn.onclick = () => switchShopTab(t);
     });
-
-    // EVENT DELEGATION: Handle ALL shop button clicks in one place
-    if (overlay) {
-        overlay.addEventListener('click', function (e) {
-            const btn = e.target.closest('.shop-item button');
-            if (!btn) return;
-
-            e.stopPropagation();
-            const id = btn.dataset.id;
-            const category = btn.dataset.category;
-            const price = parseInt(btn.dataset.price) || 0;
-
-            console.log('[Shop Event Delegation] Button clicked!', { id, category, price });
-
-            if (!id || !category) {
-                console.error('[Shop] Missing data attributes!', btn);
-                return;
-            }
-
-            const isOwned = checkOwnership(id, category);
-            console.log('[Shop] Ownership:', isOwned, 'ownedMaps:', window.ownedMaps);
-
-            if (isOwned) {
-                // Equip flow
-                if (category === 'char') {
-                    if (typeof equipSkin === 'function') equipSkin(id);
-                } else if (category === 'stair') {
-                    equipStairSkin(id);
-                } else if (category === 'pet') {
-                    equipPet(id);
-                } else if (category === 'map') {
-                    equipMap(id);
-                }
-            } else {
-                // Buy flow
-                if (window.totalCoins >= price) {
-                    window.totalCoins -= price;
-                    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
-
-                    if (category === 'char') {
-                        window.ownedSkins.push(id);
-                        localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
-                    } else if (category === 'stair') {
-                        window.ownedStairSkins.push(id);
-                        localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
-                    } else if (category === 'pet') {
-                        window.ownedPets.push(id);
-                        localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
-                    } else if (category === 'map') {
-                        console.log('[Shop] Buying map:', id);
-                        window.ownedMaps.push(id);
-                        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
-                    }
-
-                    if (window.saveData) {
-                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
-                    }
-
-                    alert(`✅ ${id} 구매 완료!`);
-                    updateShopUI();
-
-                    // Auto equip after buy
-                    if (category === 'char') {
-                        if (typeof equipSkin === 'function') equipSkin(id);
-                    } else if (category === 'stair') {
-                        equipStairSkin(id);
-                    } else if (category === 'pet') {
-                        equipPet(id);
-                    } else if (category === 'map') {
-                        equipMap(id);
-                    }
-                } else {
-                    alert(`❌ 골드가 부족합니다! (${window.totalCoins}G / ${price}G)`);
-                }
-            }
-        });
-    }
 }
 
 function equipStairSkin(id) {
@@ -366,35 +202,21 @@ function equipMap(id) {
     if (window.saveData) {
         window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap);
     }
-    alert('맵이 변경되었습니다! 확인을 누르면 적용됩니다. ❄️');
-    location.reload(); // Force reload to apply map changes cleanly
+    updateShopUI();
 }
 
 function bindBuyEquipButtons() {
-    console.log('[Shop] Binding buy/equip buttons...');
-    const buttons = document.querySelectorAll('.shop-item button');
-    console.log('[Shop] Found buttons:', buttons.length);
-
-    buttons.forEach(btn => {
+    document.querySelectorAll('.shop-item button').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const id = btn.dataset.id;
             const category = btn.dataset.category;
-            const price = parseInt(btn.dataset.price) || 0;
-
-            console.log('[Shop] Button clicked!', { id, category, price, totalCoins: window.totalCoins });
-
-            if (!id || !category) {
-                console.error('[Shop] Missing data attributes!', btn);
-                return;
-            }
+            const price = parseInt(btn.dataset.price);
 
             const isOwned = checkOwnership(id, category);
-            console.log('[Shop] Ownership check:', id, category, 'owned:', isOwned);
 
             if (isOwned) {
                 // Equip flow
-                console.log('[Shop] Equipping:', id);
                 if (category === 'char') {
                     if (typeof equipSkin === 'function') equipSkin(id);
                 } else if (category === 'stair') {
