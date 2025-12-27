@@ -207,17 +207,30 @@ function equipMap(id) {
 }
 
 function bindBuyEquipButtons() {
-    document.querySelectorAll('.shop-item button').forEach(btn => {
+    console.log('[Shop] Binding buy/equip buttons...');
+    const buttons = document.querySelectorAll('.shop-item button');
+    console.log('[Shop] Found buttons:', buttons.length);
+
+    buttons.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const id = btn.dataset.id;
             const category = btn.dataset.category;
-            const price = parseInt(btn.dataset.price);
+            const price = parseInt(btn.dataset.price) || 0;
+
+            console.log('[Shop] Button clicked!', { id, category, price, totalCoins: window.totalCoins });
+
+            if (!id || !category) {
+                console.error('[Shop] Missing data attributes!', btn);
+                return;
+            }
 
             const isOwned = checkOwnership(id, category);
+            console.log('[Shop] Ownership check:', id, category, 'owned:', isOwned);
 
             if (isOwned) {
                 // Equip flow
+                console.log('[Shop] Equipping:', id);
                 if (category === 'char') {
                     if (typeof equipSkin === 'function') equipSkin(id);
                 } else if (category === 'stair') {
