@@ -40,7 +40,8 @@ const clouds = [];
 const planets = [];
 const stars = [];
 const particles = [];
-const minerals = []; // New: Underground objects
+const minerals = []; // Underground objects
+const snowParticles = []; // Winter map snow
 
 // Persistent State (loaded from storage/Firebase)
 let epsilon = 1.0;

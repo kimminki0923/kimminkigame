@@ -19,7 +19,8 @@ const PET_DATA = {
 
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
-    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' }
+    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' },
+    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!' }
 };
 
 // Component Generator for Shop Items

@@ -224,6 +224,12 @@ function drawBackground(camX, camY) {
     const w = canvas.width;
     const h = canvas.height;
 
+    // Check if using Winter Map
+    if (typeof currentMap !== 'undefined' && currentMap === 'map_winter') {
+        drawWinterBackground(camX, camY, score, w, h);
+        return;
+    }
+
     // Check if using Desert Map
     if (typeof currentMap !== 'undefined' && currentMap === 'map_desert') {
         drawDesertBackgroundArtistic(camX, camY, score, w, h);
@@ -881,6 +887,400 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
     ctx.beginPath();
     ctx.arc(0, -50, 5, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.restore();
+}
+
+// ============================================================
+// WINTER WONDERLAND MAP - Arctic Theme with Aurora
+// ============================================================
+function initSnowParticles() {
+    if (snowParticles.length === 0) {
+        for (let i = 0; i < 150; i++) {
+            snowParticles.push({
+                x: Math.random() * 2000,
+                y: Math.random() * 2000,
+                size: 2 + Math.random() * 4,
+                speed: 1 + Math.random() * 2,
+                drift: (Math.random() - 0.5) * 0.5,
+                opacity: 0.5 + Math.random() * 0.5
+            });
+        }
+    }
+}
+
+function drawWinterBackground(camX, camY, score, w, h) {
+    initSnowParticles();
+
+    const isReverse = window.gameState.isReverseMode;
+
+    // Altitude-based phases
+    if (score < 200) {
+        drawWinterPhaseGround(ctx, camX, camY, w, h, score);
+    } else if (score < 500) {
+        drawWinterPhaseMountain(ctx, camX, camY, w, h, score);
+    } else {
+        drawWinterPhaseAurora(ctx, camX, camY, w, h, score);
+    }
+
+    // Always draw falling snow
+    drawFallingSnow(ctx, camX, camY, w, h, score);
+}
+
+// --- Phase 1: Ground Level (Penguins, Igloos) ---
+function drawWinterPhaseGround(ctx, camX, camY, w, h, score) {
+    // Sky gradient - cold winter day
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#87ceeb'); // Light blue top
+    skyGrad.addColorStop(0.5, '#b0e0e6'); // Powder blue
+    skyGrad.addColorStop(1, '#e0f7fa'); // Ice white bottom
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Distant mountains
+    const mountainOffset = (camX * 0.05) % w;
+    ctx.fillStyle = '#a8d4e6';
+    ctx.beginPath();
+    ctx.moveTo(-mountainOffset - 100, h);
+    for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
+        const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
+        ctx.lineTo(x + 75, peakY);
+        ctx.lineTo(x + 150, h * 0.65);
+    }
+    ctx.lineTo(w + 100, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Snow caps on mountains
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-mountainOffset - 100, h * 0.55);
+    for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
+        const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
+        ctx.lineTo(x + 75, peakY);
+        ctx.lineTo(x + 100, peakY + 30);
+    }
+    ctx.lineTo(w + 100, h * 0.55);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw Igloos
+    const iglooOffset = (camX * 0.15) % (w * 2);
+    drawIgloo(ctx, (w * 0.2 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.78, 1.0);
+    drawIgloo(ctx, (w * 0.7 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.80, 0.7);
+
+    // Draw Penguins
+    const penguinOffset = (camX * 0.2) % (w * 3);
+    const time = Date.now() * 0.003;
+    for (let i = 0; i < 5; i++) {
+        const px = (w * 0.15 * i + penguinOffset + w * 3) % (w * 3) - w * 0.5;
+        const py = h * 0.82 + Math.sin(time + i) * 3;
+        drawPenguin(ctx, px, py, 0.6 + (i % 3) * 0.15);
+    }
+
+    // Ground snow
+    ctx.fillStyle = '#f0f8ff';
+    ctx.fillRect(0, h * 0.85, w, h * 0.15);
+
+    // Snow sparkles
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    for (let i = 0; i < 30; i++) {
+        const sx = (i * 137 + camX * 0.5) % w;
+        const sy = h * 0.86 + (i * 7) % 50;
+        const sparkle = Math.sin(Date.now() * 0.01 + i) * 0.5 + 0.5;
+        ctx.globalAlpha = sparkle;
+        ctx.fillRect(sx, sy, 3, 3);
+    }
+    ctx.globalAlpha = 1;
+}
+
+// --- Phase 2: Mountain Climb (Pine Trees, Heavy Snow) ---
+function drawWinterPhaseMountain(ctx, camX, camY, w, h, score) {
+    const t = (score - 200) / 300;
+
+    // Darker sky as we climb
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, lerpColor('#87ceeb', '#2c3e50', t));
+    skyGrad.addColorStop(1, lerpColor('#e0f7fa', '#5d6d7e', t));
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Big snowy peaks
+    const peakOffset = (camX * 0.03) % w;
+    ctx.fillStyle = '#d5dbdb';
+    ctx.beginPath();
+    ctx.moveTo(-peakOffset - 200, h);
+    for (let x = -peakOffset - 200; x < w + 300; x += 200) {
+        const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
+        ctx.lineTo(x + 100, peakY);
+        ctx.lineTo(x + 200, h * 0.5);
+    }
+    ctx.lineTo(w + 200, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Snow on peaks
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-peakOffset - 200, h * 0.35);
+    for (let x = -peakOffset - 200; x < w + 300; x += 200) {
+        const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
+        ctx.lineTo(x + 100, peakY);
+        ctx.lineTo(x + 130, peakY + 40);
+    }
+    ctx.lineTo(w + 200, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pine trees
+    const treeOffset = (camX * 0.1) % (w * 2);
+    for (let i = 0; i < 8; i++) {
+        const tx = (w * 0.12 * i + treeOffset + w * 2) % (w * 2) - w * 0.3;
+        const ty = h * 0.7 + (i % 3) * 30;
+        drawPineTree(ctx, tx, ty, 0.8 + (i % 4) * 0.2);
+    }
+
+    // Ground
+    ctx.fillStyle = '#ecf0f1';
+    ctx.fillRect(0, h * 0.8, w, h * 0.2);
+}
+
+// --- Phase 3: Aurora Borealis (Stars, Northern Lights) ---
+function drawWinterPhaseAurora(ctx, camX, camY, w, h, score) {
+    const t = Math.min(1, (score - 500) / 300);
+    const time = Date.now() * 0.001;
+
+    // Night sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#0a0a23');
+    skyGrad.addColorStop(0.5, '#1a1a3e');
+    skyGrad.addColorStop(1, '#2d3436');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Stars
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 100; i++) {
+        const sx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
+        const sy = (Math.cos(i * 44) * 0.5 + 0.3) * h;
+        const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 3;
+        ctx.beginPath();
+        ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // AURORA BOREALIS - The main attraction!
+    drawAuroraBorealis(ctx, w, h, time, t);
+
+    // Distant snowy ground
+    ctx.fillStyle = '#1a252f';
+    ctx.fillRect(0, h * 0.85, w, h * 0.15);
+
+    // Snow glow from below
+    const glowGrad = ctx.createLinearGradient(0, h * 0.85, 0, h);
+    glowGrad.addColorStop(0, 'rgba(100, 200, 255, 0.1)');
+    glowGrad.addColorStop(1, 'rgba(100, 200, 255, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, h * 0.85, w, h * 0.15);
+}
+
+// --- Aurora Borealis Effect ---
+function drawAuroraBorealis(ctx, w, h, time, intensity) {
+    const colors = [
+        'rgba(0, 255, 127, 0.15)',   // Green
+        'rgba(64, 224, 208, 0.12)',  // Turquoise
+        'rgba(138, 43, 226, 0.10)',  // Purple
+        'rgba(0, 191, 255, 0.12)'    // Deep sky blue
+    ];
+
+    for (let layer = 0; layer < 4; layer++) {
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.2);
+
+        for (let x = 0; x <= w; x += 10) {
+            const wave1 = Math.sin(x * 0.01 + time * 0.5 + layer) * 50;
+            const wave2 = Math.sin(x * 0.02 + time * 0.3 + layer * 2) * 30;
+            const wave3 = Math.sin(x * 0.005 + time * 0.8) * 80;
+            const y = h * 0.25 + wave1 + wave2 + wave3 + layer * 40;
+            ctx.lineTo(x, y);
+        }
+
+        ctx.lineTo(w, h * 0.6);
+        ctx.lineTo(0, h * 0.6);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[layer];
+        ctx.fill();
+    }
+
+    // Shimmering particles in aurora
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 30; i++) {
+        const px = (Math.sin(i * 77 + time) * 0.5 + 0.5) * w;
+        const py = h * 0.2 + Math.sin(time * 2 + i) * 100 + i * 5;
+        const size = Math.sin(time * 5 + i) * 2 + 2;
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// --- Falling Snow ---
+function drawFallingSnow(ctx, camX, camY, w, h, score) {
+    const time = Date.now() * 0.001;
+    const intensity = score > 200 ? 1.5 : 1.0; // Heavier snow at altitude
+
+    ctx.fillStyle = '#ffffff';
+    snowParticles.forEach((s, i) => {
+        // Update position
+        s.y += s.speed * intensity;
+        s.x += s.drift + Math.sin(time + i) * 0.5;
+
+        // Wrap around
+        if (s.y > h + 10) { s.y = -10; s.x = Math.random() * w; }
+        if (s.x < -10) s.x = w + 10;
+        if (s.x > w + 10) s.x = -10;
+
+        ctx.globalAlpha = s.opacity;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+}
+
+// --- Helper: Draw Igloo ---
+function drawIgloo(ctx, x, y, scale) {
+    if (x < -200 || x > ctx.canvas.width + 200) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Dome
+    ctx.fillStyle = '#f5f5f5';
+    ctx.beginPath();
+    ctx.arc(0, 0, 60, Math.PI, 0, false);
+    ctx.lineTo(60, 0);
+    ctx.lineTo(-60, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ice block lines
+    ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
+    ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
+        ctx.stroke();
+    }
+
+    // Entrance
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, Math.PI, 0, false);
+    ctx.lineTo(20, 0);
+    ctx.lineTo(-20, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// --- Helper: Draw Penguin ---
+function drawPenguin(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+
+    const time = Date.now() * 0.005;
+    const waddle = Math.sin(time + x) * 3;
+
+    ctx.save();
+    ctx.translate(x + waddle, y);
+    ctx.scale(scale, scale);
+
+    // Body (black)
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Belly (white)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(0, 5, 12, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.arc(0, -25, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-5, -27, 4, 0, Math.PI * 2);
+    ctx.arc(5, -27, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(-5, -27, 2, 0, Math.PI * 2);
+    ctx.arc(5, -27, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beak
+    ctx.fillStyle = '#f39c12';
+    ctx.beginPath();
+    ctx.moveTo(0, -24);
+    ctx.lineTo(-5, -20);
+    ctx.lineTo(5, -20);
+    ctx.closePath();
+    ctx.fill();
+
+    // Feet
+    ctx.fillStyle = '#f39c12';
+    ctx.fillRect(-12, 20, 8, 5);
+    ctx.fillRect(4, 20, 8, 5);
+
+    ctx.restore();
+}
+
+// --- Helper: Draw Pine Tree ---
+function drawPineTree(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Trunk
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(-8, 0, 16, 30);
+
+    // Snowy layers
+    for (let i = 0; i < 4; i++) {
+        const layerY = -i * 25;
+        const layerWidth = 50 - i * 10;
+
+        // Green part
+        ctx.fillStyle = '#1b5e20';
+        ctx.beginPath();
+        ctx.moveTo(0, layerY - 35);
+        ctx.lineTo(-layerWidth, layerY);
+        ctx.lineTo(layerWidth, layerY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Snow on top
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, layerY - 35);
+        ctx.lineTo(-layerWidth * 0.6, layerY - 15);
+        ctx.lineTo(layerWidth * 0.6, layerY - 15);
+        ctx.closePath();
+        ctx.fill();
+    }
 
     ctx.restore();
 }
