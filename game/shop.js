@@ -50,7 +50,7 @@ function bindBuyEquipButtons() {
             }
 
             const skin = SKIN_DATA[skinId];
-            const isRequirementMet = skin && (!skin.requirement || aiHighScore >= skin.requirement);
+            const isRequirementMet = skin && (!skin.requirement || parseInt(aiHighScore) >= parseInt(skin.requirement));
 
             if (totalCoins >= price && isRequirementMet) {
                 if (price > 0) totalCoins -= price;
@@ -102,7 +102,7 @@ function updateShopUI() {
             btn.classList.add('equip-btn');
             btn.classList.remove('buy-btn');
         } else if (skin && skin.requirement) {
-            const isUnlocked = aiHighScore >= skin.requirement;
+            const isUnlocked = parseInt(aiHighScore) >= parseInt(skin.requirement);
             if (isUnlocked) {
                 btn.innerText = 'FREE 취득';
                 btn.style.background = '#3498db';

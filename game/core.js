@@ -454,14 +454,15 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 // Data Bridge for Firebase
 window.setGameData = function (score, coins, skins, cSkin) {
     console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
-    aiHighScore = score;
+    aiHighScore = parseInt(score || 0);
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
-    totalCoins = coins;
+    totalCoins = parseInt(coins || 0);
     if (coinEl) coinEl.innerText = totalCoins;
     if (skins) ownedSkins = skins;
     if (cSkin) currentSkin = cSkin;
     isDataLoaded = true;
     updateShopUI();
+    updateUnlockStatus(); // Fix: Ensure Reverse Mode button unlocks on refresh
 }
 
 // Initialize
