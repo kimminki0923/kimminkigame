@@ -53,6 +53,11 @@ document.getElementById('toggle-mafia-rules-btn')?.addEventListener('click', () 
     if (rules) rules.style.display = rules.style.display === 'none' ? 'block' : 'none';
 });
 
+// Enter key for chat input
+document.getElementById('mafia-chat-input')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMafiaChat();
+});
+
 function createMafiaRoom() {
     if (!db) return alert("데이터베이스 연결 중입니다... 잠시 후 다시 시도해주세요.");
     const roomId = document.getElementById('mafia-room-id').value.toUpperCase() || generateRandomId();
@@ -158,13 +163,13 @@ function addMafiaBots() {
 }
 
 function startMafiaGame() {
-    if (mafiaState.players.length < 4) return alert("최소 4명이 필요합니다.");
+    // Allow single player for testing (removed 4-player minimum)
 
     const assignedPlayers = assignRoles([...mafiaState.players]);
 
     mafiaRoomRef.update({
         players: assignedPlayers,
-        phase: 'NIGHT', // Start with Night 1 usually, or Day 1 for introductions
+        phase: 'DAY', // Start with Day for discussion
         dayCount: 1,
         nightActions: {},
         votes: {},
