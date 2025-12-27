@@ -49,17 +49,22 @@ function bindBuyEquipButtons() {
                 return;
             }
 
-            if (totalCoins >= price) {
-                totalCoins -= price;
+            const skin = SKIN_DATA[skinId];
+            const isRequirementMet = skin && (!skin.requirement || aiHighScore >= skin.requirement);
+
+            if (totalCoins >= price && isRequirementMet) {
+                if (price > 0) totalCoins -= price;
                 ownedSkins.push(skinId);
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
                     window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
                 }
-                alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
+                alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 획득 완료!`);
                 equipSkin(skinId);
                 bindBuyEquipButtons();
+            } else if (!isRequirementMet) {
+                alert(`🔒 아직 잠겨있습니다! (필요 기록: ${skin.requirement}계단)`);
             } else {
                 alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
             }
@@ -88,12 +93,25 @@ function updateShopUI() {
 
     document.querySelectorAll('.buy-btn').forEach(btn => {
         const skinId = btn.dataset.id;
+        const skin = SKIN_DATA[skinId];
+
         if (ownedSkins.includes(skinId)) {
             btn.innerText = currentSkin === skinId ? '✓ 장착중' : '장착하기';
             btn.style.background = currentSkin === skinId ? '#7f8c8d' : '#2ecc71';
             btn.disabled = currentSkin === skinId;
             btn.classList.add('equip-btn');
             btn.classList.remove('buy-btn');
+        } else if (skin && skin.requirement) {
+            const isUnlocked = aiHighScore >= skin.requirement;
+            if (isUnlocked) {
+                btn.innerText = 'FREE 취득';
+                btn.style.background = '#3498db';
+                btn.disabled = false;
+            } else {
+                btn.innerText = `Locked (${skin.requirement})`;
+                btn.style.background = '#7f8c8d';
+                btn.disabled = true;
+            }
         }
     });
 

@@ -152,7 +152,7 @@ function addStair() {
         if (currentScore < 800) {
             // Earth Crust & Mantle
             const rRare = Math.random();
-            if (rRare < 0.01) { // 1% chance for Super Diamond
+            if (rRare < 0.005) { // 0.5% chance for Super Diamond
                 hasCoin = true;
                 coinVal = 500;
             } else if (Math.random() < 0.15 + (currentScore / 4000)) {
