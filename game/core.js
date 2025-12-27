@@ -151,7 +151,11 @@ function addStair() {
         // --- Reverse Mode: Mineral Economy ---
         if (currentScore < 800) {
             // Earth Crust & Mantle
-            if (Math.random() < 0.15 + (currentScore / 4000)) {
+            const rRare = Math.random();
+            if (rRare < 0.01) { // 1% chance for Super Diamond
+                hasCoin = true;
+                coinVal = 500;
+            } else if (Math.random() < 0.15 + (currentScore / 4000)) {
                 hasCoin = true;
                 const r = Math.random();
                 // Prices inflated 10x as requested. Deeper = more expensive.

@@ -177,7 +177,7 @@ function drawBackground(camX, camY) {
     // Clouds
     let cloudAlpha = score < 600 ? 1 : Math.max(0, 1 - (score - 600) / 200);
     if (window.gameState.isReverseMode) {
-        cloudAlpha = Math.max(0, 1 - score / 300); // Faster fadeout in Reverse
+        cloudAlpha = Math.max(0, 1 - score / 150); // Faster fadeout in Reverse (disappear by 150)
     }
     if (cloudAlpha > 0) {
         ctx.globalAlpha = cloudAlpha * 0.7;
@@ -315,6 +315,9 @@ function render() {
                 let mCol = '#9b59b6'; // 10
                 if (s.coinVal >= 50) mCol = '#3498db'; // 50
                 if (s.coinVal >= 100) mCol = '#f1c40f'; // 100
+                if (s.coinVal >= 500) mCol = '#ffffff'; // Super Diamond (White/Cyan)
+
+                const mSize = s.coinVal >= 500 ? 18 : 12; // Larger for super diamond
 
                 ctx.save();
                 ctx.translate(sx, sy - 30);
@@ -323,12 +326,22 @@ function render() {
 
                 ctx.fillStyle = mCol;
                 ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(10, 0);
-                ctx.lineTo(0, 12);
-                ctx.lineTo(-10, 0);
+                ctx.moveTo(0, -mSize);
+                ctx.lineTo(mSize * 0.8, 0);
+                ctx.lineTo(0, mSize);
+                ctx.lineTo(-mSize * 0.8, 0);
                 ctx.closePath();
                 ctx.fill();
+
+                if (s.coinVal >= 500) {
+                    // Extra glow for super diamond
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00d2d3';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
 
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.beginPath();
