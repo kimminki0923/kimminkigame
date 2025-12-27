@@ -5,9 +5,6 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
-// SFX Toggle state
-window.sfxEnabled = localStorage.getItem('sfx_enabled') !== 'false'; // Default to true
-
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new AudioContext();

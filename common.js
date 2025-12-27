@@ -1,3 +1,6 @@
+// --- Global Settings ---
+window.sfxEnabled = localStorage.getItem('sfx_enabled') !== 'false';
+
 // --- Page Switching Logic ---
 window.showPage = function (pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));

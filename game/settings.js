@@ -163,10 +163,16 @@ function bindSettingsEvents() {
 
     // SFX toggle button
     const sfxBtn = document.getElementById('toggle-sfx-btn');
-    if (sfxBtn) sfxBtn.onclick = (e) => {
-        e.stopPropagation();
-        toggleSFX();
-    };
+    if (sfxBtn) {
+        // Use addEventListener for better reliability
+        sfxBtn.onclick = null; // Clear any existing
+        sfxBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Settings] SFX Toggle Clicked');
+            toggleSFX();
+        });
+    }
 
     // Key capture listener
     document.addEventListener('keydown', handleKeyCapture, true);
