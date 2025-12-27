@@ -8,6 +8,7 @@ const SKIN_DATA = {
     skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
     skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
     skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
+    skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
     skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 }
 };
 
@@ -25,8 +26,8 @@ function updateSkinRotation() {
     } else if (skin.type === 'triangle') {
         // 120 degree rotation for triangle (3 sides)
         targetSkinRotation += Math.PI * 2 / 3;
-    } else if (skin.type === 'diamond') {
-        // Diamond floats, no rolling rotation
+    } else if (skin.type === 'diamond' || skin.type === 'ruby') {
+        // Floating skins, no rolling rotation
         targetSkinRotation = 0;
     } else if (skin.type === 'pentagon') {
         // Pentagonal rotation (72 degrees)
@@ -69,16 +70,16 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
     // Position ON the stair (not floating) - move down to touch stair
     const groundOffset = skin.type === 'circle' ? 5 : 0;
 
-    // Special Floating Logic for Diamond
+    // Special Floating Logic for Floating Skins
     let floatY = 0;
-    if (skin.type === 'diamond') {
+    if (skin.type === 'diamond' || skin.type === 'ruby') {
         floatY = Math.sin(time * 3) * 5; // Bobbing up and down
     }
 
     ctx.translate(px, py - groundOffset + floatY);
 
-    // Apply rotation for non-circle skins (except Diamond which floats upright)
-    if (skin.type !== 'circle' && skin.type !== 'diamond') {
+    // Apply rotation for non-circle skins (except Floating ones)
+    if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby') {
         ctx.rotate(currentSkinRotation);
     }
 
@@ -307,6 +308,80 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
                 ctx.fillStyle = `hsl(${time * 100 + i * 60}, 100%, 70%)`;
                 ctx.beginPath();
                 ctx.arc(ox, oy, 4 + flash * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+
+        case 'ruby':
+            // BIG Pharaoh's Ruby - Floating, pulsing red light, huge size
+            const rubySize = 42; // Even bigger than diamond
+            const rubyPulse = 1 + Math.sin(time * 4) * 0.08 + (flash * 0.15);
+
+            ctx.scale(rubyPulse, rubyPulse);
+
+            // Ground shadow
+            ctx.save();
+            ctx.translate(0, -floatY);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            const rubyShadowScale = 1 - (floatY + 5) * 0.08;
+            ctx.beginPath();
+            ctx.ellipse(0, rubySize * 0.6 + 12, rubySize * 0.7 * rubyShadowScale, 8 * rubyShadowScale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Ruby Gradient - Dark red to blood red
+            const rubyGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, rubySize);
+            rubyGrad.addColorStop(0, '#ff7675');
+            rubyGrad.addColorStop(0.4, '#d63031');
+            rubyGrad.addColorStop(1, '#811818');
+
+            // Reddish Aura / Glow
+            ctx.shadowColor = '#ff4d4d';
+            ctx.shadowBlur = 35 + Math.sin(time * 6) * 15 + (flash * 60);
+
+            ctx.fillStyle = rubyGrad;
+
+            // Octagonal / Cut Ruby shape
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const r = (i % 2 === 0) ? rubySize : rubySize * 0.85;
+                const rx = Math.cos(angle) * r;
+                const ry = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(rx, ry);
+                else ctx.lineTo(rx, ry);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // White highlight for "shine"
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 + flash * 0.2})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Inner facets for that "premium" feel
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * rubySize, Math.sin(angle) * rubySize);
+            }
+            ctx.stroke();
+
+            // Floating Red Embers / Particles
+            for (let i = 0; i < 4; i++) {
+                const angle = time * 2.5 + (i * Math.PI / 2);
+                const rx = rubySize * 1.1;
+                const ry = rubySize * 0.4;
+                const ox = Math.cos(angle) * rx;
+                const oy = Math.sin(angle) * ry;
+
+                ctx.fillStyle = `rgba(255, 0, 0, ${0.4 + Math.sin(time + i) * 0.3})`;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(ox, oy, 5 + flash * 3, 0, Math.PI * 2);
                 ctx.fill();
             }
             break;
