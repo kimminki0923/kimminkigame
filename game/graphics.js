@@ -322,9 +322,21 @@ function drawPet(ctx, px, py, petType, playerDir) {
     ctx.ellipse(0, 20, 16, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Golden Pig: Add shining golden glow effect
+    if (petType === 'pet_pig') {
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#ffd700'; // Gold color
+        // Pulsing glow effect
+        ctx.shadowBlur = 20 + Math.sin(time * 5) * 10;
+    }
+
     // Draw Pet icon (fully opaque)
-    ctx.fillStyle = "#ffffff"; // Ensure text color is solid
+    ctx.fillStyle = "#ffffff";
     ctx.fillText(petIcon, 0, bounce);
+
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
 
     ctx.restore();
 }
