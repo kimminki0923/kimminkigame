@@ -599,32 +599,32 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
     ctx.fill();
 
     // 4. Parallax Layer 1: Distant Silhouettes (Slower = More Stable)
-    const p1 = (camX * 0.02) % w;
+    const p1 = (camX * 0.05) % w; // Increased slightly for visibility
     ctx.save();
     ctx.translate(0, h * 0.05);
 
     // Distant Pyramid 1
-    const dp1X = w * 0.2 - p1;
+    const dp1X = (w * 0.2 + p1 + w) % w; // Corrected direction
     drawArtisticPyramid(ctx, dp1X, h, 400, 350, '#535c68', '#2f3542');
 
     // Distant Pyramid 2
-    const dp2X = w * 0.6 - p1;
+    const dp2X = (w * 0.6 + p1 + w) % w; // Corrected direction
     drawArtisticPyramid(ctx, dp2X, h, 250, 200, '#667687', '#2f3542');
 
     ctx.restore();
 
-    // 5. Parallax Layer 2: Mid-Range Dunes (Smoother Motion)
-    const p2 = (camX * 0.1) % w;
-    drawCalculusDunes(ctx, -p2, h, w, '#cd6133', 100, 0.003);
+    // 5. Parallax Layer 2: Mid-Range Dunes
+    const p2 = (camX * 0.15) % w;
+    drawCalculusDunes(ctx, p2, h, w, '#cd6133', 100, 0.003);
 
-    // 6. Featured Monuments (Detailed Sphinx) - Grounded in world
-    const p25 = (camX * 0.9) % (w * 1.5);
-    const monX = w * 0.8 - p25;
-    drawArtisticSphinx(ctx, monX, h * 0.82, 0.8);
+    // 6. Featured Monuments (Detailed Sphinx) - FULLY GROUNDED
+    const pSphinx = (camX * 0.4) % (w * 2); // Increased factor for groundedness
+    const monX = (w * 0.5 + pSphinx + w * 2) % (w * 2) - w * 0.5;
+    drawArtisticSphinx(ctx, monX, h * 0.82, 0.9);
 
-    // 7. Parallax Layer 3: Foreground Dunes (Calculus Curves)
-    const p3 = (camX * 0.25) % w;
-    drawCalculusDunes(ctx, -p3, h + 20, w + 200, '#e58e26', 150, 0.005);
+    // 7. Parallax Layer 3: Foreground Dunes
+    const p3 = (camX * 0.3) % w;
+    drawCalculusDunes(ctx, p3, h + 20, w + 200, '#e58e26', 150, 0.005);
 
     // 8. Ground Detail
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
