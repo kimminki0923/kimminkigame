@@ -127,9 +127,10 @@ function stopGame() {
 
 function addStair() {
     const last = window.gameState.stairs[window.gameState.stairs.length - 1];
+    const isReverse = window.gameState.isReverseMode;
+    const yInc = isReverse ? -1 : 1;
 
     if (window.gameState.stairs.length < 6) {
-        const yInc = window.gameState.isReverseMode ? -1 : 1;
         window.gameState.stairs.push({
             x: last.x + 1, y: last.y + yInc, dir: 1, hasCoin: false, coinVal: 0
         });
@@ -139,15 +140,41 @@ function addStair() {
     let nextDir;
     if (Math.random() < 0.7) { nextDir = last.dir; } else { nextDir = last.dir === 1 ? 0 : 1; }
 
+    const currentScore = window.gameState.score + (window.gameState.stairs.length - window.gameState.score);
     let hasCoin = false;
     let coinVal = 0;
-    if (Math.random() < 0.3) {
-        hasCoin = true;
-        const r = Math.random();
-        if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
-    }
 
-    const yInc = window.gameState.isReverseMode ? -1 : 1;
+    if (isReverse) {
+        // --- Reverse Mode: Mineral Economy ---
+        if (currentScore < 800) {
+            // Earth Crust & Mantle
+            if (Math.random() < 0.15 + (currentScore / 4000)) {
+                hasCoin = true;
+                const r = Math.random();
+                // Prices inflated 10x as requested. Deeper = more expensive.
+                if (currentScore < 300) {
+                    if (r < 0.8) coinVal = 10; else coinVal = 50;
+                } else if (currentScore < 600) {
+                    if (r < 0.5) coinVal = 10; else if (r < 0.9) coinVal = 50; else coinVal = 100;
+                } else {
+                    if (r < 0.3) coinVal = 50; else if (r < 0.8) coinVal = 100; else coinVal = 200;
+                }
+            }
+        } else if (currentScore >= 1500) {
+            // Emerging to other side / Space gems
+            if (Math.random() < 0.1) {
+                hasCoin = true;
+                coinVal = 200;
+            }
+        }
+    } else {
+        // --- Normal Mode: Standard Coins ---
+        if (Math.random() < 0.3) {
+            hasCoin = true;
+            const r = Math.random();
+            if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
+        }
+    }
 
     window.gameState.stairs.push({
         x: last.x + (nextDir === 1 ? 1 : -1),

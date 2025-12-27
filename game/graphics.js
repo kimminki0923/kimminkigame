@@ -133,7 +133,12 @@ function drawBackground(camX, camY) {
     }
 
     // Stars
-    const starOpacity = score < 9500 ? Math.max(0, Math.min(1, (score - 600) / 400)) : Math.max(0, 1 - (score - 9500) / 500);
+    let starOpacity = score < 9500 ? Math.max(0, Math.min(1, (score - 600) / 400)) : Math.max(0, 1 - (score - 9500) / 500);
+    if (window.gameState.isReverseMode) {
+        if (score < 800) starOpacity = 0; // No stars in early descent
+        else if (score >= 800 && score < 1500) starOpacity = 0; // No stars in Core
+        else if (score >= 1500) starOpacity = Math.min(1, (score - 1500) / 500); // Emerging to space
+    }
     if (starOpacity > 0) {
         ctx.globalAlpha = starOpacity;
         ctx.fillStyle = '#ffffff';
@@ -169,7 +174,10 @@ function drawBackground(camX, camY) {
     }
 
     // Clouds
-    const cloudAlpha = score < 600 ? 1 : Math.max(0, 1 - (score - 600) / 200);
+    let cloudAlpha = score < 600 ? 1 : Math.max(0, 1 - (score - 600) / 200);
+    if (window.gameState.isReverseMode) {
+        cloudAlpha = Math.max(0, 1 - score / 300); // Faster fadeout in Reverse
+    }
     if (cloudAlpha > 0) {
         ctx.globalAlpha = cloudAlpha * 0.7;
         clouds.forEach(c => {
@@ -216,7 +224,13 @@ function drawBackground(camX, camY) {
     }
 
     // Minerals (Underground Version 2)
-    const mineralAlpha = (window.gameState.isReverseMode && score > 150) ? Math.min(1, (score - 150) / 100) : 0;
+    let mineralAlpha = 0;
+    if (window.gameState.isReverseMode) {
+        if (score > 150 && score < 800) {
+            mineralAlpha = Math.min(1, (score - 150) / 100);
+            if (score > 700) mineralAlpha = Math.max(0, 1 - (score - 700) / 100); // Fade out as core arrives
+        }
+    }
     if (mineralAlpha > 0) {
         ctx.globalAlpha = mineralAlpha;
         minerals.forEach(m => {
@@ -292,15 +306,45 @@ function render() {
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
 
-        // Coin
+        // Coin / Mineral
         if (s.hasCoin) {
-            let col = '#f1c40f';
-            if (s.coinVal === 5) col = '#00d2d3';
-            if (s.coinVal === 10) col = '#ff6b6b';
-            ctx.fillStyle = col;
-            ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx - 3, sy - 33, 2, 0, Math.PI * 2); ctx.fill();
+            if (window.gameState.isReverseMode) {
+                // Draw Mineral
+                let mCol = '#9b59b6'; // 10
+                if (s.coinVal >= 50) mCol = '#3498db'; // 50
+                if (s.coinVal >= 100) mCol = '#f1c40f'; // 100
+
+                ctx.save();
+                ctx.translate(sx, sy - 30);
+                const rot = (time * 2 + i) % (Math.PI * 2);
+                ctx.rotate(rot);
+
+                ctx.fillStyle = mCol;
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(10, 0);
+                ctx.lineTo(0, 12);
+                ctx.lineTo(-10, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(5, 0);
+                ctx.lineTo(0, 4);
+                ctx.fill();
+                ctx.restore();
+            } else {
+                // Draw Original Coin
+                let col = '#f1c40f';
+                if (s.coinVal === 5) col = '#00d2d3';
+                if (s.coinVal === 10) col = '#ff6b6b';
+                ctx.fillStyle = col;
+                ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx - 3, sy - 33, 2, 0, Math.PI * 2); ctx.fill();
+            }
         }
     });
 
