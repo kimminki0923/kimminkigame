@@ -7,28 +7,40 @@ const STAIR_SKIN_DATA = {
     stair_glass: { name: '유리 계단', icon: '🧊', price: 1000, type: 'glass' }
 };
 
+const PET_DATA = {
+    none: { name: '없음', icon: '❌' },
+    pet_dog: { name: '강아지', icon: '🐕', price: 1000, type: 'ground' },
+    pet_cat: { name: '고양이', icon: '🐈', price: 3000, type: 'ground' },
+    pet_eagle: { name: '독수리', icon: '🦅', price: 10000, type: 'air' },
+    pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' }
+};
+
 function switchShopTab(tab) {
     const charTab = document.getElementById('tab-char');
     const stairTab = document.getElementById('tab-stair');
+    const petTab = document.getElementById('tab-pet');
     const charSec = document.getElementById('shop-section-char');
     const stairSec = document.getElementById('shop-section-stair');
+    const petSec = document.getElementById('shop-section-pet');
 
-    if (!charTab || !stairTab || !charSec || !stairSec) return;
+    if (!charTab || !stairTab || !charSec || !stairSec || !petTab || !petSec) return;
+
+    // Reset all
+    [charSec, stairSec, petSec].forEach(s => s.style.display = 'none');
+    [charTab, stairTab, petTab].forEach(t => { t.style.background = '#333'; t.style.color = '#fff'; });
 
     if (tab === 'char') {
         charSec.style.display = 'block';
-        stairSec.style.display = 'none';
         charTab.style.background = '#f1c40f';
         charTab.style.color = '#000';
-        stairTab.style.background = '#333';
-        stairTab.style.color = '#fff';
-    } else {
-        charSec.style.display = 'none';
+    } else if (tab === 'stair') {
         stairSec.style.display = 'block';
-        charTab.style.background = '#333';
-        charTab.style.color = '#fff';
         stairTab.style.background = '#f1c40f';
         stairTab.style.color = '#000';
+    } else if (tab === 'pet') {
+        petSec.style.display = 'block';
+        petTab.style.background = '#f1c40f';
+        petTab.style.color = '#000';
     }
 }
 
@@ -73,6 +85,13 @@ function equipStairSkin(stairId) {
     console.log(`Equipped stair skin: ${stairId}`);
 }
 
+function equipPet(petId) {
+    currentPet = petId;
+    localStorage.setItem('currentPet', petId);
+    updateShopUI();
+    console.log(`Equipped pet: ${petId}`);
+}
+
 function bindBuyEquipButtons() {
     // Buy Character Skins
     document.querySelectorAll('.buy-btn').forEach(btn => {
@@ -95,7 +114,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
                 }
                 alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 획득 완료!`);
                 equipSkin(skinId);
@@ -135,7 +154,7 @@ function bindBuyEquipButtons() {
                 if (coinEl) coinEl.innerText = totalCoins;
                 updateShopUI();
                 if (window.saveData) {
-                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin);
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
                 }
                 alert(`✅ ${STAIR_SKIN_DATA[stairId]?.name || stairId} 구매 완료!`);
                 equipStairSkin(stairId);
@@ -154,6 +173,44 @@ function bindBuyEquipButtons() {
             equipStairSkin(stairId);
         };
     });
+
+    // Buy Pets
+    document.querySelectorAll('.buy-pet-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const petId = this.dataset.id;
+            const price = parseInt(this.dataset.price);
+
+            if (ownedPets.includes(petId)) {
+                equipPet(petId);
+                return;
+            }
+
+            if (totalCoins >= price) {
+                totalCoins -= price;
+                ownedPets.push(petId);
+                if (coinEl) coinEl.innerText = totalCoins;
+                updateShopUI();
+                if (window.saveData) {
+                    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
+                }
+                alert(`✅ ${PET_DATA[petId]?.name || petId} 입양 완료!`);
+                equipPet(petId);
+                bindBuyEquipButtons();
+            } else {
+                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+            }
+        };
+    });
+
+    // Equip Pets
+    document.querySelectorAll('.equip-pet-btn').forEach(btn => {
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const petId = this.dataset.pet || this.dataset.id;
+            equipPet(petId);
+        };
+    });
 }
 
 function updateShopUI() {
@@ -168,6 +225,11 @@ function updateShopUI() {
     const currentStairDisplay = document.getElementById('current-stair-display');
     if (currentStairDisplay && STAIR_SKIN_DATA[currentStairSkin]) {
         currentStairDisplay.innerText = `${STAIR_SKIN_DATA[currentStairSkin].icon} ${STAIR_SKIN_DATA[currentStairSkin].name}`;
+    }
+
+    const currentPetDisplay = document.getElementById('current-pet-display');
+    if (currentPetDisplay && PET_DATA[currentPet]) {
+        currentPetDisplay.innerText = `${PET_DATA[currentPet].icon} ${PET_DATA[currentPet].name}`;
     }
 
     // Character Skins UI update
@@ -227,6 +289,31 @@ function updateShopUI() {
             btn.style.background = '#7f8c8d';
             btn.disabled = true;
         } else if (ownedStairSkins.includes(stairId)) {
+            btn.innerText = '장착하기';
+            btn.style.background = '#2ecc71';
+            btn.disabled = false;
+        }
+    });
+
+    // Pet UI update
+    document.querySelectorAll('.buy-pet-btn').forEach(btn => {
+        const petId = btn.dataset.id;
+        if (ownedPets.includes(petId)) {
+            btn.innerText = currentPet === petId ? '✓ 장착중' : '장착하기';
+            btn.style.background = currentPet === petId ? '#7f8c8d' : '#2ecc71';
+            btn.disabled = currentPet === petId;
+            btn.classList.add('equip-pet-btn');
+            btn.classList.remove('buy-pet-btn');
+        }
+    });
+
+    document.querySelectorAll('.equip-pet-btn').forEach(btn => {
+        const petId = btn.dataset.pet || btn.dataset.id;
+        if (petId === currentPet) {
+            btn.innerText = '✓ 장착중';
+            btn.style.background = '#7f8c8d';
+            btn.disabled = true;
+        } else if (ownedPets.includes(petId) || petId === 'none') {
             btn.innerText = '장착하기';
             btn.style.background = '#2ecc71';
             btn.disabled = false;

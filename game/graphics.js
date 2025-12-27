@@ -2,6 +2,7 @@
 // ============================================================
 
 let time = 0;
+let petRenderPos = { x: 0, y: 0 }; // Pet interpolation
 
 function initBackgroundObjects() {
     buildings.length = 0;
@@ -267,6 +268,52 @@ function drawBackground(camX, camY) {
     }
 }
 
+function drawPet(ctx, px, py, petType, playerDir) {
+    if (!petType || petType === 'none') return;
+
+    ctx.save();
+
+    // Smoothly interpolate pet position
+    let followOffset = { x: -playerDir * 0.4, y: 0.1 }; // one step behind
+    if (petType === 'pet_eagle') followOffset = { x: 0, y: -1.0 }; // above head
+
+    const targetX = window.gameState.renderPlayer.x + followOffset.x;
+    const targetY = window.gameState.renderPlayer.y + followOffset.y;
+
+    // Initialize if jump
+    if (Math.abs(petRenderPos.x - targetX) > 5) {
+        petRenderPos.x = targetX;
+        petRenderPos.y = targetY;
+    }
+
+    petRenderPos.x += (targetX - petRenderPos.x) * 0.15;
+    petRenderPos.y += (targetY - petRenderPos.y) * 0.15;
+
+    const petX = px + (petRenderPos.x - window.gameState.renderPlayer.x) * STAIR_W;
+    const petY = py - (petRenderPos.y - window.gameState.renderPlayer.y) * STAIR_H;
+
+    ctx.translate(petX, petY);
+    if (playerDir === -1) ctx.scale(-1, 1); // Flip pet based on dir
+
+    const bounce = Math.sin(time * 10) * 3;
+    const petIcon = PET_DATA[petType]?.icon || '❓';
+
+    ctx.font = "32px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Draw shadow for pet
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.beginPath();
+    ctx.ellipse(0, 15, 12, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Pet icon
+    ctx.fillText(petIcon, 0, bounce);
+
+    ctx.restore();
+}
+
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     time = Date.now() * 0.001;
@@ -381,9 +428,10 @@ function render() {
         }
     });
 
+    // Pet
+    drawPet(ctx, px, py, currentPet, window.gameState.playerDir);
+
     // Player
-    const px = camX + window.gameState.renderPlayer.x * STAIR_W;
-    const py = camY - window.gameState.renderPlayer.y * STAIR_H;
     ctx.globalAlpha = 1.0; // Ensure full opacity for player
     drawPlayerWithSkin(ctx, px, py, window.gameState.playerDir);
 

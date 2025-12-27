@@ -123,6 +123,8 @@ async function loadCloudData(uid) {
         const localSkin = localStorage.getItem('currentSkin') || 'default';
         const localStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
         const localStairSkin = localStorage.getItem('currentStairSkin') || 'default';
+        const localPets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
+        const localPet = localStorage.getItem('currentPet') || 'none';
 
         let finalScore = localScore;
         let finalCoins = localCoins;
@@ -130,6 +132,8 @@ async function loadCloudData(uid) {
         let finalSkin = localSkin;
         let finalStairSkins = localStairSkins;
         let finalStairSkin = localStairSkin;
+        let finalPets = localPets;
+        let finalPet = localPet;
         let needSync = false;
 
         if (doc.exists) {
@@ -138,6 +142,7 @@ async function loadCloudData(uid) {
             const cloudCoins = data.coinCount || 0;
             const cloudSkins = data.ownedSkins || ['default'];
             const cloudStairSkins = data.ownedStairSkins || ['default'];
+            const cloudPets = data.ownedPets || ['none'];
 
             // Merge Strategy: MAX
             if (cloudScore > finalScore) finalScore = cloudScore;
@@ -150,15 +155,21 @@ async function loadCloudData(uid) {
             const stairSkinSet = new Set([...finalStairSkins, ...cloudStairSkins]);
             finalStairSkins = Array.from(stairSkinSet);
 
-            // Prefer Cloud Skin if different
+            const petSet = new Set([...finalPets, ...cloudPets]);
+            finalPets = Array.from(petSet);
+
+            // Prefer Cloud if different
             if (data.currentSkin && finalSkins.includes(data.currentSkin)) {
                 finalSkin = data.currentSkin;
             }
             if (data.currentStairSkin && finalStairSkins.includes(data.currentStairSkin)) {
                 finalStairSkin = data.currentStairSkin;
             }
+            if (data.currentPet && finalPets.includes(data.currentPet)) {
+                finalPet = data.currentPet;
+            }
 
-            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length || finalStairSkins.length > cloudStairSkins.length) {
+            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length || finalStairSkins.length > cloudStairSkins.length || finalPets.length > cloudPets.length) {
                 needSync = true;
             }
         } else {
@@ -168,10 +179,10 @@ async function loadCloudData(uid) {
 
         if (needSync) {
             console.log("☁️ Syncing Local Progress to Cloud...");
-            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin);
+            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet);
         }
 
-        applyGameData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin);
+        applyGameData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet);
 
     } catch (e) {
         console.error("Load Cloud Error:", e);
@@ -186,14 +197,16 @@ function loadLocalData() {
     const skin = localStorage.getItem('currentSkin') || 'default';
     const stairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
     const stairSkin = localStorage.getItem('currentStairSkin') || 'default';
-    applyGameData(s, c, skins, skin, stairSkins, stairSkin);
+    const pets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
+    const pet = localStorage.getItem('currentPet') || 'none';
+    applyGameData(s, c, skins, skin, stairSkins, stairSkin, pets, pet);
 }
 
 // --- Apply to Game (Bridge) ---
-function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
+function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet) {
     const trySet = (attempts = 0) => {
         if (window.setGameData) {
-            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default', stairSkins || ['default'], currentStairSkin || 'default');
+            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default', stairSkins || ['default'], currentStairSkin || 'default', pets || ['none'], currentPet || 'none');
         } else if (attempts < 20) {
             setTimeout(() => trySet(attempts + 1), 200);
         }
@@ -202,7 +215,7 @@ function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStai
 }
 
 // --- Save Data ---
-function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
+function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet) {
     if (!db || !currentUser) return;
 
     db.collection('users').doc(currentUser.uid).set({
@@ -212,6 +225,8 @@ function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStai
         currentSkin: currentSkin,
         ownedStairSkins: stairSkins || ['default'],
         currentStairSkin: currentStairSkin || 'default',
+        ownedPets: pets || ['none'],
+        currentPet: currentPet || 'none',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
         console.log("☁️ Cloud Save Success");
@@ -219,16 +234,18 @@ function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStai
     }).catch(e => console.error("Cloud Save Failed", e));
 }
 
-window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin) {
+window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
     if (skins) localStorage.setItem('ownedSkins', JSON.stringify(skins));
     if (currentSkin) localStorage.setItem('currentSkin', currentSkin);
     if (stairSkins) localStorage.setItem('ownedStairSkins', JSON.stringify(stairSkins));
     if (currentStairSkin) localStorage.setItem('currentStairSkin', currentStairSkin);
+    if (pets) localStorage.setItem('ownedPets', JSON.stringify(pets));
+    if (currentPet) localStorage.setItem('currentPet', currentPet);
 
     if (currentUser && isCloudEnabled) {
-        saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin);
+        saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet);
     }
 }
 

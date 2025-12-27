@@ -52,6 +52,8 @@ let currentSkin = localStorage.getItem('currentSkin') || 'default';
 let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
 let currentStairSkin = localStorage.getItem('currentStairSkin') || 'default';
 let ownedStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
+let currentPet = localStorage.getItem('currentPet') || 'none';
+let ownedPets = JSON.parse(localStorage.getItem('ownedPets') || '["none"]');
 let skinRotation = 0;
 let isDataLoaded = false;
 
