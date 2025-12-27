@@ -74,6 +74,38 @@ function lerpColor(a, b, t) {
 }
 
 // ============================================================
+// Smooth Transition Utilities (연속 전환용 유틸리티)
+// ============================================================
+
+// Clamp value between min and max
+function clamp(x, min, max) {
+    return Math.max(min, Math.min(max, x));
+}
+
+// Smoothstep - 부드러운 S-curve 전환 (0에서 1로)
+function smoothstep(edge0, edge1, x) {
+    const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    return t * t * (3 - 2 * t);
+}
+
+// Get opacity for a phase based on score with smooth fade in/out
+// phaseStart: phase가 시작되는 score
+// phaseEnd: phase가 끝나는 score  
+// blendRange: fade in/out에 걸리는 score 범위
+function getPhaseOpacity(score, phaseStart, phaseEnd, blendRange) {
+    if (score < phaseStart - blendRange) return 0;
+    if (score > phaseEnd + blendRange) return 0;
+    if (score < phaseStart) return smoothstep(phaseStart - blendRange, phaseStart, score);
+    if (score > phaseEnd) return 1 - smoothstep(phaseEnd, phaseEnd + blendRange, score);
+    return 1;
+}
+
+// Lerp for numbers
+function lerp(a, b, t) {
+    return a + (b - a) * clamp(t, 0, 1);
+}
+
+// ============================================================
 // Desert Background Rendering
 // ============================================================
 function drawDesertBackground(camX, camY, score, w, h) {
@@ -550,7 +582,167 @@ function drawPet(ctx, px, py, petType, playerDir) {
         ctx.beginPath();
         ctx.arc(-15, bounce - 10, sparkleSize, 0, Math.PI * 2);
         ctx.fill();
+    } else if (petType === 'pet_sphinx') {
+        // ============================================================
+        // SPHINX PET (스핑크스 펫) - 파라오의 왕관 15개 해금
+        // ============================================================
+        const sphinxBounce = bounce * 0.3; // 덜 튀는 움직임
+
+        // 신비로운 황금빛 아우라
+        ctx.shadowBlur = 15 + Math.sin(time * 4) * 8;
+        ctx.shadowColor = '#d4af37';
+
+        // 몸통 (누운 사자 모양)
+        const bodyGrad = ctx.createLinearGradient(-20, 0, 20, 0);
+        bodyGrad.addColorStop(0, '#c4a35a');
+        bodyGrad.addColorStop(0.5, '#d4b06a');
+        bodyGrad.addColorStop(1, '#b8956a');
+
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, sphinxBounce + 5, 22, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 앞다리
+        ctx.fillStyle = '#c4a35a';
+        ctx.fillRect(-18, sphinxBounce + 12, 8, 12);
+        ctx.fillRect(10, sphinxBounce + 12, 8, 12);
+
+        // 머리
+        ctx.fillStyle = '#d4b06a';
+        ctx.beginPath();
+        ctx.arc(-20, sphinxBounce - 5, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 네메스 머리장식 (파라오 두건)
+        ctx.fillStyle = '#1e3a5f';
+        ctx.beginPath();
+        ctx.moveTo(-30, sphinxBounce - 8);
+        ctx.lineTo(-20, sphinxBounce - 20);
+        ctx.lineTo(-10, sphinxBounce - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // 머리장식 줄무늬
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-27, sphinxBounce - 12);
+        ctx.lineTo(-13, sphinxBounce - 12);
+        ctx.stroke();
+
+        // 눈 (신비로운 푸른빛)
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#00d2d3';
+        ctx.fillStyle = '#00d2d3';
+        ctx.beginPath();
+        ctx.ellipse(-23, sphinxBounce - 6, 3, 2, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 눈동자
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-23, sphinxBounce - 6, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 꼬리
+        ctx.fillStyle = '#b8956a';
+        ctx.beginPath();
+        ctx.moveTo(20, sphinxBounce + 5);
+        ctx.quadraticCurveTo(30, sphinxBounce - 5, 25, sphinxBounce - 12);
+        ctx.lineTo(23, sphinxBounce - 10);
+        ctx.quadraticCurveTo(27, sphinxBounce - 3, 19, sphinxBounce + 6);
+        ctx.fill();
+
+        // 황금 빛 파티클
+        for (let sp = 0; sp < 3; sp++) {
+            const spAngle = time * 2 + sp * (Math.PI * 2 / 3);
+            const spDist = 30 + Math.sin(time * 5 + sp) * 5;
+            const spX = Math.cos(spAngle) * spDist * 0.8;
+            const spY = Math.sin(spAngle) * spDist * 0.3 + sphinxBounce;
+
+            ctx.fillStyle = `rgba(212, 175, 55, ${0.4 + Math.sin(time * 3 + sp) * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(spX, spY, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (petType === 'pet_polarbear') {
+        // ============================================================
+        // POLAR BEAR PET (북극곰 펫) - 눈결정 15개 해금
+        // ============================================================
+        const bearBounce = bounce * 0.4;
+
+        // 차가운 얼음 아우라
+        ctx.shadowBlur = 15 + Math.sin(time * 3) * 5;
+        ctx.shadowColor = '#81ecec';
+
+        // 몸통 (흰색)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(0, bearBounce + 5, 24, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 다리 (4개)
+        ctx.beginPath();
+        ctx.arc(-14, bearBounce + 16, 6, 0, Math.PI * 2);
+        ctx.arc(14, bearBounce + 16, 6, 0, Math.PI * 2);
+        ctx.arc(-8, bearBounce + 18, 6, 0, Math.PI * 2);
+        ctx.arc(8, bearBounce + 18, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 머리
+        ctx.beginPath();
+        ctx.arc(-18, bearBounce - 8, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 귀 (둥근 귀)
+        ctx.beginPath();
+        ctx.arc(-26, bearBounce - 16, 5, 0, Math.PI * 2);
+        ctx.arc(-10, bearBounce - 16, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 코와 입
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.ellipse(-28, bearBounce - 6, 4, 3, 0, 0, Math.PI * 2); // 코
+        ctx.fill();
+
+        // 눈
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-22, bearBounce - 10, 1.5, 0, Math.PI * 2);
+        ctx.arc(-14, bearBounce - 10, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 붉은 목도리 (포인트)
+        ctx.fillStyle = '#ff7675';
+        ctx.beginPath();
+        ctx.rect(-10, bearBounce + 2, 20, 6);
+        ctx.fill();
+        // 목도리 끝자락
+        ctx.beginPath();
+        ctx.moveTo(8, bearBounce + 4);
+        ctx.lineTo(16, bearBounce + 12);
+        ctx.lineTo(12, bearBounce + 16);
+        ctx.lineTo(4, bearBounce + 8);
+        ctx.fill();
+
+        // 눈송이 파티클
+        for (let sp = 0; sp < 3; sp++) {
+            const spAngle = time * 1.5 + sp * (Math.PI * 2 / 3);
+            const spDist = 32 + Math.sin(time * 3 + sp) * 4;
+            const spX = Math.cos(spAngle) * spDist;
+            const spY = Math.sin(spAngle) * spDist * 0.5 + bearBounce;
+
+            ctx.fillStyle = `rgba(223, 249, 251, ${0.6 + Math.sin(time * 5 + sp) * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(spX, spY, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
     } else {
+
+
         // Other pets: use emoji icon
         const petIcon = PET_DATA[petType]?.icon || '❓';
         ctx.fillStyle = "#ffffff";
@@ -567,36 +759,253 @@ function drawPet(ctx, px, py, petType, playerDir) {
 // ============================================================
 // Desert Background Rendering (Premium Art Version)
 // ============================================================
+// 개연성 있는 수직 연속성:
+// - 피라미드와 사막이 항상 아래에 보이며 점점 멀어짐 (작아짐)
+// - 하늘이 점점 높아지며 석양 → 밤하늘로 전환
+// - 우주까지 가지 않고 이집트 밤하늘에서 마무리
+// ============================================================
 function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
     const isReverse = window.gameState.isReverseMode;
 
-    // Reverse Mode: The Hidden Tomb
     if (isReverse) {
         drawDesertPhaseTomb(ctx, camX, camY, w, h);
         return;
     }
 
-    // Normal Mode: Altitude-based Phases
-    // score 0   -> scale 0 (Ground)
-    // score 150 -> scale 1 (Ascent)
-    // score 400 -> scale 2 (Summit)
-    // score 800 -> scale 3 (Celestial)
+    const altitude = Math.max(0, score);
+    const time = Date.now() * 0.001;
 
-    let altitude = Math.max(0, score);
-    if (altitude < 150) {
-        let t = altitude / 150;
-        drawDesertPhaseGround(ctx, camX, camY, w, h, t);
-    } else if (altitude < 400) {
-        let t = (altitude - 150) / 250;
-        drawDesertPhaseAscent(ctx, camX, camY, w, h, t, altitude);
-    } else if (altitude < 800) {
-        let t = (altitude - 400) / 400;
-        drawDesertPhaseSummit(ctx, camX, camY, w, h, t, altitude);
-    } else {
-        let t = Math.min(1.0, (altitude - 800) / 400);
-        drawDesertPhaseCelestial(ctx, camX, camY, w, h, t, altitude);
+    // ============================================================
+    // 1. SKY: 연속적으로 변하는 하늘 (사막 낮 → 석양 → 밤)
+    // ============================================================
+    const skyProgress = clamp(altitude / 600, 0, 1); // 600에서 완전한 밤
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    // 낮 → 석양 → 밤 그라데이션
+    const topColor = lerpColor(
+        lerpColor('#1e90ff', '#ff6b35', clamp(skyProgress * 2, 0, 1)),
+        '#0a0a23',
+        clamp((skyProgress - 0.5) * 2, 0, 1)
+    );
+    const midColor = lerpColor(
+        lerpColor('#87ceeb', '#ff8c42', clamp(skyProgress * 2, 0, 1)),
+        '#1a1a3e',
+        clamp((skyProgress - 0.5) * 2, 0, 1)
+    );
+    const botColor = lerpColor('#fad390', '#2d3436', skyProgress);
+
+    skyGrad.addColorStop(0, topColor);
+    skyGrad.addColorStop(0.5, midColor);
+    skyGrad.addColorStop(1, botColor);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // ============================================================
+    // 2. SUN/MOON: 태양이 지고 달이 뜸
+    // ============================================================
+    // 태양 (점점 내려감)
+    const sunOpacity = clamp(1 - skyProgress * 1.5, 0, 1);
+    if (sunOpacity > 0) {
+        const sunY = lerp(h * 0.15, h * 0.7, clamp(skyProgress * 2, 0, 1));
+        const sunX = w * 0.75;
+
+        ctx.globalAlpha = sunOpacity;
+        const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 80);
+        sunGrad.addColorStop(0, '#fff7ae');
+        sunGrad.addColorStop(0.3, '#ffd700');
+        sunGrad.addColorStop(1, 'rgba(255, 140, 0, 0)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, 80, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    // 달과 별 (밤이 되면 나타남)
+    const nightOpacity = clamp((skyProgress - 0.4) * 2.5, 0, 1);
+    if (nightOpacity > 0) {
+        ctx.globalAlpha = nightOpacity;
+
+        // 달
+        const moonX = w * 0.2;
+        const moonY = h * 0.15;
+        ctx.fillStyle = '#f5f5dc';
+        ctx.beginPath();
+        ctx.arc(moonX, moonY, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 별들
+        ctx.fillStyle = '#fff';
+        for (let i = 0; i < 80; i++) {
+            const sx = (Math.sin(i * 127) * 0.5 + 0.5) * w;
+            const sy = (Math.cos(i * 53) * 0.4) * h;
+            const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 2 + 1;
+            ctx.beginPath();
+            ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // ============================================================
+    // 3. GROUND ELEMENTS: 항상 아래에 보이며 점점 작아짐/멀어짐
+    // ============================================================
+    // 스케일: 1.0 → 0.1 (멀어짐)
+    const groundScale = lerp(1.0, 0.15, clamp(altitude / 400, 0, 1));
+    // Y 위치: 화면 아래 → 더 아래로 (시야에서 멀어짐)
+    const groundY = h + altitude * 1.5;
+    // 투명도: 가까울때 1.0, 멀어질수록 살짝 흐려짐
+    const groundAlpha = lerp(1.0, 0.6, clamp(altitude / 500, 0, 1));
+
+    ctx.save();
+    ctx.globalAlpha = groundAlpha;
+
+    // 패럴랙스
+    const p1 = (camX * 0.05) % w;
+    const p2 = (camX * 0.1) % w;
+
+    // 먼 산/모래언덕 (항상 보이는 배경)
+    const duneY = lerp(h * 0.6, h * 0.9, clamp(altitude / 300, 0, 1));
+    ctx.fillStyle = lerpColor('#d4a574', '#8b7355', skyProgress);
+    ctx.beginPath();
+    ctx.moveTo(-100, h);
+    for (let x = -100; x < w + 200; x += 100) {
+        const peakY = duneY + Math.sin((x + p2) * 0.01) * 30 * groundScale;
+        ctx.quadraticCurveTo(x + 50, peakY - 50 * groundScale, x + 100, duneY);
+    }
+    ctx.lineTo(w + 100, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // 피라미드들 (원근감 적용)
+    const pyramidBaseY = groundY;
+    const pyramidScale = groundScale;
+
+    // 큰 피라미드 (뒤쪽)
+    if (pyramidScale > 0.05) {
+        drawScaledPyramid(ctx,
+            (w * 0.3 + p1 * 0.5) % w,
+            pyramidBaseY,
+            350 * pyramidScale,
+            300 * pyramidScale,
+            '#b8860b', '#8b6914'
+        );
+
+        // 작은 피라미드들
+        drawScaledPyramid(ctx,
+            (w * 0.6 + p1 * 0.3) % w,
+            pyramidBaseY,
+            200 * pyramidScale,
+            180 * pyramidScale,
+            '#daa520', '#b8860b'
+        );
+
+        drawScaledPyramid(ctx,
+            (w * 0.8 + p1 * 0.4) % w,
+            pyramidBaseY,
+            150 * pyramidScale,
+            130 * pyramidScale,
+            '#cd853f', '#a0522d'
+        );
+    }
+
+    // 스핑크스 (원근감 적용)
+    if (pyramidScale > 0.1) {
+        const sphinxX = (w * 0.5 + (camX * 0.2) % (w * 0.5)) % w;
+        const sphinxY = pyramidBaseY - 20 * pyramidScale;
+        drawScaledSphinx(ctx, sphinxX, sphinxY, pyramidScale * 0.8);
+    }
+
+    // 전경 모래 (가까운 모래언덕)
+    if (altitude < 200) {
+        const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
+        ctx.globalAlpha = groundAlpha * foregroundAlpha;
+        ctx.fillStyle = '#e6c987';
+        ctx.beginPath();
+        ctx.moveTo(-50, h);
+        for (let x = -50; x < w + 100; x += 80) {
+            const peakY = h * 0.85 + Math.sin((x + p1 * 2) * 0.015) * 20;
+            ctx.quadraticCurveTo(x + 40, peakY - 30, x + 80, h * 0.88);
+        }
+        ctx.lineTo(w + 50, h);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    // ============================================================
+    // 4. ATMOSPHERIC EFFECTS: 높이에 따른 대기 효과
+    // ============================================================
+    // 높이 올라갈수록 공기가 희박해지는 느낌 (약간의 안개)
+    if (altitude > 100) {
+        const hazeAlpha = clamp((altitude - 100) / 400, 0, 0.3);
+        const hazeGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+        hazeGrad.addColorStop(0, `rgba(200, 180, 150, ${hazeAlpha})`);
+        hazeGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = hazeGrad;
+        ctx.fillRect(0, h * 0.5, w, h * 0.5);
     }
 }
+
+// 스케일 적용된 피라미드
+function drawScaledPyramid(ctx, x, baseY, width, height, colorLight, colorDark) {
+    if (x < -width || x > ctx.canvas.width + width) return;
+    if (height < 5) return; // 너무 작으면 그리지 않음
+
+    // 어두운 면
+    ctx.fillStyle = colorDark;
+    ctx.beginPath();
+    ctx.moveTo(x - width / 2, baseY);
+    ctx.lineTo(x, baseY - height);
+    ctx.lineTo(x + width / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 밝은 면
+    ctx.fillStyle = colorLight;
+    ctx.beginPath();
+    ctx.moveTo(x - width / 2, baseY);
+    ctx.lineTo(x, baseY - height);
+    ctx.lineTo(x, baseY);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// 스케일 적용된 스핑크스
+function drawScaledSphinx(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+    if (scale < 0.1) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // 몸통 (누운 사자)
+    ctx.fillStyle = '#c4a35a';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 80, 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 머리
+    ctx.fillStyle = '#d4b06a';
+    ctx.beginPath();
+    ctx.arc(-50, -30, 25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 머리 장식
+    ctx.fillStyle = '#1e3a5f';
+    ctx.beginPath();
+    ctx.moveTo(-70, -35);
+    ctx.lineTo(-50, -60);
+    ctx.lineTo(-30, -35);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
 
 // --- Phase 1: Ground ---
 function drawDesertPhaseGround(ctx, camX, camY, w, h, t) {
@@ -915,20 +1324,270 @@ function initSnowParticles() {
 function drawWinterBackground(camX, camY, score, w, h) {
     initSnowParticles();
 
-    const isReverse = window.gameState.isReverseMode;
+    // ============================================================
+    // 개연성 있는 수직 연속성:
+    // - 펭귄, 이글루, 눈산이 항상 아래에 보이며 점점 멀어짐 (작아짐)
+    // - 하늘이 점점 어두워지며 낮 → 저녁 → 밤으로 전환
+    // - 오로라가 서서히 나타남 (밤하늘에서 자연스럽게)
+    // ============================================================
 
-    // Altitude-based phases
-    if (score < 200) {
-        drawWinterPhaseGround(ctx, camX, camY, w, h, score);
-    } else if (score < 500) {
-        drawWinterPhaseMountain(ctx, camX, camY, w, h, score);
-    } else {
-        drawWinterPhaseAurora(ctx, camX, camY, w, h, score);
+    const altitude = Math.max(0, score);
+    const time = Date.now() * 0.001;
+
+    // ============================================================
+    // 1. SKY: 연속적으로 변하는 하늘 (맑은 낮 → 저녁 → 밤)
+    // ============================================================
+    const skyProgress = clamp(altitude / 500, 0, 1); // 500에서 완전한 밤
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    // 낮 → 저녁 → 밤 그라데이션
+    const topColor = lerpColor(
+        lerpColor('#87ceeb', '#5d6d7e', clamp(skyProgress * 2, 0, 1)),
+        '#0a0a23',
+        clamp((skyProgress - 0.5) * 2, 0, 1)
+    );
+    const midColor = lerpColor(
+        lerpColor('#b0e0e6', '#8e99a4', clamp(skyProgress * 2, 0, 1)),
+        '#1a1a3e',
+        clamp((skyProgress - 0.5) * 2, 0, 1)
+    );
+    const botColor = lerpColor('#e0f7fa', '#2d3436', skyProgress);
+
+    skyGrad.addColorStop(0, topColor);
+    skyGrad.addColorStop(0.5, midColor);
+    skyGrad.addColorStop(1, botColor);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // ============================================================
+    // 2. STARS & AURORA: 밤이 되면 별과 오로라 출현
+    // ============================================================
+    const nightOpacity = clamp((skyProgress - 0.3) * 1.5, 0, 1);
+    if (nightOpacity > 0) {
+        ctx.save();
+        ctx.globalAlpha = nightOpacity;
+
+        // 별들
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 100; i++) {
+            const sx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
+            const sy = (Math.cos(i * 44) * 0.35) * h;
+            const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 2.5 + 0.5;
+            ctx.beginPath();
+            ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 오로라 (밤이 깊어질수록 강해짐)
+        const auroraIntensity = clamp((skyProgress - 0.5) * 2, 0, 1);
+        if (auroraIntensity > 0) {
+            drawAuroraBorealis(ctx, w, h, time, auroraIntensity * nightOpacity);
+        }
+
+        ctx.restore();
     }
 
-    // Always draw falling snow
+    // ============================================================
+    // 3. GROUND ELEMENTS: 항상 아래에 보이며 점점 작아짐/멀어짐
+    // ============================================================
+    // 스케일: 1.0 → 0.15 (멀어짐)
+    const groundScale = lerp(1.0, 0.15, clamp(altitude / 400, 0, 1));
+    // Y 위치: 화면 아래 → 더 아래로
+    const groundY = h + altitude * 1.2;
+    // 투명도: 가까울때 1.0, 멀어질수록 살짝 흐려짐
+    const groundAlpha = lerp(1.0, 0.5, clamp(altitude / 500, 0, 1));
+
+    ctx.save();
+    ctx.globalAlpha = groundAlpha;
+
+    const p1 = (camX * 0.05) % w;
+    const p2 = (camX * 0.08) % w;
+
+    // 먼 산 (항상 보이는 배경) - 높이에 따라 내려감
+    const mountainY = lerp(h * 0.4, h * 0.75, clamp(altitude / 300, 0, 1));
+    const mountainColor = lerpColor('#a8d4e6', '#5d6d7e', skyProgress);
+
+    ctx.fillStyle = mountainColor;
+    ctx.beginPath();
+    ctx.moveTo(-100, h);
+    for (let x = -100; x < w + 200; x += 120) {
+        const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
+        ctx.lineTo(x + 60, peakY);
+        ctx.lineTo(x + 120, mountainY + 30 * groundScale);
+    }
+    ctx.lineTo(w + 100, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // 산 위의 눈
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-100, mountainY + 20 * groundScale);
+    for (let x = -100; x < w + 200; x += 120) {
+        const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
+        ctx.lineTo(x + 60, peakY);
+        ctx.lineTo(x + 80, peakY + 20 * groundScale);
+    }
+    ctx.lineTo(w + 100, mountainY + 20 * groundScale);
+    ctx.closePath();
+    ctx.fill();
+
+    // 이글루들 (원근감 적용)
+    if (groundScale > 0.15) {
+        const iglooBaseY = groundY;
+        const iglooOffset = (camX * 0.15) % (w * 2);
+
+        // 큰 이글루
+        drawScaledIgloo(ctx,
+            (w * 0.25 + iglooOffset) % w,
+            iglooBaseY,
+            groundScale * 0.9
+        );
+
+        // 작은 이글루
+        drawScaledIgloo(ctx,
+            (w * 0.7 + iglooOffset * 0.7) % w,
+            iglooBaseY,
+            groundScale * 0.6
+        );
+    }
+
+    // 펭귄들 (원근감 적용)
+    if (groundScale > 0.2) {
+        const penguinOffset = (camX * 0.2) % (w * 3);
+        for (let i = 0; i < 5; i++) {
+            const px = (w * 0.12 * i + penguinOffset + w) % w;
+            const py = groundY - 10 * groundScale;
+            const waddle = Math.sin(time * 3 + i) * 2;
+            drawScaledPenguin(ctx, px + waddle, py, groundScale * (0.5 + (i % 3) * 0.15));
+        }
+    }
+
+    // 전경 눈밭 (가까운 눈)
+    if (altitude < 200) {
+        const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
+        ctx.globalAlpha = groundAlpha * foregroundAlpha;
+        ctx.fillStyle = '#f0f8ff';
+        ctx.fillRect(0, h * 0.88, w, h * 0.12);
+
+        // 눈 반짝임
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        for (let i = 0; i < 20; i++) {
+            const sx = (i * 137 + camX * 0.5) % w;
+            const sy = h * 0.89 + (i * 7) % 40;
+            const sparkle = Math.sin(time * 5 + i) * 0.5 + 0.5;
+            ctx.globalAlpha = sparkle * foregroundAlpha;
+            ctx.fillRect(sx, sy, 3, 3);
+        }
+    }
+
+    ctx.restore();
+
+    // ============================================================
+    // 4. ATMOSPHERIC EFFECTS: 높이에 따른 대기 효과
+    // ============================================================
+    // 높이 올라갈수록 찬 공기 느낌
+    if (altitude > 100) {
+        const hazeAlpha = clamp((altitude - 100) / 400, 0, 0.2);
+        const hazeGrad = ctx.createLinearGradient(0, h * 0.6, 0, h);
+        hazeGrad.addColorStop(0, `rgba(200, 220, 255, ${hazeAlpha})`);
+        hazeGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = hazeGrad;
+        ctx.fillRect(0, h * 0.6, w, h * 0.4);
+    }
+
+    // ============================================================
+    // ALWAYS: Falling Snow (눈이 항상 내림)
+    // ============================================================
     drawFallingSnow(ctx, camX, camY, w, h, score);
 }
+
+// 스케일 적용된 이글루
+function drawScaledIgloo(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+    if (scale < 0.1) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // 돔
+    ctx.fillStyle = '#f5f5f5';
+    ctx.beginPath();
+    ctx.arc(0, 0, 60, Math.PI, 0, false);
+    ctx.lineTo(60, 0);
+    ctx.lineTo(-60, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 얼음 블록 라인
+    ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
+    ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
+        ctx.stroke();
+    }
+
+    // 입구
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, Math.PI, 0, false);
+    ctx.lineTo(20, 0);
+    ctx.lineTo(-20, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// 스케일 적용된 펭귄
+function drawScaledPenguin(ctx, x, y, scale) {
+    if (x < -50 || x > ctx.canvas.width + 50) return;
+    if (scale < 0.1) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // 몸통 (검은색)
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 배 (흰색)
+    ctx.fillStyle = '#f8f9fa';
+    ctx.beginPath();
+    ctx.ellipse(0, 5, 12, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 부리 (주황색)
+    ctx.fillStyle = '#ff9500';
+    ctx.beginPath();
+    ctx.moveTo(-5, -15);
+    ctx.lineTo(0, -10);
+    ctx.lineTo(5, -15);
+    ctx.closePath();
+    ctx.fill();
+
+    // 눈
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-6, -18, 4, 0, Math.PI * 2);
+    ctx.arc(6, -18, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-6, -18, 2, 0, Math.PI * 2);
+    ctx.arc(6, -18, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
 
 // --- Phase 1: Ground Level (Penguins, Igloos) ---
 function drawWinterPhaseGround(ctx, camX, camY, w, h, score) {
@@ -1322,9 +1981,153 @@ function render() {
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
 
-        // Coin / Mineral
+        // Coin / Mineral / Crown
         if (s.hasCoin) {
-            if (window.gameState.isReverseMode) {
+            // ============================================================
+            // PHARAOH'S CROWN (파라오의 왕관) - 특별 아이템
+            // ============================================================
+            if (s.hasCrown) {
+                ctx.save();
+                ctx.translate(sx, sy - 35);
+
+                // 빛나는 아우라
+                const pulse = 1 + Math.sin(time * 5) * 0.1;
+                ctx.scale(pulse, pulse);
+
+                // 황금 빛 효과
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 20 + Math.sin(time * 8) * 10;
+
+                // 왕관 베이스 (황금)
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.moveTo(-18, 10);
+                ctx.lineTo(-18, 0);
+                ctx.lineTo(-12, -10);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(0, -15);
+                ctx.lineTo(6, 0);
+                ctx.lineTo(12, -10);
+                ctx.lineTo(18, 0);
+                ctx.lineTo(18, 10);
+                ctx.closePath();
+                ctx.fill();
+
+                // 왕관 테두리
+                ctx.strokeStyle = '#b8860b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 보석들 (루비, 사파이어, 에메랄드)
+                ctx.shadowBlur = 0;
+
+                // 중앙 루비
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(0, -8, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 좌측 사파이어
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(-10, -3, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 우측 에메랄드
+                ctx.fillStyle = '#2ecc71';
+                ctx.beginPath();
+                ctx.arc(10, -3, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 하이라이트 (반짝임)
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.beginPath();
+                ctx.arc(-3, -9, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 회전하는 스파클 파티클
+                for (let p = 0; p < 4; p++) {
+                    const angle = time * 3 + (p * Math.PI / 2);
+                    const dist = 25 + Math.sin(time * 5 + p) * 5;
+                    const px = Math.cos(angle) * dist;
+                    const py = Math.sin(angle) * dist * 0.4;
+
+                    ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time * 4 + p) * 0.3})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py - 5, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            } else if (s.hasSnowCrystal) {
+                // ============================================================
+                // WINTER SNOW CRYSTAL (눈결정) - 특별 아이템
+                // ============================================================
+                ctx.save();
+                ctx.translate(sx, sy - 35);
+
+                // 차가운 아우라
+                const pulse = 1 + Math.sin(time * 4) * 0.1;
+                ctx.scale(pulse, pulse);
+
+                ctx.shadowColor = '#00d2d3';
+                ctx.shadowBlur = 20 + Math.sin(time * 6) * 10;
+
+                // 육각형 눈결정
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+
+                for (let k = 0; k < 6; k++) {
+                    ctx.save();
+                    ctx.rotate(k * Math.PI / 3);
+
+                    // 메인 가지
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, -18);
+                    ctx.stroke();
+
+                    // 서브 가지
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.lineTo(-6, -16);
+                    ctx.moveTo(0, -10);
+                    ctx.lineTo(6, -16);
+
+                    ctx.moveTo(0, -6);
+                    ctx.lineTo(-4, -10);
+                    ctx.moveTo(0, -6);
+                    ctx.lineTo(4, -10);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // 중앙 보석 (사파이어)
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#74b9ff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 반짝임 효과
+                ctx.fillStyle = '#fff';
+                const sparkleOp = 0.5 + Math.sin(time * 10) * 0.5;
+                ctx.globalAlpha = sparkleOp;
+                ctx.beginPath();
+                ctx.arc(-5, -10, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.arc(8, 2, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            } else if (window.gameState.isReverseMode) {
+
                 // Draw Mineral
                 let mCol = '#9b59b6'; // 10
                 if (s.coinVal >= 50) mCol = '#3498db'; // 50

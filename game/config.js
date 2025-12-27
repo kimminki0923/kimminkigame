@@ -61,6 +61,14 @@ window.ownedMaps = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]'
 window.skinRotation = 0;
 window.isDataLoaded = false;
 
+// Pharaoh's Crown Collection (파라오 왕관 수집)
+window.pharaohCrowns = parseInt(localStorage.getItem('infinite_stairs_crowns') || 0);
+
+// Winter Kingdom Snow Crystal Collection (겨울왕국 눈결정 수집)
+window.snowCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystals') || 0);
+
+
+
 // Fall Animation State
 let isFalling = false;
 let fallVelocity = 0;

@@ -83,12 +83,44 @@ function initGame(forceReverse = null) {
     window.gameState.running = true;
     menuOverlay.style.display = 'none';
 
+    // ============================================================
+    // PHARAOH FULL SET CHECK (파라오 풀셋 보너스 알림)
+    // ============================================================
+    const isPharaohFullSet = (
+        (typeof currentSkin !== 'undefined' && currentSkin === 'skin_ruby') &&
+        (typeof currentMap !== 'undefined' && currentMap === 'map_desert') &&
+        (typeof currentStairSkin !== 'undefined' && currentStairSkin === 'stair_pharaoh')
+    );
+
+    if (isPharaohFullSet && !window.isTraining && !window.isAutoPlaying) {
+        statusEl.innerText = "👑 파라오 풀셋 보너스! 골드 100%!";
+        statusEl.style.color = "#f1c40f";
+        console.log("[BONUS] Pharaoh Full Set Activated! 100% Gold Spawn + Better Coins!");
+    }
+
+    // ============================================================
+    // WINTER FULL SET CHECK (겨울왕국 풀셋 보너스 알림)
+    // ============================================================
+    const isWinterFullSet = (
+        (typeof currentSkin !== 'undefined' && currentSkin === 'skin_diamond') &&
+        (typeof currentMap !== 'undefined' && currentMap === 'map_winter') &&
+        (typeof currentStairSkin !== 'undefined' && currentStairSkin === 'stair_ice')
+    );
+
+    if (isWinterFullSet && !window.isTraining && !window.isAutoPlaying) {
+        statusEl.innerText = "❄️ 겨울왕국 풀셋 보너스! 골드 100%!";
+        statusEl.style.color = "#00d2d3";
+        console.log("[BONUS] Winter Full Set Activated! 100% Gold Spawn + Better Coins!");
+    }
+
     if (window.isTraining || window.isAutoPlaying) {
         stopBtn.style.display = 'inline-block';
     } else {
         stopBtn.style.display = 'none';
         timerBar.parentElement.style.opacity = 1;
     }
+
+
 
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
@@ -178,20 +210,79 @@ function addStair() {
         }
     } else {
         // --- Normal Mode: Standard Coins ---
-        if (Math.random() < 0.3) {
+        // ============================================================
+        // PHARAOH FULL SET BONUS (파라오 풀셋 보너스)
+        // 조건: 파라오의 루비(skin_ruby) + 사막맵(map_desert) + 파라오 황금계단(stair_pharaoh)
+        // 효과: 100% 골드 스폰!
+        // ============================================================
+        const isPharaohFullSet = (
+            (typeof currentSkin !== 'undefined' && currentSkin === 'skin_ruby') &&
+            (typeof currentMap !== 'undefined' && currentMap === 'map_desert') &&
+            (typeof currentStairSkin !== 'undefined' && currentStairSkin === 'stair_pharaoh')
+        );
+
+        // ============================================================
+        // WINTER FULL SET BONUS (겨울왕국 풀셋 보너스)
+        // 조건: 다이아몬드(skin_diamond) + 겨울맵(map_winter) + 얼음계단(stair_ice)
+        // 효과: 100% 골드 스폰!
+        // ============================================================
+        const isWinterFullSet = (
+            (typeof currentSkin !== 'undefined' && currentSkin === 'skin_diamond') &&
+            (typeof currentMap !== 'undefined' && currentMap === 'map_winter') &&
+            (typeof currentStairSkin !== 'undefined' && currentStairSkin === 'stair_ice')
+        );
+
+        let coinChance = 0.3;
+        if (isPharaohFullSet || isWinterFullSet) coinChance = 1.0;
+
+        if (Math.random() < coinChance) {
             hasCoin = true;
             const r = Math.random();
-            if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
+            if (isPharaohFullSet || isWinterFullSet) {
+                // 풀셋 보너스: 더 좋은 코인 확률!
+                if (r < 0.4) coinVal = 5; else if (r < 0.8) coinVal = 10; else coinVal = 50;
+            } else {
+                // 일반: 1, 5, 10
+                if (r < 0.6) coinVal = 1; else if (r < 0.9) coinVal = 5; else coinVal = 10;
+            }
+        }
+
+        // ============================================================
+        // PHARAOH'S CROWN (파라오의 왕관) - 0.05% 확률
+        // 풀셋일 때만 등장! 15개 수집 시 스핑크스 펫 해금
+        // ============================================================
+        if (isPharaohFullSet && Math.random() < 0.0005) {
+            hasCoin = true;
+            coinVal = 1000; // 특별 코드: 왕관 = 1000
+        }
+
+        // ============================================================
+        // WINTER SNOW CRYSTAL (눈결정) - 0.05% 확률
+        // 겨울 풀셋일 때만 등장! 15개 수집 시 북극곰 펫 해금
+        // ============================================================
+        if (isWinterFullSet && Math.random() < 0.0005) {
+            hasCoin = true;
+            coinVal = 2000; // 특별 코드: 눈결정 = 2000
         }
     }
+
+    // hasCrown flag 설정 (coinVal이 1000이면 왕관)
+    const hasCrown = (coinVal === 1000);
+    // hasSnowCrystal flag 설정 (coinVal이 2000이면 눈결정)
+    const hasSnowCrystal = (coinVal === 2000);
+
 
     window.gameState.stairs.push({
         x: last.x + (nextDir === 1 ? 1 : -1),
         y: last.y + yInc,
         dir: nextDir,
         hasCoin: hasCoin,
-        coinVal: coinVal
+        coinVal: coinVal,
+        hasCrown: hasCrown,
+        hasSnowCrystal: hasSnowCrystal
     });
+
+
 }
 
 function performAction(action) {
@@ -229,13 +320,119 @@ function performAction(action) {
         }
 
         if (next.hasCoin) {
+            // ============================================================
+            // PHARAOH'S CROWN COLLECTION (파라오의 왕관 수집)
+            // ============================================================
+            if (next.hasCrown) {
+                // 왕관 수집!
+                window.pharaohCrowns++;
+                localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
+                console.log(`[CROWN] Pharaoh's Crown collected! Total: ${window.pharaohCrowns}/15`);
+
+                // 15개 수집 시 스핑크스 펫 해금!
+                if (window.pharaohCrowns >= 15 && !window.ownedPets.includes('pet_sphinx')) {
+                    window.ownedPets.push('pet_sphinx');
+                    localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+                    console.log('[UNLOCK] Sphinx pet unlocked!');
+
+                    // 해금 알림 파티클
+                    particles.push({
+                        type: 'text',
+                        val: '🦁 스핑크스 펫 해금!',
+                        x: next.x,
+                        y: next.y - 1,
+                        life: 2.0,
+                        color: '#f1c40f',
+                        dy: -2
+                    });
+                }
+
+                // 왕관 수집 파티클
+                particles.push({
+                    type: 'text',
+                    val: `👑 ${window.pharaohCrowns}/15`,
+                    x: next.x,
+                    y: next.y,
+                    life: 1.5,
+                    color: '#f1c40f',
+                    dy: -3
+                });
+
+                next.hasCoin = false;
+                next.hasCrown = false;
+                return 10;
+            }
+
+            // ============================================================
+            // WINTER SNOW CRYSTAL COLLECTION (눈결정 수집)
+            // ============================================================
+            if (next.hasSnowCrystal) {
+                // 눈결정 수집!
+                window.snowCrystals++;
+                localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
+                console.log(`[SNOW] Snow Crystal collected! Total: ${window.snowCrystals}/15`);
+
+                // 15개 수집 시 북극곰 펫 해금!
+                if (window.snowCrystals >= 15 && !window.ownedPets.includes('pet_polarbear')) {
+                    window.ownedPets.push('pet_polarbear');
+                    localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+                    console.log('[UNLOCK] Polar Bear pet unlocked!');
+
+                    // 해금 알림 파티클
+                    particles.push({
+                        type: 'text',
+                        val: '🐻‍❄️ 북극곰 펫 해금!',
+                        x: next.x,
+                        y: next.y - 1,
+                        life: 2.0,
+                        color: '#00d2d3',
+                        dy: -2
+                    });
+                }
+
+                // 눈결정 수집 파티클
+                particles.push({
+                    type: 'text',
+                    val: `❄️ ${window.snowCrystals}/15`,
+                    x: next.x,
+                    y: next.y,
+                    life: 1.5,
+                    color: '#00d2d3',
+                    dy: -3
+                });
+
+                next.hasCoin = false;
+                next.hasSnowCrystal = false;
+                return 10;
+            }
+
+
+            // ============================================================
+            // NORMAL COIN COLLECTION (일반 코인 수집)
+            // ============================================================
             let actualCoinVal = next.coinVal;
             const isPigActive = (typeof currentPet !== 'undefined' && currentPet === 'pet_pig');
+            const isSphinxActive = (typeof currentPet !== 'undefined' && currentPet === 'pet_sphinx');
+            const isPolarBearActive = (typeof currentPet !== 'undefined' && currentPet === 'pet_polarbear');
 
-            if (isPigActive) {
-                actualCoinVal *= 2;
-                console.log(`[BONUS] Golden Pig doubled coin: ${next.coinVal} -> ${actualCoinVal}`);
+            // PET BONUS: 스핑크스 10배, 북극곰 5배, 황금돼지 2배
+            let petMultiplier = 1;
+            let bonusEmoji = '';
+            if (isSphinxActive) {
+                petMultiplier = 10;
+                bonusEmoji = '🦁x10 ';
+                console.log(`[BONUS] Sphinx x10 coin: ${next.coinVal} -> ${actualCoinVal * petMultiplier}`);
+            } else if (isPolarBearActive) {
+                petMultiplier = 5;
+                bonusEmoji = '🐻‍❄️x5 ';
+                console.log(`[BONUS] Polar Bear x5 coin: ${next.coinVal} -> ${actualCoinVal * petMultiplier}`);
+            } else if (isPigActive) {
+                petMultiplier = 2;
+                bonusEmoji = '🐷x2 ';
+                console.log(`[BONUS] Golden Pig x2 coin: ${next.coinVal} -> ${actualCoinVal * petMultiplier}`);
             }
+            actualCoinVal *= petMultiplier;
+
 
             window.gameState.coinCount += actualCoinVal;
             if (!window.isTraining && !window.isAutoPlaying) {
@@ -254,11 +451,16 @@ function performAction(action) {
             let col = '#ffd700';
             if (next.coinVal === 5) col = '#00d2d3';
             if (next.coinVal === 10) col = '#ff6b6b';
-            if (isPigActive) col = '#f1c40f'; // Bright golden for bonus
+            if (isSphinxActive) col = '#d4af37'; // 스핑크스: 황금빛
+            else if (isPolarBearActive) col = '#81ecec'; // 북극곰: 얼음빛
+            else if (isPigActive) col = '#f1c40f'; // 돼지: 밝은 황금
+
 
             particles.push({
                 type: 'text',
-                val: (isPigActive ? '🐷x2 ' : '+') + actualCoinVal,
+                val: bonusEmoji + '+' + actualCoinVal,
+
+
                 x: next.x,
                 y: next.y,
                 life: 1.0,

@@ -14,8 +14,12 @@ const PET_DATA = {
     pet_dog: { name: '강아지', icon: '🐕', price: 1000, type: 'ground' },
     pet_cat: { name: '고양이', icon: '🐈', price: 3000, type: 'ground' },
     pet_eagle: { name: '독수리', icon: '🦅', price: 10000, type: 'air' },
-    pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' }
+    pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
+    pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
+    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '눈결정 15개 수집 시 해금!' }
 };
+
+
 
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
@@ -41,10 +45,37 @@ function createShopItemElement(id, data, category) {
     div.style.minWidth = '140px';
     div.style.textAlign = 'center';
 
+    // 스핑크스 펫 특별 처리 - 왕관 수집 진행도 표시
+    let requirementDisplay = '';
+    if (id === 'pet_sphinx') {
+        const crowns = window.pharaohCrowns || 0;
+        const needed = 15;
+        const canUnlock = crowns >= needed;
+        requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#e67e22'}; font-size: 12px; margin-bottom: 5px;">👑 ${crowns}/${needed}</div>`;
+    } else if (id === 'pet_polarbear') {
+        const crystals = window.snowCrystals || 0;
+        const needed = 15;
+        const canUnlock = crystals >= needed;
+        requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#00d2d3'}; font-size: 12px; margin-bottom: 5px;">❄️ ${crystals}/${needed}</div>`;
+    }
+
+    // 특수 효과 표시
+    let effectDisplay = '';
+    if (id === 'pet_sphinx') {
+        effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x10</div>';
+    } else if (id === 'pet_polarbear') {
+        effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5</div>';
+    } else if (id === 'pet_pig') {
+        effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
+    }
+
+
     div.innerHTML = `
         <div style="font-size: 40px; margin-bottom: 10px;">${data.icon}</div>
         <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
+        ${requirementDisplay}
         ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
+        ${effectDisplay}
         <button id="btn-${id}" 
             class="${isOwned ? 'equip-btn' : 'buy-btn'}"
             style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold;
@@ -56,6 +87,7 @@ function createShopItemElement(id, data, category) {
 
     return div;
 }
+
 
 function checkOwnership(id, category) {
     if (category === 'char') return window.ownedSkins.includes(id);
