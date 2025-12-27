@@ -90,7 +90,7 @@ function drawBackground(camX, camY) {
     // Version 2: Reverse Mode Specific Themes
     if (window.gameState.isReverseMode) {
         keys = [
-            { scores: 0, top: '#ff9a9e', bot: '#fecfef' },   // Surface
+            { scores: 0, top: '#2c3e50', bot: '#4a69bd' },   // Surface (Subterranean vibe start)
             { scores: 100, top: '#5d4037', bot: '#3e2723' }, // Entering Soil
             { scores: 500, top: '#212121', bot: '#000000' }, // Deep Underground
             { scores: 800, top: '#e64a19', bot: '#bf360c' }, // Outer Core (Lava)
@@ -271,7 +271,7 @@ function render() {
 
     // Camera & Player Interpolation
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
-    if (window.gameState.stairs.length > 0) {
+    if (window.gameState.stairs.length > 0 && !isFalling) {
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
     }

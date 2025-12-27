@@ -101,7 +101,9 @@ function updateUnlockStatus() {
         if (aiHighScore >= 1000) {
             reverseBtn.disabled = false;
             reverseBtn.style.opacity = 1;
-            reverseBtn.innerText = "🔽 리버스 모드 진입";
+            // Only set default text if not already toggled or precisely defined
+            const isReverse = window.gameState.isReverseMode;
+            reverseBtn.innerText = isReverse ? "🔼 일반 모드 변경" : "🔽 리버스 모드 변경";
         } else {
             reverseBtn.disabled = true;
             reverseBtn.style.opacity = 0.5;
