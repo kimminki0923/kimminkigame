@@ -262,7 +262,7 @@ function handleInput(action) {
 function startFalling(wrongDir) {
     isFalling = true;
     window.gameState.running = false;
-    fallVelocity = -5;
+    fallVelocity = -2; // Reduced from -5 (less jump up)
     fallY = 0;
     const curr = window.gameState.stairs[window.gameState.score];
     fallX = (wrongDir === 1) ? 1 : -1;
@@ -271,7 +271,7 @@ function startFalling(wrongDir) {
 
 function updateFall() {
     if (!isFalling) return;
-    fallVelocity += 0.8;
+    fallVelocity += 0.3; // Reduced from 0.8 (slower gravity)
     window.gameState.renderPlayer.y -= (fallVelocity * 0.05);
     window.gameState.renderPlayer.x += (fallX * 0.05);
     if (window.gameState.renderPlayer.y < window.gameState.stairs[window.gameState.score].y - 10) {
