@@ -272,7 +272,7 @@ function addStair() {
         // PHARAOH'S CROWN (파라오의 왕관) - 10% 확률
         // 풀셋일 때만 등장! 15개 수집 시 스핑크스 펫 해금
         // ============================================================
-        if (isPharaohFullSet && Math.random() < 0.0005) {
+        if (isPharaohFullSet && Math.random() < 0.00005) {
             hasCoin = true;
             coinVal = 1000; // 특별 코드: 왕관 = 1000
         }
@@ -281,7 +281,7 @@ function addStair() {
         // WINTER SNOW CRYSTAL (눈결정) - 10% 확률
         // 겨울 풀셋일 때만 등장! 15개 수집 시 북극곰 펫 해금
         // ============================================================
-        if (isWinterFullSet && Math.random() < 0.0005) {
+        if (isWinterFullSet && Math.random() < 0.00005) {
             hasCoin = true;
             coinVal = 2000; // 특별 코드: 눈결정 = 2000
         }
@@ -611,11 +611,44 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // RESTORED: Smooth Player Movement Interpolation
+    // ============================================================
+    // ULTRA-SMOOTH SPRING ANIMATION (애니메이션처럼 부드러운 이동)
+    // Uses spring physics with velocity for natural, fluid movement
+    // ============================================================
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.35;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.35;
+        // Initialize velocity if not exists
+        if (typeof window.playerVelocity === 'undefined') {
+            window.playerVelocity = { x: 0, y: 0 };
+        }
+
+        // Spring physics constants
+        const stiffness = 0.15;  // How quickly it moves toward target
+        const damping = 0.75;    // How much velocity is retained (higher = smoother)
+
+        // Calculate spring force
+        const dx = target.x - window.gameState.renderPlayer.x;
+        const dy = target.y - window.gameState.renderPlayer.y;
+
+        // Apply spring force to velocity
+        window.playerVelocity.x += dx * stiffness;
+        window.playerVelocity.y += dy * stiffness;
+
+        // Apply damping (friction)
+        window.playerVelocity.x *= damping;
+        window.playerVelocity.y *= damping;
+
+        // Update position with velocity
+        window.gameState.renderPlayer.x += window.playerVelocity.x;
+        window.gameState.renderPlayer.y += window.playerVelocity.y;
+
+        // Snap to target if very close (prevents micro-oscillations)
+        if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+            window.gameState.renderPlayer.x = target.x;
+            window.gameState.renderPlayer.y = target.y;
+            window.playerVelocity.x = 0;
+            window.playerVelocity.y = 0;
+        }
     }
 
     drawGameState();
