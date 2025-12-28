@@ -647,7 +647,7 @@ window.addEventListener('keydown', (e) => {
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
         if (cheatBuffer.endsWith('kimminki')) {
-            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 1,000,000G reward.");
+            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
 
             // 1. Jump to 1000 steps
             const needed = 1000 - window.gameState.score;
@@ -672,16 +672,22 @@ window.addEventListener('keydown', (e) => {
             const shopGold = document.getElementById('shop-gold');
             if (shopGold) shopGold.innerText = totalCoins;
 
-            // 4. UI feedback & Timer reset
+            // 4. Grant 15 Pharaoh Crowns and 15 Snow Crystals
+            window.pharaohCrowns = (window.pharaohCrowns || 0) + 15;
+            window.snowCrystals = (window.snowCrystals || 0) + 15;
+            localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
+            localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
+
+            // 5. UI feedback & Timer reset
             window.gameState.timer = MAX_TIMER;
             if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
 
-            // 5. Cloud Persistence
+            // 6. Cloud Persistence (with crowns and crystals)
             if (window.saveData && isDataLoaded) {
-                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
             }
 
-            alert("🎁 이스터에그 발견! 1000계단 점프 + 1,000,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
+            alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
             cheatBuffer = "";
         }
     }
