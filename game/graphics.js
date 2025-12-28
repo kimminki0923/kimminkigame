@@ -2585,3 +2585,4 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
 
         ctx.restore();
     }
+}
