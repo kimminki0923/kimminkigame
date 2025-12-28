@@ -748,6 +748,78 @@ function drawPet(ctx, px, py, petType, playerDir) {
             ctx.arc(spX, spY, 2, 0, Math.PI * 2);
             ctx.fill();
         }
+    } else if (petType === 'pet_penguin') {
+        // ============================================================
+        // PENGUIN PET (펭귄 펫) - 체력 감소 1.5배 느려짐
+        // ============================================================
+        const penguinBounce = bounce * 0.5;
+
+        // 몸통 (검정)
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.ellipse(0, penguinBounce + 5, 16, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 배 (흰색)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(0, penguinBounce + 8, 10, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 머리
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(0, penguinBounce - 12, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈 (흰자)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-5, penguinBounce - 14, 4, 0, Math.PI * 2);
+        ctx.arc(5, penguinBounce - 14, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈동자
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-5, penguinBounce - 14, 2, 0, Math.PI * 2);
+        ctx.arc(5, penguinBounce - 14, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 부리 (주황)
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.moveTo(0, penguinBounce - 10);
+        ctx.lineTo(-4, penguinBounce - 6);
+        ctx.lineTo(4, penguinBounce - 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // 발 (주황)
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.ellipse(-6, penguinBounce + 22, 5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(6, penguinBounce + 22, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 날개 (파닥파닥)
+        const wingAngle = Math.sin(time * 8) * 0.3;
+        ctx.fillStyle = '#34495e';
+        ctx.save();
+        ctx.translate(-14, penguinBounce + 5);
+        ctx.rotate(-wingAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(14, penguinBounce + 5);
+        ctx.rotate(wingAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     } else {
 
 

@@ -593,10 +593,11 @@ function gameLoop(timestamp) {
         currentDecay = Math.min(currentDecay, 1.0); // 최대 감소량 제한
 
         // ============================================================
-        // POLAR BEAR PET EFFECT (북극곰 펫 효과)
+        // POLAR BEAR & PENGUIN PET EFFECT (북극곰/펭귄 펫 효과)
         // 효과: 강인한 체력으로 타이머 감소 속도 1.5배 완화
         // ============================================================
-        if (typeof window.currentPet !== 'undefined' && window.currentPet === 'pet_polarbear') {
+        if (typeof window.currentPet !== 'undefined' &&
+            (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin')) {
             currentDecay /= 1.5;
         }
 

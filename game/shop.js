@@ -17,7 +17,8 @@ const PET_DATA = {
     pet_eagle: { name: '독수리', icon: '🦅', price: 10000, type: 'air' },
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
-    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' }
+    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' },
+    pet_penguin: { name: '펜귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' }
 };
 window.PET_DATA = PET_DATA;
 
@@ -69,6 +70,8 @@ function createShopItemElement(id, data, category) {
         effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5 | 🛡️ 체력 감소 1.5배 느려짐</div>';
     } else if (id === 'pet_pig') {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
+    } else if (id === 'pet_penguin') {
+        effectDisplay = '<div style="color: #74b9ff; font-size: 11px; margin-top: 5px;">🛡️ 체력 감소 1.5배 느려짐</div>';
     }
 
 
