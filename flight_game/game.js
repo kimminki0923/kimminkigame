@@ -44,14 +44,21 @@ function init() {
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
         camera.position.set(0, 10, -20);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({
+            antialias: false,
+            powerPreference: "high-performance",
+            failIfMajorPerformanceCaveat: false,
+            alpha: false,
+            depth: true,
+            stencil: false
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('game-container').appendChild(renderer.domElement);
     } catch (e) {
-        document.getElementById('game-container').innerHTML = '<div style="color:white; text-align:center; padding-top:20%; font-size:24px;">⚠️ WebGL is not supported on this device/browser.<br>3D rendering disabled.</div>';
-        console.error("WebGL Error:", e);
+        document.getElementById('game-container').innerHTML = '<div style="color:white; text-align:center; padding-top:20%; font-size:24px;">⚠️ WebGL Error.<br>Please enable "Hardware Acceleration" in browser settings.<br>브라우저 설정에서 하드웨어 가속을 켜주세요.</div>';
+        console.error("WebGL Creation Failed:", e);
         return;
     }
 
