@@ -614,7 +614,7 @@ function gameLoop(timestamp) {
     // 버터처럼 부드러운 플레이어 이동
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.08; // 매우 부드러운 값
+        const smoothness = 0.03; // 극강 버터 스무스
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }

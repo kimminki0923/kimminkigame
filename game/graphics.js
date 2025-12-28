@@ -2087,7 +2087,7 @@ function render() {
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
         // 매우 부드러운 이동: 낮은 lerp = 더 부드러움
-        const smoothness = 0.08; // 버터처럼 부드러운 값
+        const smoothness = 0.03; // 극강 버터 스무스
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
