@@ -115,7 +115,7 @@ function updateShopUI() {
 
     // Dynamic Shop Sections
     const sections = {
-        'char': { data: SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
+        'char': { data: window.SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
         'stair': { data: STAIR_SKIN_DATA, containerId: 'shop-items-stair', category: 'stair' },
         'pet': { data: PET_DATA, containerId: 'shop-items-pet', category: 'pet' },
         'map': { data: MAP_DATA, containerId: 'shop-items-map', category: 'map' }
@@ -123,7 +123,7 @@ function updateShopUI() {
 
     // Update Current Equipped Displays
     const skinDisplay = document.getElementById('current-skin-display');
-    if (skinDisplay && SKIN_DATA[window.currentSkin]) skinDisplay.innerText = SKIN_DATA[window.currentSkin].icon + ' ' + SKIN_DATA[window.currentSkin].name;
+    if (skinDisplay && window.SKIN_DATA[window.currentSkin]) skinDisplay.innerText = window.SKIN_DATA[window.currentSkin].icon + ' ' + window.SKIN_DATA[window.currentSkin].name;
 
     const stairDisplay = document.getElementById('current-stair-display');
     if (stairDisplay && STAIR_SKIN_DATA[window.currentStairSkin]) stairDisplay.innerText = STAIR_SKIN_DATA[window.currentStairSkin].icon + ' ' + STAIR_SKIN_DATA[window.currentStairSkin].name;
@@ -264,7 +264,7 @@ function bindBuyEquipButtons() {
                 if (price === 0) {
                     // Check requirement
                     if (category === 'char') {
-                        const item = SKIN_DATA[id];
+                        const item = window.SKIN_DATA[id];
                         if (item && item.requirement && aiHighScore < item.requirement) {
                             return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
                         }

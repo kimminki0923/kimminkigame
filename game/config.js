@@ -10,6 +10,17 @@ const MAX_TIMER = 100;
 const TIMER_DECAY = 0.3;
 const TIMER_BONUS = 15;
 
+// Player Skins Data
+window.SKIN_DATA = {
+    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
+    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
+    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
+    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
+    skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
+    skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 },
+    skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 }
+};
+
 // AI Constants
 const EPSILON_DECAY = 0.999;
 const MIN_EPSILON = 0.01;

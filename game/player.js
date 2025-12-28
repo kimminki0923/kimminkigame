@@ -3,22 +3,12 @@
 // Geometry Dash style - grounded on stairs, rolling animation
 // ============================================================
 
-const SKIN_DATA = {
-    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
-    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
-    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
-    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
-    skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
-    skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 },
-    skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 }
-};
-
 // Animation state for smooth rolling
 let targetSkinRotation = 0;
 let currentSkinRotation = 0;
 
 function updateSkinRotation() {
-    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+    const skin = window.SKIN_DATA[currentSkin] || window.SKIN_DATA.default;
     if (skin.type === 'circle') {
         targetSkinRotation = 0;
     } else if (skin.type === 'square') {
@@ -54,7 +44,7 @@ function equipSkin(skinId) {
 window.playerFlash = 0;
 
 function drawPlayerWithSkin(ctx, px, py, dir) {
-    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+    const skin = window.SKIN_DATA[currentSkin] || window.SKIN_DATA.default;
     const time = Date.now() * 0.001;
 
     // Smooth rotation interpolation (Geometry Dash style)
