@@ -1,10 +1,16 @@
 // game/graphics.js - Background and Rendering
 // ============================================================
 
+// Global arrays for background objects
+let buildings = [];
+let clouds = [];
+let planets = [];
+let stars = [];
+let minerals = [];
 let time = 0;
 let petRenderPos = { x: 0, y: 0 }; // Pet interpolation
 
-function initBackgroundObjects() {
+window.initBackgroundObjects = function () {
     buildings.length = 0;
     for (let i = 0; i < 25; i++) {
         buildings.push({
