@@ -1,4 +1,4 @@
-const canvas = document.getElementById('gameCanvas');
+﻿const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const statusEl = document.getElementById('status');
@@ -64,7 +64,7 @@ window.setGameData = function (score, coins, skins, skin, stairSkins, sSkin, pet
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
     if (coinEl) coinEl.innerText = totalCoins;
 
-    console.log("✅ Game Data Loaded:", { score, coins, crowns, crystals });
+    console.log("??Game Data Loaded:", { score, coins, crowns, crystals });
     isDataLoaded = true;
 };
 
@@ -193,7 +193,7 @@ window.stopGame = function () {
     menuOverlay.style.display = 'block';
     stopBtn.style.display = 'none';
 
-    trainBtn.innerText = "🧠 AI 학습하기";
+    trainBtn.innerText = "?쭬 AI ?숈뒿?섍린";
     trainBtn.style.background = "#e67e22";
     autoPlayBtn.disabled = false;
 
@@ -291,11 +291,11 @@ function performAction(action) {
         if (next.hasItem) {
             if (next.hasItem === 'crown') {
                 window.pharaohCrowns++;
-                particles.push({ type: 'text', val: '👑 +1', x: next.x, y: next.y - 10, life: 1.5, color: '#f1c40f', dy: -4 });
+                particles.push({ type: 'text', val: '?몣 +1', x: next.x, y: next.y - 10, life: 1.5, color: '#f1c40f', dy: -4 });
                 window.gameState.coinCount += 50; // Bonus score for rare item
             } else if (next.hasItem === 'snowflake') {
                 window.snowCrystals++;
-                particles.push({ type: 'text', val: '❄️ +1', x: next.x, y: next.y - 10, life: 1.5, color: '#00d2d3', dy: -4 });
+                particles.push({ type: 'text', val: '?꾬툘 +1', x: next.x, y: next.y - 10, life: 1.5, color: '#00d2d3', dy: -4 });
                 window.gameState.coinCount += 50;
             }
             next.hasItem = null;
@@ -571,9 +571,9 @@ function render() {
             ctx.textAlign = "center";
             ctx.shadowBlur = 10; ctx.shadowColor = 'white';
             if (s.hasItem === 'crown') {
-                ctx.fillText("👑", sx, sy - 25);
+                ctx.fillText("?몣", sx, sy - 25);
             } else if (s.hasItem === 'snowflake') {
-                ctx.fillText("❄️", sx, sy - 25);
+                ctx.fillText("?꾬툘", sx, sy - 25);
             }
             ctx.shadowBlur = 0;
         }
@@ -588,7 +588,7 @@ function render() {
     ctx.textAlign = "center";
     ctx.shadowBlur = 4; ctx.shadowColor = 'black';
     const bounce = Math.sin(Date.now() / 150) * 4;
-    ctx.fillText(window.gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
+    ctx.fillText(window.gameState.playerDir === 1 ? "?? : "??, px, py - 45 + bounce);
     ctx.shadowBlur = 0;
 
     for (let i = particles.length - 1; i >= 0; i--) {
@@ -635,7 +635,7 @@ trainBtn.addEventListener('click', () => {
     window.isTraining = !window.isTraining;
     window.isAutoPlaying = false;
     if (window.isTraining) {
-        trainBtn.innerText = "⏹️ 학습 중지";
+        trainBtn.innerText = "?뱄툘 ?숈뒿 以묒?";
         trainBtn.style.background = "#c0392b";
         initGame();
     } else {
@@ -652,10 +652,13 @@ resetAiBtn.addEventListener('click', () => {
 stopBtn.addEventListener('click', stopGame);
 
 const SKIN_DATA = {
-    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
-    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 150 },
-    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 200 },
-    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 500 }
+    default: { name: '湲곕낯 (?먰삎)', icon: '??, type: 'circle' },
+    skin_square: { name: '?ш컖??, icon: '?윧', type: 'square', price: 1000 },
+    skin_triangle: { name: '?쇨컖??, icon: '?뵼', type: 'triangle', price: 5000 },
+    skin_diamond: { name: '?ㅼ씠?꾨が??, icon: '?뭿', type: 'diamond', price: 10000 },
+    skin_ruby: { name: '?뚮씪?ㅼ쓽 猷⑤퉬', icon: '?뵶', type: 'ruby', price: 20000 },
+    skin_pentagon: { name: '?ㅺ컖??(怨좎닔??', icon: '燧?, type: 'pentagon', price: 0, requirement: 1000 },
+    skin_cosmic: { name: '肄붿뒪誘??ㅽ?', icon: '?뙚', type: 'cosmic', price: 1000000 }
 };
 
 // Explicit Shop Logic (Separated for reliability)
@@ -716,11 +719,11 @@ function bindBuyEquipButtons() {
                 if (window.saveData) {
                     window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
                 }
-                alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
+                alert(`??${SKIN_DATA[skinId]?.name || skinId} 援щℓ ?꾨즺!`);
                 equipSkin(skinId);
                 bindBuyEquipButtons(); // Re-bind after class changes
             } else {
-                alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+                alert(`??怨⑤뱶媛 遺議깊빀?덈떎! (蹂댁쑀: ${totalCoins}G / ?꾩슂: ${price}G)`);
             }
         };
     });
@@ -752,7 +755,7 @@ function updateShopUI() {
         const skinId = btn.dataset.id;
         if (ownedSkins.includes(skinId)) {
             // Already owned - show equip button
-            btn.innerText = currentSkin === skinId ? '✓ 장착중' : '장착하기';
+            btn.innerText = currentSkin === skinId ? '???μ갑以? : '?μ갑?섍린';
             btn.style.background = currentSkin === skinId ? '#7f8c8d' : '#2ecc71';
             btn.disabled = currentSkin === skinId;
             btn.classList.add('equip-btn');
@@ -763,11 +766,11 @@ function updateShopUI() {
     document.querySelectorAll('.equip-btn').forEach(btn => {
         const skinId = btn.dataset.skin || btn.dataset.id;
         if (skinId === currentSkin) {
-            btn.innerText = '✓ 장착중';
+            btn.innerText = '???μ갑以?;
             btn.style.background = '#7f8c8d';
             btn.disabled = true;
         } else if (ownedSkins.includes(skinId)) {
-            btn.innerText = '장착하기';
+            btn.innerText = '?μ갑?섍린';
             btn.style.background = '#2ecc71';
             btn.disabled = false;
         }
@@ -819,10 +822,10 @@ document.addEventListener('click', (e) => {
                 window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin);
             }
 
-            alert(`✅ ${SKIN_DATA[skinId]?.name || skinId} 구매 완료!`);
+            alert(`??${SKIN_DATA[skinId]?.name || skinId} 援щℓ ?꾨즺!`);
             equipSkin(skinId);
         } else {
-            alert(`❌ 골드가 부족합니다! (보유: ${totalCoins}G / 필요: ${price}G)`);
+            alert(`??怨⑤뱶媛 遺議깊빀?덈떎! (蹂댁쑀: ${totalCoins}G / ?꾩슂: ${price}G)`);
         }
         return;
     }
@@ -989,10 +992,10 @@ function applyEasterEgg() {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet);
     }
 
-    statusEl.innerText = "✨ KIMMINKI POWER! ✨";
+    statusEl.innerText = "??KIMMINKI POWER! ??;
     particles.push({ type: 'text', val: 'SECRET UNLOCKED!', x: window.gameState.stairs[1000].x, y: window.gameState.stairs[1000].y, life: 2.0, color: '#f1c40f', dy: -5 });
 
-    alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!");
+    alert("?럞 ?댁뒪?곗뿉洹?諛쒓껄! 1000怨꾨떒 ?먰봽 + 10,000怨⑤뱶 ?띾뱷!");
 }
 
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
@@ -1002,7 +1005,7 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 
 // Update persistent state when Firebase loads
 window.setGameData = function (score, coins, skins, cSkin) {
-    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
+    console.log(`?곻툘 Firebase Data Applied: Score ${score}, Coins ${coins}`);
     aiHighScore = score;
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
     totalCoins = coins;

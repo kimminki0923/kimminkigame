@@ -13,6 +13,10 @@ const timerBar = document.getElementById('timer-bar');
 const coinEl = document.getElementById('coin-count');
 
 const menuOverlay = document.getElementById('menu-overlay');
+
+// EXPOSE CANVAS GLOBALLY FOR RENDERER
+window.canvas = canvas;
+window.ctx = ctx;
 const startBtn = document.getElementById('start-btn');
 const trainBtn = document.getElementById('train-btn');
 const autoPlayBtn = document.getElementById('auto-play-btn');
@@ -73,15 +77,24 @@ function setupEnvironment(isReverse = false) {
 }
 
 // Actual Game Start
-function initGame(forceReverse = null) {
+// Actual Game Start
+window.startGame = function (forceReverse = null) {
     if (forceReverse !== null) window.gameState.isReverseMode = forceReverse;
 
     // Reset state but keep mode
     const mode = window.gameState.isReverseMode;
-    setupEnvironment(mode);
+    // Check if setupEnvironment exists, otherwise just log warning
+    if (typeof setupEnvironment === 'function') {
+        setupEnvironment(mode);
+    } else {
+        console.warn("setupEnvironment not found, skipping map setup");
+    }
 
     window.gameState.running = true;
-    menuOverlay.style.display = 'none';
+
+    // Safety check for UI elements
+    const menuOverlay = document.getElementById('menu-overlay');
+    if (menuOverlay) menuOverlay.style.display = 'none';
 
     // ============================================================
     // PHARAOH FULL SET CHECK (파라오 풀셋 보너스 알림)
@@ -93,8 +106,10 @@ function initGame(forceReverse = null) {
     );
 
     if (isPharaohFullSet && !window.isTraining && !window.isAutoPlaying) {
-        statusEl.innerText = "👑 파라오 풀셋 보너스! 골드 100%!";
-        statusEl.style.color = "#f1c40f";
+        if (typeof statusEl !== 'undefined' && statusEl) {
+            statusEl.innerText = "👑 파라오 풀셋 보너스! 골드 100%!";
+            statusEl.style.color = "#f1c40f";
+        }
         console.log("[BONUS] Pharaoh Full Set Activated! 100% Gold Spawn + Better Coins!");
     }
 
@@ -108,25 +123,31 @@ function initGame(forceReverse = null) {
     );
 
     if (isWinterFullSet && !window.isTraining && !window.isAutoPlaying) {
-        statusEl.innerText = "❄️ 겨울왕국 풀셋 보너스! 골드 100%!";
-        statusEl.style.color = "#00d2d3";
+        if (typeof statusEl !== 'undefined' && statusEl) {
+            statusEl.innerText = "❄️ 겨울왕국 풀셋 보너스! 골드 100%!";
+            statusEl.style.color = "#00d2d3";
+        }
         console.log("[BONUS] Winter Full Set Activated! 100% Gold Spawn + Better Coins!");
     }
 
     if (window.isTraining || window.isAutoPlaying) {
-        stopBtn.style.display = 'inline-block';
+        if (typeof stopBtn !== 'undefined' && stopBtn) stopBtn.style.display = 'inline-block';
     } else {
-        stopBtn.style.display = 'none';
-        timerBar.parentElement.style.opacity = 1;
+        if (typeof stopBtn !== 'undefined' && stopBtn) stopBtn.style.display = 'none';
+        if (typeof timerBar !== 'undefined' && timerBar.parentElement) timerBar.parentElement.style.opacity = 1;
     }
-
-
 
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
-            statusEl.innerText = mode ? "Reverse Robot..." : "Robot Playing...";
+            if (typeof statusEl !== 'undefined' && statusEl) statusEl.innerText = mode ? "Reverse Robot..." : "Robot Playing...";
         }
-        aiTick();
+        if (typeof aiTick === 'function') aiTick();
+    }
+
+    // Ensure Game Loop Starts
+    if (!window.gameLoopStarted) {
+        window.gameLoopStarted = true;
+        requestAnimationFrame(gameLoop);
     }
 }
 
@@ -248,19 +269,19 @@ function addStair() {
         }
 
         // ============================================================
-        // PHARAOH'S CROWN (파라오의 왕관) - 0.05% 확률
+        // PHARAOH'S CROWN (파라오의 왕관) - 10% 확률
         // 풀셋일 때만 등장! 15개 수집 시 스핑크스 펫 해금
         // ============================================================
-        if (isPharaohFullSet && Math.random() < 0.0005) {
+        if (isPharaohFullSet && Math.random() < 0.00005) {
             hasCoin = true;
             coinVal = 1000; // 특별 코드: 왕관 = 1000
         }
 
         // ============================================================
-        // WINTER SNOW CRYSTAL (눈결정) - 0.05% 확률
+        // WINTER SNOW CRYSTAL (눈결정) - 10% 확률
         // 겨울 풀셋일 때만 등장! 15개 수집 시 북극곰 펫 해금
         // ============================================================
-        if (isWinterFullSet && Math.random() < 0.0005) {
+        if (isWinterFullSet && Math.random() < 0.00005) {
             hasCoin = true;
             coinVal = 2000; // 특별 코드: 눈결정 = 2000
         }
@@ -523,13 +544,13 @@ function gameOver() {
         episodeCountEl.innerText = episode;
         learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${isReverse ? reverseHighScore : aiHighScore}`;
         if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
-        setTimeout(initGame, 20);
+        setTimeout(startGame, 20);
         return;
     }
 
     if (window.isAutoPlaying) {
         statusEl.innerText = "Robot Failed. Retry...";
-        setTimeout(initGame, 1000);
+        setTimeout(startGame, 1000);
         return;
     }
 
@@ -564,17 +585,19 @@ function gameOver() {
 }
 
 // Main Game Loop
-function loop() {
+function gameLoop(timestamp) {
     if (window.gameState.running) {
-        // 난이도 조절: 점수가 높을수록 시간이 더 빨리 줄어듦 (더 가파르게 수정)
-        let currentDecay = TIMER_DECAY + (Math.log(window.gameState.score + 10) * 0.15);
-        currentDecay = Math.min(currentDecay, 1.8); // 최대 감소량 제한도 증가
+        // 난이도 조절: 처음엔 아주 느리게, 점수 올라갈수록 빨라짐
+        // 0점: 0.05, 100점: 0.25, 200점: 0.45, 500점: 1.0
+        let currentDecay = 0.05 + (window.gameState.score * 0.002);
+        currentDecay = Math.min(currentDecay, 1.0); // 최대 감소량 제한
 
         // ============================================================
-        // POLAR BEAR PET EFFECT (북극곰 펫 효과)
+        // POLAR BEAR & PENGUIN PET EFFECT (북극곰/펭귄 펫 효과)
         // 효과: 강인한 체력으로 타이머 감소 속도 1.5배 완화
         // ============================================================
-        if (typeof window.currentPet !== 'undefined' && window.currentPet === 'pet_polarbear') {
+        if (typeof window.currentPet !== 'undefined' &&
+            (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin')) {
             currentDecay /= 1.5;
         }
 
@@ -589,22 +612,36 @@ function loop() {
     }
 
     if (isFalling) updateFall();
-    render();
-    requestAnimationFrame(loop);
+
+    // 버터처럼 부드러운 플레이어 이동
+    const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
+    if (window.gameState.stairs.length > 0) {
+        const smoothness = 0.03; // 극강 버터 스무스
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
+    }
+
+    drawGameState();
+    // Start Loop
+    requestAnimationFrame(gameLoop);
 }
+
+// Compatibility Alias (for buttons calling initGame)
+window.initGame = window.startGame;
 
 // Event Listeners
 startBtn.addEventListener('click', () => {
     if (window.resumeAudio) window.resumeAudio();
     window.isTraining = false;
     window.isAutoPlaying = false;
-    initGame(); // Uses currently selected mode in window.gameState.isReverseMode
+    startGame(); // Uses currently selected mode in window.gameState.isReverseMode
 });
 
 trainBtn.addEventListener('click', () => {
     window.isTraining = !window.isTraining;
     window.isAutoPlaying = false;
     if (window.isTraining) {
+        if (window.resumeAudio) window.resumeAudio();
         trainBtn.innerText = "⏹️ 학습 중지";
         trainBtn.style.background = "#c0392b";
         initGame();
@@ -614,12 +651,14 @@ trainBtn.addEventListener('click', () => {
 });
 
 autoPlayBtn.addEventListener('click', () => {
+    if (window.resumeAudio) window.resumeAudio();
     window.isAutoPlaying = true;
     window.isTraining = false;
     initGame();
 });
 
 document.getElementById('reverse-start-btn').addEventListener('click', () => {
+    if (window.resumeAudio) window.resumeAudio();
     const nextMode = !window.gameState.isReverseMode;
     console.log(`[Mode] Switching to ${nextMode ? 'REVERSE' : 'NORMAL'}`);
     setupEnvironment(nextMode);
@@ -646,8 +685,8 @@ window.addEventListener('keydown', (e) => {
         cheatBuffer += e.key.toLowerCase();
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
-        if (cheatBuffer.endsWith('kimminki')) {
-            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 10,000G reward.");
+        if (cheatBuffer.endsWith('kimminki') || cheatBuffer.endsWith('kimiminki')) {
+            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
 
             // 1. Jump to 1000 steps
             const needed = 1000 - window.gameState.score;
@@ -665,23 +704,29 @@ window.addEventListener('keydown', (e) => {
                 if (hsEl) hsEl.innerText = aiHighScore;
             }
 
-            // 3. Grant 10,000 gold and save to localStorage
-            totalCoins += 10000;
+            // 3. Grant 1,000,000 gold and save to localStorage
+            totalCoins += 1000000;
             localStorage.setItem('infinite_stairs_coins', totalCoins);
             if (coinEl) coinEl.innerText = totalCoins;
             const shopGold = document.getElementById('shop-gold');
             if (shopGold) shopGold.innerText = totalCoins;
 
-            // 4. UI feedback & Timer reset
+            // 4. Grant 15 Pharaoh Crowns and 15 Snow Crystals
+            window.pharaohCrowns = (window.pharaohCrowns || 0) + 15;
+            window.snowCrystals = (window.snowCrystals || 0) + 15;
+            localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
+            localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
+
+            // 5. UI feedback & Timer reset
             window.gameState.timer = MAX_TIMER;
             if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
 
-            // 5. Cloud Persistence
+            // 6. Cloud Persistence (with crowns and crystals)
             if (window.saveData && isDataLoaded) {
-                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
             }
 
-            alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
+            alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
             cheatBuffer = "";
         }
     }
@@ -728,8 +773,8 @@ window.gameState.stairs = [];
 for (let i = 0; i < 30; i++) window.gameState.stairs.push({ x: 0, y: 0, hasCoin: false, coinVal: 0 });
 window.gameState.renderPlayer = { x: 0, y: 0 };
 initBackgroundObjects();
-render();
-loop();
+drawGameState();
+gameLoop();
 
 // Bind shop events
 bindShopEvents();
@@ -749,3 +794,32 @@ window.addEventListener('beforeunload', () => {
 setInterval(() => {
     window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
 }, 30000);
+// --- Data Bridge (Connected to auth.js) ---
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStair, pets, cPet, maps, cMap, crowns, crystals) {
+    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
+    window.aiHighScore = score;
+    if (highScoreEl) highScoreEl.innerText = window.aiHighScore;
+
+    window.totalCoins = coins;
+    if (coinEl) coinEl.innerText = window.totalCoins;
+
+    if (skins) window.ownedSkins = skins;
+    if (cSkin) window.currentSkin = cSkin;
+
+    // Sync Missing Data Types
+    if (stairSkins) window.ownedStairSkins = stairSkins;
+    if (cStair) window.currentStairSkin = cStair;
+
+    if (pets) window.ownedPets = pets;
+    if (cPet) window.currentPet = cPet;
+
+    if (maps) window.ownedMaps = maps;
+    if (cMap) window.currentMap = cMap;
+
+    if (crowns !== undefined) window.pharaohCrowns = crowns;
+    if (crystals !== undefined) window.snowCrystals = crystals;
+
+    window.isDataLoaded = true; // Unlock saving
+    updateShopUI();
+    if (typeof updateUnlockStatus === 'function') updateUnlockStatus();
+};

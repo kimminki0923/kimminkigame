@@ -7,8 +7,19 @@ const STAIR_W = 100;
 const STAIR_H = 25;
 const PLAYER_R = 12;
 const MAX_TIMER = 100;
-const TIMER_DECAY = 0.3;
+const TIMER_DECAY = 0.25; // 조금 더 쉬운 난이도
 const TIMER_BONUS = 15;
+
+// Player Skins Data
+window.SKIN_DATA = {
+    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
+    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
+    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
+    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
+    skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
+    skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 },
+    skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 }
+};
 
 // AI Constants
 const EPSILON_DECAY = 0.999;
@@ -35,13 +46,14 @@ window.isTraining = false;
 window.isAutoPlaying = false;
 
 // Graphics Asset Arrays
-const buildings = [];
-const clouds = [];
-const planets = [];
-const stars = [];
-const particles = [];
-const minerals = []; // Underground objects
-const snowParticles = []; // Winter map snow
+// Graphics Asset Arrays
+window.buildings = window.buildings || [];
+window.clouds = window.clouds || [];
+window.planets = window.planets || [];
+window.stars = window.stars || [];
+window.particles = window.particles || [];
+window.minerals = window.minerals || []; // Underground objects
+window.snowParticles = window.snowParticles || []; // Winter map snow
 
 // Persistent State (loaded from storage/Firebase)
 // Persistent State (loaded from storage/Firebase)

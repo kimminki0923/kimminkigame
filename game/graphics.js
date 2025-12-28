@@ -1,10 +1,16 @@
 // game/graphics.js - Background and Rendering
 // ============================================================
 
+// Global arrays for background objects
+let buildings = [];
+let clouds = [];
+let planets = [];
+let stars = [];
+let minerals = [];
 let time = 0;
 let petRenderPos = { x: 0, y: 0 }; // Pet interpolation
 
-function initBackgroundObjects() {
+window.initBackgroundObjects = function () {
     buildings.length = 0;
     for (let i = 0; i < 25; i++) {
         buildings.push({
@@ -462,6 +468,8 @@ function drawBackground(camX, camY) {
     }
 }
 
+// Premium Pet Drawing - detailed graphics version
+// Export as window.premiumDrawPet to avoid overwrite by player.js
 function drawPet(ctx, px, py, petType, playerDir) {
     if (!petType || petType === 'none') return;
 
@@ -740,6 +748,78 @@ function drawPet(ctx, px, py, petType, playerDir) {
             ctx.arc(spX, spY, 2, 0, Math.PI * 2);
             ctx.fill();
         }
+    } else if (petType === 'pet_penguin') {
+        // ============================================================
+        // PENGUIN PET (펭귄 펫) - 체력 감소 1.5배 느려짐
+        // ============================================================
+        const penguinBounce = bounce * 0.5;
+
+        // 몸통 (검정)
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.ellipse(0, penguinBounce + 5, 16, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 배 (흰색)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(0, penguinBounce + 8, 10, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 머리
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(0, penguinBounce - 12, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈 (흰자)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-5, penguinBounce - 14, 4, 0, Math.PI * 2);
+        ctx.arc(5, penguinBounce - 14, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈동자
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-5, penguinBounce - 14, 2, 0, Math.PI * 2);
+        ctx.arc(5, penguinBounce - 14, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 부리 (주황)
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.moveTo(0, penguinBounce - 10);
+        ctx.lineTo(-4, penguinBounce - 6);
+        ctx.lineTo(4, penguinBounce - 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // 발 (주황)
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.ellipse(-6, penguinBounce + 22, 5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(6, penguinBounce + 22, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 날개 (파닥파닥)
+        const wingAngle = Math.sin(time * 8) * 0.3;
+        ctx.fillStyle = '#34495e';
+        ctx.save();
+        ctx.translate(-14, penguinBounce + 5);
+        ctx.rotate(-wingAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(14, penguinBounce + 5);
+        ctx.rotate(wingAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     } else {
 
 
@@ -755,6 +835,8 @@ function drawPet(ctx, px, py, petType, playerDir) {
 
     ctx.restore();
 }
+// Export premium pet drawing function
+window.premiumDrawPet = drawPet;
 
 // ============================================================
 // Desert Background Rendering (Premium Art Version)
@@ -916,6 +998,14 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
         drawScaledSphinx(ctx, sphinxX, sphinxY, pyramidScale * 0.8);
     }
 
+    // Pharaoh Statue (New addition)
+    if (pyramidScale > 0.15) {
+        const statueX = (w * 0.85 + (camX * 0.15) % (w * 0.4)) % w;
+        // Position it on the ground layer
+        const statueY = pyramidBaseY;
+        drawScaledPharaohStatue(ctx, statueX, statueY, pyramidScale * 0.9);
+    }
+
     // 전경 모래 (가까운 모래언덕)
     if (altitude < 200) {
         const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
@@ -1028,6 +1118,10 @@ function drawDesertPhaseGround(ctx, camX, camY, w, h, t) {
 
     const pSphinx = (camX * 0.4) % (w * 2);
     drawArtisticSphinx(ctx, (w * 0.5 + pSphinx + w * 2) % (w * 2) - w * 0.5, h * 0.82 + sink, 0.9);
+    // New desert elements
+    drawOasis(ctx, (w * 0.6 + camX * 0.2) % w, h - 80, 1.0);
+    drawCamels(ctx, camX, camY, w, h, altitude);
+    drawHieroglyphs(ctx, camX, w, h);
 
     drawCalculusDunes(ctx, p3, h + 20 + sink, w + 200, '#e58e26', 150, 0.005);
 }
@@ -1304,6 +1398,73 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
 }
 
 // ============================================================
+// Helper Functions (Global Scope)
+// ============================================================
+
+// New helper: Oasis with palm trees
+function drawOasis(ctx, x, y, scale) {
+    if (x < -200 || x > ctx.canvas.width + 200) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    // Water rectangle
+    ctx.fillStyle = '#3b83bd';
+    ctx.fillRect(-80, -20, 160, 40);
+    // Palm trunk
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(-5, -20, 10, 30);
+    // Palm leaves
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.moveTo(0, -20);
+    ctx.bezierCurveTo(-30, -50, -30, -70, 0, -90);
+    ctx.bezierCurveTo(30, -70, 30, -50, 0, -20);
+    ctx.fill();
+    ctx.restore();
+}
+
+// New helper: Camels moving slowly
+function drawCamels(ctx, camX, camY, w, h, altitude) {
+    const count = 3;
+    for (let i = 0; i < count; i++) {
+        const baseX = ((camX * 0.03) + i * 200) % w;
+        const baseY = h - 50 - (altitude * 0.2) % 30;
+        ctx.save();
+        ctx.translate(baseX, baseY);
+        ctx.scale(0.6, 0.6);
+        ctx.fillStyle = '#c2b280';
+        // Body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Humps
+        ctx.beginPath();
+        ctx.arc(-15, -10, 8, 0, Math.PI * 2);
+        ctx.arc(15, -10, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Legs
+        ctx.fillRect(-20, 10, 8, 12);
+        ctx.fillRect(12, 10, 8, 12);
+        ctx.restore();
+    }
+}
+
+// New helper: Hieroglyphic wall pattern
+function drawHieroglyphs(ctx, camX, w, h) {
+    const spacing = 200;
+    const offsetX = (camX * 0.5) % spacing;
+    ctx.fillStyle = 'rgba(255,215,0,0.07)';
+    ctx.font = '30px serif';
+    const symbols = ['𓀀', '𓋹', '𓅓'];
+    for (let x = -spacing; x < w + spacing; x += spacing) {
+        for (let y = h * 0.3; y < h; y += spacing) {
+            const sym = symbols[(Math.floor(x / spacing) + Math.floor(y / spacing)) % symbols.length];
+            ctx.fillText(sym, x + offsetX, y);
+        }
+    }
+}
+
+// ============================================================
 // WINTER WONDERLAND MAP - Arctic Theme with Aurora
 // ============================================================
 function initSnowParticles() {
@@ -1463,6 +1624,19 @@ function drawWinterBackground(camX, camY, score, w, h) {
         }
     }
 
+    // Polar Bears (New addition)
+    if (groundScale > 0.25) {
+        const bearOffset = (camX * 0.08) % (w * 4);
+        for (let i = 0; i < 2; i++) {
+            // Place them sparsely
+            const bx = (w * 0.4 * i + bearOffset + w * 2.5) % w;
+            const by = groundY - 5 * groundScale;
+            // Slow breathing animation
+            const breathe = Math.sin(time * 1 + i) * 0.5;
+            drawScaledPolarBear(ctx, bx, by + breathe, groundScale * 0.8);
+        }
+    }
+
     // 전경 눈밭 (가까운 눈)
     if (altitude < 200) {
         const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
@@ -1500,6 +1674,36 @@ function drawWinterBackground(camX, camY, score, w, h) {
     // ALWAYS: Falling Snow (눈이 항상 내림)
     // ============================================================
     drawFallingSnow(ctx, camX, camY, w, h, score);
+}
+
+// ============================================================
+// Falling Snow Effect for Winter Map
+// ============================================================
+function drawFallingSnow(ctx, camX, camY, w, h, score) {
+    const snowParticles = window.snowParticles || [];
+    const time = Date.now() * 0.001;
+
+    ctx.fillStyle = '#ffffff';
+    snowParticles.forEach((p, i) => {
+        // Update position
+        p.y += p.speed;
+        p.x += p.drift + Math.sin(time + i) * 0.5;
+
+        // Wrap around
+        if (p.y > h) {
+            p.y = -10;
+            p.x = Math.random() * w;
+        }
+        if (p.x > w) p.x = 0;
+        if (p.x < 0) p.x = w;
+
+        // Draw snowflake
+        ctx.globalAlpha = p.opacity * (1 - score / 1000);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
 }
 
 // 스케일 적용된 이글루
@@ -1951,18 +2155,26 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     time = Date.now() * 0.001;
 
-    // Camera & Player Interpolation
+    // Camera & Player Interpolation (버터 스무스)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
+        // 매우 부드러운 이동: 낮은 lerp = 더 부드러움
+        const smoothness = 0.03; // 극강 버터 스무스
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
     const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode
     const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
 
     // Background
-    drawBackground(camX, camY);
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_desert') {
+        drawDesertBackgroundArtistic(camX, camY, window.gameState.score, canvas.width, canvas.height);
+    } else if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
+        drawWinterBackground(camX, camY, window.gameState.score, canvas.width, canvas.height);
+    } else {
+        drawBackground(camX, camY);
+    }
 
     // Stairs
     window.gameState.stairs.forEach((s, i) => {
@@ -1988,78 +2200,96 @@ function render() {
             // ============================================================
             if (s.hasCrown) {
                 ctx.save();
-                ctx.translate(sx, sy - 35);
+                ctx.translate(sx, sy - 50); // 더 높이 올림
 
-                // 빛나는 아우라
-                const pulse = 1 + Math.sin(time * 5) * 0.1;
-                ctx.scale(pulse, pulse);
+                // 빛나는 아우라 (더 큰 펄스)
+                const pulse = 1.2 + Math.sin(time * 5) * 0.15;
+                ctx.scale(pulse * 1.8, pulse * 1.8); // 1.8배 크기 증가
 
-                // 황금 빛 효과
+                // 황금 빛 효과 (더 강하게)
                 ctx.shadowColor = '#ffd700';
-                ctx.shadowBlur = 20 + Math.sin(time * 8) * 10;
+                ctx.shadowBlur = 40 + Math.sin(time * 8) * 20;
 
-                // 왕관 베이스 (황금)
+                // 왕관 베이스 (황금) - 더 크게
                 ctx.fillStyle = '#ffd700';
                 ctx.beginPath();
-                ctx.moveTo(-18, 10);
-                ctx.lineTo(-18, 0);
-                ctx.lineTo(-12, -10);
-                ctx.lineTo(-6, 0);
-                ctx.lineTo(0, -15);
-                ctx.lineTo(6, 0);
-                ctx.lineTo(12, -10);
-                ctx.lineTo(18, 0);
-                ctx.lineTo(18, 10);
+                ctx.moveTo(-22, 12);
+                ctx.lineTo(-22, 0);
+                ctx.lineTo(-15, -12);
+                ctx.lineTo(-7, 0);
+                ctx.lineTo(0, -20);
+                ctx.lineTo(7, 0);
+                ctx.lineTo(15, -12);
+                ctx.lineTo(22, 0);
+                ctx.lineTo(22, 12);
                 ctx.closePath();
                 ctx.fill();
 
-                // 왕관 테두리
+                // 왕관 테두리 (더 두껍게)
                 ctx.strokeStyle = '#b8860b';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.stroke();
 
-                // 보석들 (루비, 사파이어, 에메랄드)
-                ctx.shadowBlur = 0;
+                // 보석들 (루비, 사파이어, 에메랄드) - 더 크게
+                ctx.shadowBlur = 15;
 
-                // 중앙 루비
+                // 중앙 루비 (더 크게)
+                ctx.shadowColor = '#e74c3c';
                 ctx.fillStyle = '#e74c3c';
                 ctx.beginPath();
-                ctx.arc(0, -8, 4, 0, Math.PI * 2);
+                ctx.arc(0, -10, 6, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#c0392b';
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                // 좌측 사파이어
+                // 좌측 사파이어 (더 크게)
+                ctx.shadowColor = '#3498db';
                 ctx.fillStyle = '#3498db';
                 ctx.beginPath();
-                ctx.arc(-10, -3, 3, 0, Math.PI * 2);
+                ctx.arc(-12, -3, 4, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 우측 에메랄드
+                // 우측 에메랄드 (더 크게)
+                ctx.shadowColor = '#2ecc71';
                 ctx.fillStyle = '#2ecc71';
                 ctx.beginPath();
-                ctx.arc(10, -3, 3, 0, Math.PI * 2);
+                ctx.arc(12, -3, 4, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 하이라이트 (반짝임)
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.shadowBlur = 0;
+
+                // 하이라이트 (반짝임) - 더 크게
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
                 ctx.beginPath();
-                ctx.arc(-3, -9, 1.5, 0, Math.PI * 2);
+                ctx.arc(-4, -12, 2.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 회전하는 스파클 파티클
-                for (let p = 0; p < 4; p++) {
-                    const angle = time * 3 + (p * Math.PI / 2);
-                    const dist = 25 + Math.sin(time * 5 + p) * 5;
+                // 회전하는 스파클 파티클 (더 많이, 더 크게)
+                for (let p = 0; p < 6; p++) {
+                    const angle = time * 3 + (p * Math.PI / 3);
+                    const dist = 35 + Math.sin(time * 5 + p) * 8;
                     const px = Math.cos(angle) * dist;
                     const py = Math.sin(angle) * dist * 0.4;
 
-                    ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time * 4 + p) * 0.3})`;
+                    ctx.fillStyle = `rgba(255, 215, 0, ${0.7 + Math.sin(time * 4 + p) * 0.3})`;
                     ctx.beginPath();
-                    ctx.arc(px, py - 5, 2, 0, Math.PI * 2);
+                    ctx.arc(px, py - 5, 3, 0, Math.PI * 2);
                     ctx.fill();
                 }
+
+                // 추가: 빛줄기 효과
+                ctx.globalAlpha = 0.3 + Math.sin(time * 6) * 0.2;
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                for (let r = 0; r < 8; r++) {
+                    const rayAngle = time * 2 + (r * Math.PI / 4);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -5);
+                    ctx.lineTo(Math.cos(rayAngle) * 50, Math.sin(rayAngle) * 50 - 5);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1.0;
 
                 ctx.restore();
             } else if (s.hasSnowCrystal) {
@@ -2184,8 +2414,10 @@ function render() {
     const px = camX + window.gameState.renderPlayer.x * STAIR_W;
     const py = camY - window.gameState.renderPlayer.y * STAIR_H;
 
-    // Pet
-    drawPet(ctx, px, py, currentPet, window.gameState.playerDir);
+    // Pet (using premium graphics.js version)
+    if (typeof window.premiumDrawPet === 'function') {
+        window.premiumDrawPet(ctx, px, py, currentPet, window.gameState.playerDir);
+    }
 
     // Player
     ctx.globalAlpha = 1.0; // Ensure full opacity for player
@@ -2214,6 +2446,61 @@ function render() {
         ctx.fillText(p.val, ppx, ppy);
         ctx.globalAlpha = 1.0;
     }
+
+    // Render Environment Effects (Heat, Frost, etc.)
+    drawEnvironmentEffects(ctx, canvas.width, canvas.height, time);
+}
+
+// ============================================================
+// ENVIRONMENT EFFECTS (스크린 이펙트)
+// ============================================================
+function drawEnvironmentEffects(ctx, w, h, time) {
+    // 1. Pharaoh Effects (Heat Haze & Fire Particles)
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_desert') {
+        // Warm Overlay (Vignette)
+        const gradient = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.8);
+        gradient.addColorStop(0, 'rgba(255, 100, 0, 0)');
+        gradient.addColorStop(1, 'rgba(255, 60, 0, 0.15)'); // Orange/Red edges
+
+        ctx.fillStyle = gradient;
+        ctx.globalCompositeOperation = 'screen'; // Additive blending for heat
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'source-over'; // Reset
+
+        // Heat Waves (Rising distortion lines)
+        ctx.save();
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = '#ffcc00';
+        for (let i = 0; i < 5; i++) {
+            const yPos = (time * 50 + i * 150) % h;
+            const waveH = 50;
+            ctx.fillRect(0, h - yPos, w, waveH);
+        }
+        ctx.restore();
+    }
+
+    // 2. Winter Effects (Frost & Coldness)
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
+        // Cold Overlay (Blueish Vignette)
+        const gradient = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.8);
+        gradient.addColorStop(0, 'rgba(0, 200, 255, 0)');
+        gradient.addColorStop(1, 'rgba(135, 206, 250, 0.2)'); // Light Blue edges
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        // Frost Crystals at corners
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        // Top Left
+        ctx.moveTo(0, 0); ctx.lineTo(100, 0); ctx.quadraticCurveTo(50, 50, 0, 100); ctx.fill();
+        // Top Right
+        ctx.moveTo(w, 0); ctx.lineTo(w - 100, 0); ctx.quadraticCurveTo(w - 50, 50, w, 100); ctx.fill();
+        // Bottom Left
+        ctx.moveTo(0, h); ctx.lineTo(100, h); ctx.quadraticCurveTo(50, h - 50, 0, h - 100); ctx.fill();
+        // Bottom Right
+        ctx.moveTo(w, h); ctx.lineTo(w - 100, h); ctx.quadraticCurveTo(w - 50, h - 50, w, h - 100); ctx.fill();
+    }
 }
 
 // Helper: Detailed Stair Drawing
@@ -2238,27 +2525,55 @@ function drawStair(ctx, x, y, skinId, index) {
         ctx.stroke();
     }
     else if (skinId === 'stair_pharaoh') {
-        // Pharaoh Skin: Sandstone with Gold Trim
-        ctx.fillStyle = '#e0c090'; // Sandstone
+        // ============================================================
+        // PHARAOH'S GOLDEN STAIR (파라오의 황금 계단) - Premium Design
+        // ============================================================
+
+        // Golden Gradient Base
+        const goldGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
+        goldGrad.addColorStop(0, '#ffd700');   // Bright gold top
+        goldGrad.addColorStop(0.3, '#f1c40f'); // Rich gold
+        goldGrad.addColorStop(0.7, '#d4a70a'); // Deep gold
+        goldGrad.addColorStop(1, '#b8860b');   // Dark gold bottom
+        ctx.fillStyle = goldGrad;
         ctx.fillRect(left, top, STAIR_W, STAIR_H);
 
-        // Gold Trim
-        ctx.strokeStyle = '#ffd700';
+        // Metallic Gold Trim with Glow
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = '#fff8dc';
         ctx.lineWidth = 3;
         ctx.strokeRect(left, top, STAIR_W, STAIR_H);
+        ctx.shadowBlur = 0;
 
-        // Hieroglyphs (Symbolic)
-        ctx.fillStyle = 'rgba(52, 152, 219, 0.6)'; // Luminous Blue
-        ctx.font = '12px Courier New';
-        const symbols = ['𓋹', '𓂀', '𓅓'];
-        const sym = symbols[index % 3];
-        ctx.fillText(sym, x - 5, y + STAIR_H / 2 + 5);
+        // Inner Gold Border
+        ctx.strokeStyle = '#b8860b';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(left + 3, top + 3, STAIR_W - 6, STAIR_H - 6);
 
-        // Sand texture
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        for (let j = 0; j < 5; j++) {
-            ctx.fillRect(left + Math.random() * STAIR_W, top + Math.random() * STAIR_H, 2, 2);
-        }
+        // Hieroglyphic Pattern (Larger, Glowing)
+        ctx.shadowColor = '#3498db';
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.8)';
+        ctx.font = 'bold 16px serif';
+        ctx.textAlign = 'center';
+        const symbols = ['𓋹', '𓂀', '𓅓', '𓃭', '𓆣'];
+        const sym = symbols[index % symbols.length];
+        ctx.fillText(sym, x, y + STAIR_H / 2 + 5);
+        ctx.shadowBlur = 0;
+
+        // Top Highlight (Metallic Shine)
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(left + 5, top + 2, STAIR_W - 10, 3);
+
+        // Decorative Corner Gems
+        const gemColors = ['#e74c3c', '#3498db', '#2ecc71'];
+        const gemColor = gemColors[index % 3];
+        ctx.fillStyle = gemColor;
+        ctx.beginPath();
+        ctx.arc(left + 8, top + STAIR_H / 2, 3, 0, Math.PI * 2);
+        ctx.arc(left + STAIR_W - 8, top + STAIR_H / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
     }
     else if (skinId === 'stair_ice') {
         // Ice Skin: Cold Frosty Blue
@@ -2336,4 +2651,96 @@ function drawCalculusDunes(ctx, startX, bottomY, width, color, waveHeight, frequ
     ctx.lineTo(startObj, bottomY);
     ctx.closePath();
     ctx.fill();
+}
+
+// Scale-ready Pharaoh Statue
+function drawScaledPharaohStatue(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+    if (scale < 0.1) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Body
+    ctx.fillStyle = '#8B7355';
+    ctx.fillRect(-15, -80, 30, 80);
+
+    // Head
+    ctx.fillStyle = '#d4a860';
+    ctx.beginPath();
+    ctx.arc(0, -95, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crown
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.moveTo(-15, -100);
+    ctx.lineTo(0, -130);
+    ctx.lineTo(15, -100);
+    ctx.closePath();
+    ctx.fill();
+
+    // Beard/Details
+    ctx.fillStyle = '#000';
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(-5, -85, 10, 10);
+    ctx.globalAlpha = 1.0;
+
+    ctx.restore();
+}
+
+// Scale-ready Polar Bear
+function drawScaledPolarBear(ctx, x, y, scale) {
+    if (x < -100 || x > ctx.canvas.width + 100) return;
+    if (scale < 0.1) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Flip if near left edge for variety (optional, but keep simple for now)
+
+    // Body (White)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 35, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(-25, -15, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.beginPath();
+    ctx.arc(-15, 15, 8, 0, Math.PI * 2);
+    ctx.arc(15, 15, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye/Nose
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.arc(-30, -18, 2, 0, Math.PI * 2); // Eye
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-38, -15, 3, 2, 0, 0, Math.PI * 2); // Nose
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+// ============================================================
+// drawGameState - Main Game Rendering Function
+// Called by core.js every frame to render the entire game
+// Delegates to the premium render() function for high-quality graphics
+// ============================================================
+function drawGameState() {
+    // Use the premium render() function which includes:
+    // - Map-specific backgrounds (desert, winter, default)
+    // - Detailed coin/crown/crystal rendering
+    // - Environment effects
+    // - Premium pet and player rendering
+    render();
 }

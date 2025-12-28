@@ -3,21 +3,12 @@
 // Geometry Dash style - grounded on stairs, rolling animation
 // ============================================================
 
-const SKIN_DATA = {
-    default: { name: '기본 (원형)', icon: '⚪', type: 'circle' },
-    skin_square: { name: '사각형', icon: '🟧', type: 'square', price: 1000 },
-    skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
-    skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
-    skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
-    skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 }
-};
-
 // Animation state for smooth rolling
 let targetSkinRotation = 0;
 let currentSkinRotation = 0;
 
 function updateSkinRotation() {
-    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+    const skin = window.SKIN_DATA[currentSkin] || window.SKIN_DATA.default;
     if (skin.type === 'circle') {
         targetSkinRotation = 0;
     } else if (skin.type === 'square') {
@@ -26,7 +17,7 @@ function updateSkinRotation() {
     } else if (skin.type === 'triangle') {
         // 120 degree rotation for triangle (3 sides)
         targetSkinRotation += Math.PI * 2 / 3;
-    } else if (skin.type === 'diamond' || skin.type === 'ruby') {
+    } else if (skin.type === 'diamond' || skin.type === 'ruby' || skin.type === 'cosmic') {
         // Floating skins, no rolling rotation
         targetSkinRotation = 0;
     } else if (skin.type === 'pentagon') {
@@ -53,7 +44,7 @@ function equipSkin(skinId) {
 window.playerFlash = 0;
 
 function drawPlayerWithSkin(ctx, px, py, dir) {
-    const skin = SKIN_DATA[currentSkin] || SKIN_DATA.default;
+    const skin = window.SKIN_DATA[currentSkin] || window.SKIN_DATA.default;
     const time = Date.now() * 0.001;
 
     // Smooth rotation interpolation (Geometry Dash style)
@@ -73,14 +64,14 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
 
     // Special Floating Logic for Floating Skins
     let floatY = 0;
-    if (skin.type === 'diamond' || skin.type === 'ruby') {
+    if (skin.type === 'diamond' || skin.type === 'ruby' || skin.type === 'cosmic') {
         floatY = Math.sin(time * 3) * 5; // Bobbing up and down
     }
 
     ctx.translate(px, py - groundOffset + floatY);
 
     // Apply rotation for non-circle skins (except Floating ones)
-    if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby') {
+    if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby' && skin.type !== 'cosmic') {
         ctx.rotate(currentSkinRotation);
     }
 
@@ -387,6 +378,97 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
             }
             break;
 
+        case 'cosmic':
+            // ============================================================
+            // COSMIC STAR (코스믹 스타) - 100만 골드 전설급 스킨
+            // ============================================================
+            const cosmicSize = 50; // 가장 큰 스킨
+            const cosmicPulse = 1 + Math.sin(time * 6) * 0.1 + (flash * 0.2);
+            const hue = (time * 30) % 360; // 색상 순환
+
+            ctx.scale(cosmicPulse, cosmicPulse);
+
+            // 플로팅 그림자
+            ctx.save();
+            ctx.translate(0, -floatY);
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            const cosmicShadowScale = 1 - (floatY + 5) * 0.1;
+            ctx.beginPath();
+            ctx.ellipse(0, cosmicSize * 0.6 + 15, cosmicSize * 0.8 * cosmicShadowScale, 10 * cosmicShadowScale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // 코스믹 글로우 (무지개빛)
+            ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+            ctx.shadowBlur = 60 + Math.sin(time * 8) * 20 + (flash * 80);
+
+            // 별 모양 (8각 별)
+            const cosmicGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, cosmicSize);
+            cosmicGrad.addColorStop(0, '#fff');
+            cosmicGrad.addColorStop(0.2, `hsl(${hue}, 100%, 70%)`);
+            cosmicGrad.addColorStop(0.5, `hsl(${(hue + 60) % 360}, 100%, 50%)`);
+            cosmicGrad.addColorStop(1, `hsl(${(hue + 120) % 360}, 80%, 30%)`);
+
+            ctx.fillStyle = cosmicGrad;
+            ctx.beginPath();
+            for (let i = 0; i < 16; i++) {
+                const angle = (i * Math.PI / 8) - Math.PI / 2;
+                const r = (i % 2 === 0) ? cosmicSize : cosmicSize * 0.5;
+                const rx = Math.cos(angle) * r;
+                const ry = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(rx, ry);
+                else ctx.lineTo(rx, ry);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // 하이라이트
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 + flash * 0.1})`;
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+
+            // 내부 코어 (빛나는 중심)
+            const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 15);
+            coreGrad.addColorStop(0, '#fff');
+            coreGrad.addColorStop(0.5, `hsl(${hue}, 100%, 80%)`);
+            coreGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 회전하는 우주 입자 (6개)
+            for (let i = 0; i < 6; i++) {
+                const orbitAngle = time * (3 + i * 0.5) + (i * Math.PI / 3);
+                const orbitR = cosmicSize * (0.8 + (i % 2) * 0.3);
+                const ox = Math.cos(orbitAngle) * orbitR;
+                const oy = Math.sin(orbitAngle) * orbitR * 0.4;
+
+                ctx.fillStyle = `hsl(${(hue + i * 60) % 360}, 100%, 70%)`;
+                ctx.shadowColor = `hsl(${(hue + i * 60) % 360}, 100%, 50%)`;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(ox, oy, 6 + flash * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 스파클 이펙트
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 8; i++) {
+                const sparkleAngle = time * 5 + i * Math.PI / 4;
+                const sparkleR = cosmicSize * 1.2 + Math.sin(time * 10 + i) * 10;
+                const sx = Math.cos(sparkleAngle) * sparkleR;
+                const sy = Math.sin(sparkleAngle) * sparkleR * 0.3;
+                const sparkleSize = 2 + Math.sin(time * 8 + i) * 1.5;
+
+                ctx.beginPath();
+                ctx.arc(sx, sy, sparkleSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+
         default:
             // BIG bouncy circle - grounded
             const circleSize = 22;
@@ -447,3 +529,54 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
 
     ctx.restore();
 }
+
+// ============================================================
+// Pet Drawing Logic (Emoji Based - Restored Original Style)
+// ============================================================
+window.drawPet = function (ctx, playerX, playerY, petType, dir) {
+    if (!petType || petType === 'none') return;
+
+    // Check global PET_DATA first
+    const petData = (window.PET_DATA && window.PET_DATA[petType])
+        ? window.PET_DATA[petType]
+        : { icon: '❓' }; // Fallback
+
+    const icon = petData.icon;
+
+    // Bobbing animation
+    const time = Date.now() * 0.005;
+    const bob = Math.sin(time * 2) * 5;
+
+    // Position: Behind player
+    const offsetDir = dir === 1 ? -1 : 1;
+    const petX = playerX + (offsetDir * 35);
+    const petY = playerY - 15 + bob;
+
+    ctx.save();
+    ctx.translate(petX, petY);
+
+    // Floating animation rotation (light shake)
+    const rot = Math.sin(time * 3) * 0.1;
+    ctx.rotate(rot);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 20 - bob, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Emoji
+    ctx.font = "30px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Flip emoji if needed (scale X)
+    ctx.scale(dir === 1 ? 1 : -1, 1);
+
+    ctx.shadowColor = 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(icon, 0, 0);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+};

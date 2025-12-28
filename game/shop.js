@@ -8,6 +8,7 @@ const STAIR_SKIN_DATA = {
     stair_pharaoh: { name: '파라오의 황금 계단', icon: '👑', price: 3000, type: 'pharaoh' },
     stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' }
 };
+window.STAIR_SKIN_DATA = STAIR_SKIN_DATA;
 
 const PET_DATA = {
     none: { name: '없음', icon: '❌' },
@@ -16,16 +17,18 @@ const PET_DATA = {
     pet_eagle: { name: '독수리', icon: '🦅', price: 10000, type: 'air' },
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
-    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '눈결정 15개 수집 시 해금!' }
+    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' },
+    pet_penguin: { name: '펭귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' }
 };
-
+window.PET_DATA = PET_DATA;
 
 
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
-    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' },
-    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!' }
+    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!', previewImg: 'assets/desert_map_preview.png' },
+    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' }
 };
+window.MAP_DATA = MAP_DATA;
 
 console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 
@@ -64,25 +67,28 @@ function createShopItemElement(id, data, category) {
     if (id === 'pet_sphinx') {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x10</div>';
     } else if (id === 'pet_polarbear') {
-        effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5</div>';
+        effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5 | 🛡️ 체력 감소 1.5배 느려짐</div>';
     } else if (id === 'pet_pig') {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
+    } else if (id === 'pet_penguin') {
+        effectDisplay = '<div style="color: #74b9ff; font-size: 11px; margin-top: 5px;">🛡️ 체력 감소 1.5배 느려짐</div>';
     }
 
 
+    let previewImgTag = '';
+    if (data.previewImg) {
+        previewImgTag = `<img src="${data.previewImg}" alt="${data.name} preview" style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px;"/>`;
+    }
     div.innerHTML = `
-        <div style="font-size: 40px; margin-bottom: 10px;">${data.icon}</div>
+        ${previewImgTag}
+        <div style="font-size: 40px; margin-bottom: 5px;">${data.icon}</div>
         <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
         ${requirementDisplay}
-        ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
+        ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 8px;">💰 ${data.price}</div>` : ''}
         ${effectDisplay}
         <button id="btn-${id}" 
             class="${isOwned ? 'equip-btn' : 'buy-btn'}"
-            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold;
-            background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')};
-            color: #fff;">
-            ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
-        </button>
+            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')}; color: #fff;">${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}</button>
     `;
 
     return div;
@@ -114,7 +120,7 @@ function updateShopUI() {
 
     // Dynamic Shop Sections
     const sections = {
-        'char': { data: SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
+        'char': { data: window.SKIN_DATA, containerId: 'shop-items-char', category: 'char' },
         'stair': { data: STAIR_SKIN_DATA, containerId: 'shop-items-stair', category: 'stair' },
         'pet': { data: PET_DATA, containerId: 'shop-items-pet', category: 'pet' },
         'map': { data: MAP_DATA, containerId: 'shop-items-map', category: 'map' }
@@ -122,7 +128,7 @@ function updateShopUI() {
 
     // Update Current Equipped Displays
     const skinDisplay = document.getElementById('current-skin-display');
-    if (skinDisplay && SKIN_DATA[window.currentSkin]) skinDisplay.innerText = SKIN_DATA[window.currentSkin].icon + ' ' + SKIN_DATA[window.currentSkin].name;
+    if (skinDisplay && window.SKIN_DATA[window.currentSkin]) skinDisplay.innerText = window.SKIN_DATA[window.currentSkin].icon + ' ' + window.SKIN_DATA[window.currentSkin].name;
 
     const stairDisplay = document.getElementById('current-stair-display');
     if (stairDisplay && STAIR_SKIN_DATA[window.currentStairSkin]) stairDisplay.innerText = STAIR_SKIN_DATA[window.currentStairSkin].icon + ' ' + STAIR_SKIN_DATA[window.currentStairSkin].name;
@@ -263,7 +269,7 @@ function bindBuyEquipButtons() {
                 if (price === 0) {
                     // Check requirement
                     if (category === 'char') {
-                        const item = SKIN_DATA[id];
+                        const item = window.SKIN_DATA[id];
                         if (item && item.requirement && aiHighScore < item.requirement) {
                             return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
                         }
