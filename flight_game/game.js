@@ -36,18 +36,24 @@ const MAX_SPEED = 350;
 
 // Initialization
 function init() {
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.Fog(0x87CEEB, 200, 2000);
+    try {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 200, 2000);
 
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.set(0, 10, -20);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(0, 10, -20);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    document.getElementById('game-container').appendChild(renderer.domElement);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('game-container').appendChild(renderer.domElement);
+    } catch (e) {
+        document.getElementById('game-container').innerHTML = '<div style="color:white; text-align:center; padding-top:20%; font-size:24px;">⚠️ WebGL is not supported on this device/browser.<br>3D rendering disabled.</div>';
+        console.error("WebGL Error:", e);
+        return;
+    }
 
     // Lights
     const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.6);
@@ -58,12 +64,6 @@ function init() {
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 1000;
-    sunLight.shadow.camera.left = -500;
-    sunLight.shadow.camera.right = 500;
-    sunLight.shadow.camera.top = 500;
-    sunLight.shadow.camera.bottom = -500;
     scene.add(sunLight);
 
     createEnvironment();
@@ -71,6 +71,9 @@ function init() {
 
     ringsGroup = new THREE.Group();
     scene.add(ringsGroup);
+
+    // Initial Camera Setup - Look at the plane!
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     window.addEventListener('resize', onWindowResize, false);
     document.addEventListener('keydown', (e) => handleKey(e, true), false);
@@ -292,10 +295,21 @@ function createRing(zPos) {
 }
 
 function updatePhysics() {
-    if (state.mode === GAME_STATE.MENU || state.mode === GAME_STATE.CRASHED) return;
-
-    const dt = 0.016; // Fixed step approximation
+    const dt = 0.016;
     const p = state.plane.mesh;
+
+    // MENU Mode: Rotate camera around plane for visual effect
+    if (state.mode === GAME_STATE.MENU) {
+        state.plane.propeller.rotation.z += 0.1; // Spin propeller
+        const time = Date.now() * 0.0005;
+        camera.position.x = Math.sin(time) * 20;
+        camera.position.z = Math.cos(time) * 20;
+        camera.position.y = 5;
+        camera.lookAt(0, 2, 0); // Look at plane
+        return; // Skip physics
+    }
+
+    if (state.mode === GAME_STATE.CRASHED) return;
 
     // --- Controls ---
     // Throttle (W/S)
