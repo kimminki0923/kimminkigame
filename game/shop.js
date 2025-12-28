@@ -66,7 +66,7 @@ function createShopItemElement(id, data, category) {
     if (id === 'pet_sphinx') {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x10</div>';
     } else if (id === 'pet_polarbear') {
-        effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5</div>';
+        effectDisplay = '<div style="color: #00d2d3; font-size: 11px; margin-top: 5px;">⚡ 골드 x5 | 🛡️ 체력 감소 1.5배 느려짐</div>';
     } else if (id === 'pet_pig') {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
     }
