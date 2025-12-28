@@ -566,8 +566,17 @@ function gameOver() {
 // Main Game Loop
 function loop() {
     if (window.gameState.running) {
-        let currentDecay = TIMER_DECAY + (Math.log(window.gameState.score + 10) * 0.08);
-        currentDecay = Math.min(currentDecay, 1.2);
+        // 난이도 조절: 점수가 높을수록 시간이 더 빨리 줄어듦 (더 가파르게 수정)
+        let currentDecay = TIMER_DECAY + (Math.log(window.gameState.score + 10) * 0.15);
+        currentDecay = Math.min(currentDecay, 1.8); // 최대 감소량 제한도 증가
+
+        // ============================================================
+        // POLAR BEAR PET EFFECT (북극곰 펫 효과)
+        // 효과: 강인한 체력으로 타이머 감소 속도 1.5배 완화
+        // ============================================================
+        if (typeof window.currentPet !== 'undefined' && window.currentPet === 'pet_polarbear') {
+            currentDecay /= 1.5;
+        }
 
         window.gameState.timer -= currentDecay;
         if (window.gameState.timer <= 0) { window.gameState.timer = 0; gameOver(); }
