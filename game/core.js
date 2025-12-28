@@ -611,44 +611,11 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // ============================================================
-    // ULTRA-SMOOTH SPRING ANIMATION (애니메이션처럼 부드러운 이동)
-    // Uses spring physics with velocity for natural, fluid movement
-    // ============================================================
+    // 부드러운 플레이어 이동 (원본처럼)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        // Initialize velocity if not exists
-        if (typeof window.playerVelocity === 'undefined') {
-            window.playerVelocity = { x: 0, y: 0 };
-        }
-
-        // Spring physics constants
-        const stiffness = 0.15;  // How quickly it moves toward target
-        const damping = 0.75;    // How much velocity is retained (higher = smoother)
-
-        // Calculate spring force
-        const dx = target.x - window.gameState.renderPlayer.x;
-        const dy = target.y - window.gameState.renderPlayer.y;
-
-        // Apply spring force to velocity
-        window.playerVelocity.x += dx * stiffness;
-        window.playerVelocity.y += dy * stiffness;
-
-        // Apply damping (friction)
-        window.playerVelocity.x *= damping;
-        window.playerVelocity.y *= damping;
-
-        // Update position with velocity
-        window.gameState.renderPlayer.x += window.playerVelocity.x;
-        window.gameState.renderPlayer.y += window.playerVelocity.y;
-
-        // Snap to target if very close (prevents micro-oscillations)
-        if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
-            window.gameState.renderPlayer.x = target.x;
-            window.gameState.renderPlayer.y = target.y;
-            window.playerVelocity.x = 0;
-            window.playerVelocity.y = 0;
-        }
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.15;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.15;
     }
 
     drawGameState();
