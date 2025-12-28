@@ -611,11 +611,12 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // 부드러운 플레이어 이동 (원본처럼)
+    // 버터처럼 부드러운 플레이어 이동
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.15;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.15;
+        const smoothness = 0.08; // 매우 부드러운 값
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
 
     drawGameState();

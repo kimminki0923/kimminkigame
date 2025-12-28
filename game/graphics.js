@@ -2083,12 +2083,13 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     time = Date.now() * 0.001;
 
-    // Camera & Player Interpolation (원본처럼 부드러운 lerp)
+    // Camera & Player Interpolation (버터 스무스)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
-        // 부드러운 이동: 낮은 lerp 값 = 더 부드러움
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.15;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.15;
+        // 매우 부드러운 이동: 낮은 lerp = 더 부드러움
+        const smoothness = 0.08; // 버터처럼 부드러운 값
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
     const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode
