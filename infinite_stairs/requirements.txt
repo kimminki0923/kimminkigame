@@ -1,5 +1,0 @@
-stable-baselines3
-shimmy
-gymnasium
-fastapi
-uvicorn
