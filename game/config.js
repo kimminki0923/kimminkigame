@@ -7,7 +7,7 @@ const STAIR_W = 100;
 const STAIR_H = 25;
 const PLAYER_R = 12;
 const MAX_TIMER = 100;
-const TIMER_DECAY = 0.3;
+const TIMER_DECAY = 0.25; // 조금 더 쉬운 난이도
 const TIMER_BONUS = 15;
 
 // Player Skins Data
