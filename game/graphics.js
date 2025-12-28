@@ -2080,78 +2080,96 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
                 // ============================================================
                 if (s.hasCrown) {
                     ctx.save();
-                    ctx.translate(sx, sy - 35);
+                    ctx.translate(sx, sy - 50); // 더 높이 올림
 
-                    // 빛나는 아우라
-                    const pulse = 1 + Math.sin(time * 5) * 0.1;
-                    ctx.scale(pulse, pulse);
+                    // 빛나는 아우라 (더 큰 펄스)
+                    const pulse = 1.2 + Math.sin(time * 5) * 0.15;
+                    ctx.scale(pulse * 1.8, pulse * 1.8); // 1.8배 크기 증가
 
-                    // 황금 빛 효과
+                    // 황금 빛 효과 (더 강하게)
                     ctx.shadowColor = '#ffd700';
-                    ctx.shadowBlur = 20 + Math.sin(time * 8) * 10;
+                    ctx.shadowBlur = 40 + Math.sin(time * 8) * 20;
 
-                    // 왕관 베이스 (황금)
+                    // 왕관 베이스 (황금) - 더 크게
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.moveTo(-18, 10);
-                    ctx.lineTo(-18, 0);
-                    ctx.lineTo(-12, -10);
-                    ctx.lineTo(-6, 0);
-                    ctx.lineTo(0, -15);
-                    ctx.lineTo(6, 0);
-                    ctx.lineTo(12, -10);
-                    ctx.lineTo(18, 0);
-                    ctx.lineTo(18, 10);
+                    ctx.moveTo(-22, 12);
+                    ctx.lineTo(-22, 0);
+                    ctx.lineTo(-15, -12);
+                    ctx.lineTo(-7, 0);
+                    ctx.lineTo(0, -20);
+                    ctx.lineTo(7, 0);
+                    ctx.lineTo(15, -12);
+                    ctx.lineTo(22, 0);
+                    ctx.lineTo(22, 12);
                     ctx.closePath();
                     ctx.fill();
 
-                    // 왕관 테두리
+                    // 왕관 테두리 (더 두껍게)
                     ctx.strokeStyle = '#b8860b';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 3;
                     ctx.stroke();
 
-                    // 보석들 (루비, 사파이어, 에메랄드)
-                    ctx.shadowBlur = 0;
+                    // 보석들 (루비, 사파이어, 에메랄드) - 더 크게
+                    ctx.shadowBlur = 15;
 
-                    // 중앙 루비
+                    // 중앙 루비 (더 크게)
+                    ctx.shadowColor = '#e74c3c';
                     ctx.fillStyle = '#e74c3c';
                     ctx.beginPath();
-                    ctx.arc(0, -8, 4, 0, Math.PI * 2);
+                    ctx.arc(0, -10, 6, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.strokeStyle = '#c0392b';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = 1.5;
                     ctx.stroke();
 
-                    // 좌측 사파이어
+                    // 좌측 사파이어 (더 크게)
+                    ctx.shadowColor = '#3498db';
                     ctx.fillStyle = '#3498db';
                     ctx.beginPath();
-                    ctx.arc(-10, -3, 3, 0, Math.PI * 2);
+                    ctx.arc(-12, -3, 4, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 우측 에메랄드
+                    // 우측 에메랄드 (더 크게)
+                    ctx.shadowColor = '#2ecc71';
                     ctx.fillStyle = '#2ecc71';
                     ctx.beginPath();
-                    ctx.arc(10, -3, 3, 0, Math.PI * 2);
+                    ctx.arc(12, -3, 4, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 하이라이트 (반짝임)
-                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.shadowBlur = 0;
+
+                    // 하이라이트 (반짝임) - 더 크게
+                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
                     ctx.beginPath();
-                    ctx.arc(-3, -9, 1.5, 0, Math.PI * 2);
+                    ctx.arc(-4, -12, 2.5, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 회전하는 스파클 파티클
-                    for (let p = 0; p < 4; p++) {
-                        const angle = time * 3 + (p * Math.PI / 2);
-                        const dist = 25 + Math.sin(time * 5 + p) * 5;
+                    // 회전하는 스파클 파티클 (더 많이, 더 크게)
+                    for (let p = 0; p < 6; p++) {
+                        const angle = time * 3 + (p * Math.PI / 3);
+                        const dist = 35 + Math.sin(time * 5 + p) * 8;
                         const px = Math.cos(angle) * dist;
                         const py = Math.sin(angle) * dist * 0.4;
 
-                        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time * 4 + p) * 0.3})`;
+                        ctx.fillStyle = `rgba(255, 215, 0, ${0.7 + Math.sin(time * 4 + p) * 0.3})`;
                         ctx.beginPath();
-                        ctx.arc(px, py - 5, 2, 0, Math.PI * 2);
+                        ctx.arc(px, py - 5, 3, 0, Math.PI * 2);
                         ctx.fill();
                     }
+
+                    // 추가: 빛줄기 효과
+                    ctx.globalAlpha = 0.3 + Math.sin(time * 6) * 0.2;
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    for (let r = 0; r < 8; r++) {
+                        const rayAngle = time * 2 + (r * Math.PI / 4);
+                        ctx.beginPath();
+                        ctx.moveTo(0, -5);
+                        ctx.lineTo(Math.cos(rayAngle) * 50, Math.sin(rayAngle) * 50 - 5);
+                        ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1.0;
 
                     ctx.restore();
                 } else if (s.hasSnowCrystal) {
