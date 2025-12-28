@@ -587,10 +587,10 @@ function gameOver() {
 // Main Game Loop
 function gameLoop(timestamp) {
     if (window.gameState.running) {
-        // 난이도 조절: 처음엔 느리게, 점수 올라갈수록 빨라짐
-        // 0점: 0.1, 50점: 0.2, 100점: 0.3, 200점: 0.5, 500점: 0.8
-        let currentDecay = 0.1 + (window.gameState.score * 0.003);
-        currentDecay = Math.min(currentDecay, 1.2); // 최대 감소량 제한
+        // 난이도 조절: 처음엔 아주 느리게, 점수 올라갈수록 빨라짐
+        // 0점: 0.05, 100점: 0.25, 200점: 0.45, 500점: 1.0
+        let currentDecay = 0.05 + (window.gameState.score * 0.002);
+        currentDecay = Math.min(currentDecay, 1.0); // 최대 감소량 제한
 
         // ============================================================
         // POLAR BEAR PET EFFECT (북극곰 펫 효과)
