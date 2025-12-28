@@ -2086,8 +2086,8 @@ function render() {
     // Camera & Player Interpolation
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.35;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.35;
     }
     const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
     const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode

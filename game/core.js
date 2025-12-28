@@ -272,7 +272,7 @@ function addStair() {
         // PHARAOH'S CROWN (파라오의 왕관) - 10% 확률
         // 풀셋일 때만 등장! 15개 수집 시 스핑크스 펫 해금
         // ============================================================
-        if (isPharaohFullSet && Math.random() < 0.1) {
+        if (isPharaohFullSet && Math.random() < 0.0005) {
             hasCoin = true;
             coinVal = 1000; // 특별 코드: 왕관 = 1000
         }
@@ -281,7 +281,7 @@ function addStair() {
         // WINTER SNOW CRYSTAL (눈결정) - 10% 확률
         // 겨울 풀셋일 때만 등장! 15개 수집 시 북극곰 펫 해금
         // ============================================================
-        if (isWinterFullSet && Math.random() < 0.1) {
+        if (isWinterFullSet && Math.random() < 0.0005) {
             hasCoin = true;
             coinVal = 2000; // 특별 코드: 눈결정 = 2000
         }
@@ -614,8 +614,8 @@ function gameLoop(timestamp) {
     // RESTORED: Smooth Player Movement Interpolation
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.35;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.35;
     }
 
     drawGameState();
