@@ -916,6 +916,14 @@ function drawDesertBackgroundArtistic(camX, camY, score, w, h) {
         drawScaledSphinx(ctx, sphinxX, sphinxY, pyramidScale * 0.8);
     }
 
+    // Pharaoh Statue (New addition)
+    if (pyramidScale > 0.15) {
+        const statueX = (w * 0.85 + (camX * 0.15) % (w * 0.4)) % w;
+        // Position it on the ground layer
+        const statueY = pyramidBaseY;
+        drawScaledPharaohStatue(ctx, statueX, statueY, pyramidScale * 0.9);
+    }
+
     // 전경 모래 (가까운 모래언덕)
     if (altitude < 200) {
         const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
@@ -1028,6 +1036,10 @@ function drawDesertPhaseGround(ctx, camX, camY, w, h, t) {
 
     const pSphinx = (camX * 0.4) % (w * 2);
     drawArtisticSphinx(ctx, (w * 0.5 + pSphinx + w * 2) % (w * 2) - w * 0.5, h * 0.82 + sink, 0.9);
+    // New desert elements
+    drawOasis(ctx, (w * 0.6 + camX * 0.2) % w, h - 80, 1.0);
+    drawCamels(ctx, camX, camY, w, h, altitude);
+    drawHieroglyphs(ctx, camX, w, h);
 
     drawCalculusDunes(ctx, p3, h + 20 + sink, w + 200, '#e58e26', 150, 0.005);
 }
@@ -1301,1039 +1313,1190 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
     ctx.fill();
 
     ctx.restore();
-}
+    // New helper: Oasis with palm trees
+    function drawOasis(ctx, x, y, scale) {
+        if (x < -200 || x > ctx.canvas.width + 200) return;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        // Water rectangle
+        ctx.fillStyle = '#3b83bd';
+        ctx.fillRect(-80, -20, 160, 40);
+        // Palm trunk
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(-5, -20, 10, 30);
+        // Palm leaves
+        ctx.fillStyle = '#2ecc71';
+        ctx.beginPath();
+        ctx.moveTo(0, -20);
+        ctx.bezierCurveTo(-30, -50, -30, -70, 0, -90);
+        ctx.bezierCurveTo(30, -70, 30, -50, 0, -20);
+        ctx.fill();
+        ctx.restore();
+    }
 
-// ============================================================
-// WINTER WONDERLAND MAP - Arctic Theme with Aurora
-// ============================================================
-function initSnowParticles() {
-    if (snowParticles.length === 0) {
-        for (let i = 0; i < 150; i++) {
-            snowParticles.push({
-                x: Math.random() * 2000,
-                y: Math.random() * 2000,
-                size: 2 + Math.random() * 4,
-                speed: 1 + Math.random() * 2,
-                drift: (Math.random() - 0.5) * 0.5,
-                opacity: 0.5 + Math.random() * 0.5
-            });
+    // New helper: Camels moving slowly
+    function drawCamels(ctx, camX, camY, w, h, altitude) {
+        const count = 3;
+        for (let i = 0; i < count; i++) {
+            const baseX = ((camX * 0.03) + i * 200) % w;
+            const baseY = h - 50 - (altitude * 0.2) % 30;
+            ctx.save();
+            ctx.translate(baseX, baseY);
+            ctx.scale(0.6, 0.6);
+            ctx.fillStyle = '#c2b280';
+            // Body
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 30, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Humps
+            ctx.beginPath();
+            ctx.arc(-15, -10, 8, 0, Math.PI * 2);
+            ctx.arc(15, -10, 8, 0, Math.PI * 2);
+            ctx.fill();
+            // Legs
+            ctx.fillRect(-20, 10, 8, 12);
+            ctx.fillRect(12, 10, 8, 12);
+            ctx.restore();
         }
     }
-}
 
-function drawWinterBackground(camX, camY, score, w, h) {
-    initSnowParticles();
-
-    // ============================================================
-    // 개연성 있는 수직 연속성:
-    // - 펭귄, 이글루, 눈산이 항상 아래에 보이며 점점 멀어짐 (작아짐)
-    // - 하늘이 점점 어두워지며 낮 → 저녁 → 밤으로 전환
-    // - 오로라가 서서히 나타남 (밤하늘에서 자연스럽게)
-    // ============================================================
-
-    const altitude = Math.max(0, score);
-    const time = Date.now() * 0.001;
-
-    // ============================================================
-    // 1. SKY: 연속적으로 변하는 하늘 (맑은 낮 → 저녁 → 밤)
-    // ============================================================
-    const skyProgress = clamp(altitude / 500, 0, 1); // 500에서 완전한 밤
-
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-    // 낮 → 저녁 → 밤 그라데이션
-    const topColor = lerpColor(
-        lerpColor('#87ceeb', '#5d6d7e', clamp(skyProgress * 2, 0, 1)),
-        '#0a0a23',
-        clamp((skyProgress - 0.5) * 2, 0, 1)
-    );
-    const midColor = lerpColor(
-        lerpColor('#b0e0e6', '#8e99a4', clamp(skyProgress * 2, 0, 1)),
-        '#1a1a3e',
-        clamp((skyProgress - 0.5) * 2, 0, 1)
-    );
-    const botColor = lerpColor('#e0f7fa', '#2d3436', skyProgress);
-
-    skyGrad.addColorStop(0, topColor);
-    skyGrad.addColorStop(0.5, midColor);
-    skyGrad.addColorStop(1, botColor);
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, h);
+    // New helper: Hieroglyphic wall pattern
+    function drawHieroglyphs(ctx, camX, w, h) {
+        const spacing = 200;
+        const offsetX = (camX * 0.5) % spacing;
+        ctx.fillStyle = 'rgba(255,215,0,0.07)';
+        ctx.font = '30px serif';
+        const symbols = ['𓀀', '𓋹', '𓅓'];
+        for (let x = -spacing; x < w + spacing; x += spacing) {
+            for (let y = h * 0.3; y < h; y += spacing) {
+                const sym = symbols[(Math.floor(x / spacing) + Math.floor(y / spacing)) % symbols.length];
+                ctx.fillText(sym, x + offsetX, y);
+            }
+        }
+    }
 
     // ============================================================
-    // 2. STARS & AURORA: 밤이 되면 별과 오로라 출현
+    // WINTER WONDERLAND MAP - Arctic Theme with Aurora
     // ============================================================
-    const nightOpacity = clamp((skyProgress - 0.3) * 1.5, 0, 1);
-    if (nightOpacity > 0) {
+    function initSnowParticles() {
+        if (snowParticles.length === 0) {
+            for (let i = 0; i < 150; i++) {
+                snowParticles.push({
+                    x: Math.random() * 2000,
+                    y: Math.random() * 2000,
+                    size: 2 + Math.random() * 4,
+                    speed: 1 + Math.random() * 2,
+                    drift: (Math.random() - 0.5) * 0.5,
+                    opacity: 0.5 + Math.random() * 0.5
+                });
+            }
+        }
+    }
+
+    function drawWinterBackground(camX, camY, score, w, h) {
+        initSnowParticles();
+
+        // ============================================================
+        // 개연성 있는 수직 연속성:
+        // - 펭귄, 이글루, 눈산이 항상 아래에 보이며 점점 멀어짐 (작아짐)
+        // - 하늘이 점점 어두워지며 낮 → 저녁 → 밤으로 전환
+        // - 오로라가 서서히 나타남 (밤하늘에서 자연스럽게)
+        // ============================================================
+
+        const altitude = Math.max(0, score);
+        const time = Date.now() * 0.001;
+
+        // ============================================================
+        // 1. SKY: 연속적으로 변하는 하늘 (맑은 낮 → 저녁 → 밤)
+        // ============================================================
+        const skyProgress = clamp(altitude / 500, 0, 1); // 500에서 완전한 밤
+
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        // 낮 → 저녁 → 밤 그라데이션
+        const topColor = lerpColor(
+            lerpColor('#87ceeb', '#5d6d7e', clamp(skyProgress * 2, 0, 1)),
+            '#0a0a23',
+            clamp((skyProgress - 0.5) * 2, 0, 1)
+        );
+        const midColor = lerpColor(
+            lerpColor('#b0e0e6', '#8e99a4', clamp(skyProgress * 2, 0, 1)),
+            '#1a1a3e',
+            clamp((skyProgress - 0.5) * 2, 0, 1)
+        );
+        const botColor = lerpColor('#e0f7fa', '#2d3436', skyProgress);
+
+        skyGrad.addColorStop(0, topColor);
+        skyGrad.addColorStop(0.5, midColor);
+        skyGrad.addColorStop(1, botColor);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // ============================================================
+        // 2. STARS & AURORA: 밤이 되면 별과 오로라 출현
+        // ============================================================
+        const nightOpacity = clamp((skyProgress - 0.3) * 1.5, 0, 1);
+        if (nightOpacity > 0) {
+            ctx.save();
+            ctx.globalAlpha = nightOpacity;
+
+            // 별들
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 100; i++) {
+                const sx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
+                const sy = (Math.cos(i * 44) * 0.35) * h;
+                const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 2.5 + 0.5;
+                ctx.beginPath();
+                ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 오로라 (밤이 깊어질수록 강해짐)
+            const auroraIntensity = clamp((skyProgress - 0.5) * 2, 0, 1);
+            if (auroraIntensity > 0) {
+                drawAuroraBorealis(ctx, w, h, time, auroraIntensity * nightOpacity);
+            }
+
+            ctx.restore();
+        }
+
+        // ============================================================
+        // 3. GROUND ELEMENTS: 항상 아래에 보이며 점점 작아짐/멀어짐
+        // ============================================================
+        // 스케일: 1.0 → 0.15 (멀어짐)
+        const groundScale = lerp(1.0, 0.15, clamp(altitude / 400, 0, 1));
+        // Y 위치: 화면 아래 → 더 아래로
+        const groundY = h + altitude * 1.2;
+        // 투명도: 가까울때 1.0, 멀어질수록 살짝 흐려짐
+        const groundAlpha = lerp(1.0, 0.5, clamp(altitude / 500, 0, 1));
+
         ctx.save();
-        ctx.globalAlpha = nightOpacity;
+        ctx.globalAlpha = groundAlpha;
 
-        // 별들
+        const p1 = (camX * 0.05) % w;
+        const p2 = (camX * 0.08) % w;
+
+        // 먼 산 (항상 보이는 배경) - 높이에 따라 내려감
+        const mountainY = lerp(h * 0.4, h * 0.75, clamp(altitude / 300, 0, 1));
+        const mountainColor = lerpColor('#a8d4e6', '#5d6d7e', skyProgress);
+
+        ctx.fillStyle = mountainColor;
+        ctx.beginPath();
+        ctx.moveTo(-100, h);
+        for (let x = -100; x < w + 200; x += 120) {
+            const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
+            ctx.lineTo(x + 60, peakY);
+            ctx.lineTo(x + 120, mountainY + 30 * groundScale);
+        }
+        ctx.lineTo(w + 100, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // 산 위의 눈
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-100, mountainY + 20 * groundScale);
+        for (let x = -100; x < w + 200; x += 120) {
+            const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
+            ctx.lineTo(x + 60, peakY);
+            ctx.lineTo(x + 80, peakY + 20 * groundScale);
+        }
+        ctx.lineTo(w + 100, mountainY + 20 * groundScale);
+        ctx.closePath();
+        ctx.fill();
+
+        // 이글루들 (원근감 적용)
+        if (groundScale > 0.15) {
+            const iglooBaseY = groundY;
+            const iglooOffset = (camX * 0.15) % (w * 2);
+
+            // 큰 이글루
+            drawScaledIgloo(ctx,
+                (w * 0.25 + iglooOffset) % w,
+                iglooBaseY,
+                groundScale * 0.9
+            );
+
+            // 작은 이글루
+            drawScaledIgloo(ctx,
+                (w * 0.7 + iglooOffset * 0.7) % w,
+                iglooBaseY,
+                groundScale * 0.6
+            );
+        }
+
+        // 펭귄들 (원근감 적용)
+        if (groundScale > 0.2) {
+            const penguinOffset = (camX * 0.2) % (w * 3);
+            for (let i = 0; i < 5; i++) {
+                const px = (w * 0.12 * i + penguinOffset + w) % w;
+                const py = groundY - 10 * groundScale;
+                const waddle = Math.sin(time * 3 + i) * 2;
+                drawScaledPenguin(ctx, px + waddle, py, groundScale * (0.5 + (i % 3) * 0.15));
+            }
+        }
+
+        // Polar Bears (New addition)
+        if (groundScale > 0.25) {
+            const bearOffset = (camX * 0.08) % (w * 4);
+            for (let i = 0; i < 2; i++) {
+                // Place them sparsely
+                const bx = (w * 0.4 * i + bearOffset + w * 2.5) % w;
+                const by = groundY - 5 * groundScale;
+                // Slow breathing animation
+                const breathe = Math.sin(time * 1 + i) * 0.5;
+                drawScaledPolarBear(ctx, bx, by + breathe, groundScale * 0.8);
+            }
+        }
+
+        // 전경 눈밭 (가까운 눈)
+        if (altitude < 200) {
+            const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
+            ctx.globalAlpha = groundAlpha * foregroundAlpha;
+            ctx.fillStyle = '#f0f8ff';
+            ctx.fillRect(0, h * 0.88, w, h * 0.12);
+
+            // 눈 반짝임
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            for (let i = 0; i < 20; i++) {
+                const sx = (i * 137 + camX * 0.5) % w;
+                const sy = h * 0.89 + (i * 7) % 40;
+                const sparkle = Math.sin(time * 5 + i) * 0.5 + 0.5;
+                ctx.globalAlpha = sparkle * foregroundAlpha;
+                ctx.fillRect(sx, sy, 3, 3);
+            }
+        }
+
+        ctx.restore();
+
+        // ============================================================
+        // 4. ATMOSPHERIC EFFECTS: 높이에 따른 대기 효과
+        // ============================================================
+        // 높이 올라갈수록 찬 공기 느낌
+        if (altitude > 100) {
+            const hazeAlpha = clamp((altitude - 100) / 400, 0, 0.2);
+            const hazeGrad = ctx.createLinearGradient(0, h * 0.6, 0, h);
+            hazeGrad.addColorStop(0, `rgba(200, 220, 255, ${hazeAlpha})`);
+            hazeGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = hazeGrad;
+            ctx.fillRect(0, h * 0.6, w, h * 0.4);
+        }
+
+        // ============================================================
+        // ALWAYS: Falling Snow (눈이 항상 내림)
+        // ============================================================
+        drawFallingSnow(ctx, camX, camY, w, h, score);
+    }
+
+    // 스케일 적용된 이글루
+    function drawScaledIgloo(ctx, x, y, scale) {
+        if (x < -100 || x > ctx.canvas.width + 100) return;
+        if (scale < 0.1) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // 돔
+        ctx.fillStyle = '#f5f5f5';
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, Math.PI, 0, false);
+        ctx.lineTo(60, 0);
+        ctx.lineTo(-60, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // 얼음 블록 라인
+        ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
+        ctx.lineWidth = 2;
+        for (let i = 1; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
+            ctx.stroke();
+        }
+
+        // 입구
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, Math.PI, 0, false);
+        ctx.lineTo(20, 0);
+        ctx.lineTo(-20, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // 스케일 적용된 펭귄
+    function drawScaledPenguin(ctx, x, y, scale) {
+        if (x < -50 || x > ctx.canvas.width + 50) return;
+        if (scale < 0.1) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // 몸통 (검은색)
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 배 (흰색)
+        ctx.fillStyle = '#f8f9fa';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 12, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 부리 (주황색)
+        ctx.fillStyle = '#ff9500';
+        ctx.beginPath();
+        ctx.moveTo(-5, -15);
+        ctx.lineTo(0, -10);
+        ctx.lineTo(5, -15);
+        ctx.closePath();
+        ctx.fill();
+
+        // 눈
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-6, -18, 4, 0, Math.PI * 2);
+        ctx.arc(6, -18, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-6, -18, 2, 0, Math.PI * 2);
+        ctx.arc(6, -18, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+
+
+    // --- Phase 1: Ground Level (Penguins, Igloos) ---
+    function drawWinterPhaseGround(ctx, camX, camY, w, h, score) {
+        // Sky gradient - cold winter day
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        skyGrad.addColorStop(0, '#87ceeb'); // Light blue top
+        skyGrad.addColorStop(0.5, '#b0e0e6'); // Powder blue
+        skyGrad.addColorStop(1, '#e0f7fa'); // Ice white bottom
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Distant mountains
+        const mountainOffset = (camX * 0.05) % w;
+        ctx.fillStyle = '#a8d4e6';
+        ctx.beginPath();
+        ctx.moveTo(-mountainOffset - 100, h);
+        for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
+            const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
+            ctx.lineTo(x + 75, peakY);
+            ctx.lineTo(x + 150, h * 0.65);
+        }
+        ctx.lineTo(w + 100, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Snow caps on mountains
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-mountainOffset - 100, h * 0.55);
+        for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
+            const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
+            ctx.lineTo(x + 75, peakY);
+            ctx.lineTo(x + 100, peakY + 30);
+        }
+        ctx.lineTo(w + 100, h * 0.55);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw Igloos
+        const iglooOffset = (camX * 0.15) % (w * 2);
+        drawIgloo(ctx, (w * 0.2 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.78, 1.0);
+        drawIgloo(ctx, (w * 0.7 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.80, 0.7);
+
+        // Draw Penguins
+        const penguinOffset = (camX * 0.2) % (w * 3);
+        const time = Date.now() * 0.003;
+        for (let i = 0; i < 5; i++) {
+            const px = (w * 0.15 * i + penguinOffset + w * 3) % (w * 3) - w * 0.5;
+            const py = h * 0.82 + Math.sin(time + i) * 3;
+            drawPenguin(ctx, px, py, 0.6 + (i % 3) * 0.15);
+        }
+
+        // Ground snow
+        ctx.fillStyle = '#f0f8ff';
+        ctx.fillRect(0, h * 0.85, w, h * 0.15);
+
+        // Snow sparkles
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        for (let i = 0; i < 30; i++) {
+            const sx = (i * 137 + camX * 0.5) % w;
+            const sy = h * 0.86 + (i * 7) % 50;
+            const sparkle = Math.sin(Date.now() * 0.01 + i) * 0.5 + 0.5;
+            ctx.globalAlpha = sparkle;
+            ctx.fillRect(sx, sy, 3, 3);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // --- Phase 2: Mountain Climb (Pine Trees, Heavy Snow) ---
+    function drawWinterPhaseMountain(ctx, camX, camY, w, h, score) {
+        const t = (score - 200) / 300;
+
+        // Darker sky as we climb
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        skyGrad.addColorStop(0, lerpColor('#87ceeb', '#2c3e50', t));
+        skyGrad.addColorStop(1, lerpColor('#e0f7fa', '#5d6d7e', t));
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Big snowy peaks
+        const peakOffset = (camX * 0.03) % w;
+        ctx.fillStyle = '#d5dbdb';
+        ctx.beginPath();
+        ctx.moveTo(-peakOffset - 200, h);
+        for (let x = -peakOffset - 200; x < w + 300; x += 200) {
+            const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
+            ctx.lineTo(x + 100, peakY);
+            ctx.lineTo(x + 200, h * 0.5);
+        }
+        ctx.lineTo(w + 200, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Snow on peaks
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-peakOffset - 200, h * 0.35);
+        for (let x = -peakOffset - 200; x < w + 300; x += 200) {
+            const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
+            ctx.lineTo(x + 100, peakY);
+            ctx.lineTo(x + 130, peakY + 40);
+        }
+        ctx.lineTo(w + 200, h * 0.35);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pine trees
+        const treeOffset = (camX * 0.1) % (w * 2);
+        for (let i = 0; i < 8; i++) {
+            const tx = (w * 0.12 * i + treeOffset + w * 2) % (w * 2) - w * 0.3;
+            const ty = h * 0.7 + (i % 3) * 30;
+            drawPineTree(ctx, tx, ty, 0.8 + (i % 4) * 0.2);
+        }
+
+        // Ground
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(0, h * 0.8, w, h * 0.2);
+    }
+
+    // --- Phase 3: Aurora Borealis (Stars, Northern Lights) ---
+    function drawWinterPhaseAurora(ctx, camX, camY, w, h, score) {
+        const t = Math.min(1, (score - 500) / 300);
+        const time = Date.now() * 0.001;
+
+        // Night sky
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        skyGrad.addColorStop(0, '#0a0a23');
+        skyGrad.addColorStop(0.5, '#1a1a3e');
+        skyGrad.addColorStop(1, '#2d3436');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Stars
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < 100; i++) {
             const sx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
-            const sy = (Math.cos(i * 44) * 0.35) * h;
-            const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 2.5 + 0.5;
+            const sy = (Math.cos(i * 44) * 0.5 + 0.3) * h;
+            const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 3;
             ctx.beginPath();
             ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // 오로라 (밤이 깊어질수록 강해짐)
-        const auroraIntensity = clamp((skyProgress - 0.5) * 2, 0, 1);
-        if (auroraIntensity > 0) {
-            drawAuroraBorealis(ctx, w, h, time, auroraIntensity * nightOpacity);
+        // AURORA BOREALIS - The main attraction!
+        drawAuroraBorealis(ctx, w, h, time, t);
+
+        // Distant snowy ground
+        ctx.fillStyle = '#1a252f';
+        ctx.fillRect(0, h * 0.85, w, h * 0.15);
+
+        // Snow glow from below
+        const glowGrad = ctx.createLinearGradient(0, h * 0.85, 0, h);
+        glowGrad.addColorStop(0, 'rgba(100, 200, 255, 0.1)');
+        glowGrad.addColorStop(1, 'rgba(100, 200, 255, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, h * 0.85, w, h * 0.15);
+    }
+
+    // --- Aurora Borealis Effect ---
+    function drawAuroraBorealis(ctx, w, h, time, intensity) {
+        const colors = [
+            'rgba(0, 255, 127, 0.15)',   // Green
+            'rgba(64, 224, 208, 0.12)',  // Turquoise
+            'rgba(138, 43, 226, 0.10)',  // Purple
+            'rgba(0, 191, 255, 0.12)'    // Deep sky blue
+        ];
+
+        for (let layer = 0; layer < 4; layer++) {
+            ctx.beginPath();
+            ctx.moveTo(0, h * 0.2);
+
+            for (let x = 0; x <= w; x += 10) {
+                const wave1 = Math.sin(x * 0.01 + time * 0.5 + layer) * 50;
+                const wave2 = Math.sin(x * 0.02 + time * 0.3 + layer * 2) * 30;
+                const wave3 = Math.sin(x * 0.005 + time * 0.8) * 80;
+                const y = h * 0.25 + wave1 + wave2 + wave3 + layer * 40;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.lineTo(w, h * 0.6);
+            ctx.lineTo(0, h * 0.6);
+            ctx.closePath();
+
+            ctx.fillStyle = colors[layer];
+            ctx.fill();
+        }
+
+        // Shimmering particles in aurora
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let i = 0; i < 30; i++) {
+            const px = (Math.sin(i * 77 + time) * 0.5 + 0.5) * w;
+            const py = h * 0.2 + Math.sin(time * 2 + i) * 100 + i * 5;
+            const size = Math.sin(time * 5 + i) * 2 + 2;
+            ctx.beginPath();
+            ctx.arc(px, py, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // --- Falling Snow ---
+    function drawFallingSnow(ctx, camX, camY, w, h, score) {
+        const time = Date.now() * 0.001;
+        const intensity = score > 200 ? 1.5 : 1.0; // Heavier snow at altitude
+
+        ctx.fillStyle = '#ffffff';
+        snowParticles.forEach((s, i) => {
+            // Update position
+            s.y += s.speed * intensity;
+            s.x += s.drift + Math.sin(time + i) * 0.5;
+
+            // Wrap around
+            if (s.y > h + 10) { s.y = -10; s.x = Math.random() * w; }
+            if (s.x < -10) s.x = w + 10;
+            if (s.x > w + 10) s.x = -10;
+
+            ctx.globalAlpha = s.opacity;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // --- Helper: Draw Igloo ---
+    function drawIgloo(ctx, x, y, scale) {
+        if (x < -200 || x > ctx.canvas.width + 200) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // Dome
+        ctx.fillStyle = '#f5f5f5';
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, Math.PI, 0, false);
+        ctx.lineTo(60, 0);
+        ctx.lineTo(-60, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ice block lines
+        ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
+        ctx.lineWidth = 2;
+        for (let i = 1; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
+            ctx.stroke();
+        }
+
+        // Entrance
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, Math.PI, 0, false);
+        ctx.lineTo(20, 0);
+        ctx.lineTo(-20, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // --- Helper: Draw Penguin ---
+    function drawPenguin(ctx, x, y, scale) {
+        if (x < -100 || x > ctx.canvas.width + 100) return;
+
+        const time = Date.now() * 0.005;
+        const waddle = Math.sin(time + x) * 3;
+
+        ctx.save();
+        ctx.translate(x + waddle, y);
+        ctx.scale(scale, scale);
+
+        // Body (black)
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Belly (white)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 12, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(0, -25, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-5, -27, 4, 0, Math.PI * 2);
+        ctx.arc(5, -27, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(-5, -27, 2, 0, Math.PI * 2);
+        ctx.arc(5, -27, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Beak
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.moveTo(0, -24);
+        ctx.lineTo(-5, -20);
+        ctx.lineTo(5, -20);
+        ctx.closePath();
+        ctx.fill();
+
+        // Feet
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(-12, 20, 8, 5);
+        ctx.fillRect(4, 20, 8, 5);
+
+        ctx.restore();
+    }
+
+    // --- Helper: Draw Pine Tree ---
+    function drawPineTree(ctx, x, y, scale) {
+        if (x < -100 || x > ctx.canvas.width + 100) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // Trunk
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(-8, 0, 16, 30);
+
+        // Snowy layers
+        for (let i = 0; i < 4; i++) {
+            const layerY = -i * 25;
+            const layerWidth = 50 - i * 10;
+
+            // Green part
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath();
+            ctx.moveTo(0, layerY - 35);
+            ctx.lineTo(-layerWidth, layerY);
+            ctx.lineTo(layerWidth, layerY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Snow on top
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(0, layerY - 35);
+            ctx.lineTo(-layerWidth * 0.6, layerY - 15);
+            ctx.lineTo(layerWidth * 0.6, layerY - 15);
+            ctx.closePath();
+            ctx.fill();
         }
 
         ctx.restore();
     }
 
-    // ============================================================
-    // 3. GROUND ELEMENTS: 항상 아래에 보이며 점점 작아짐/멀어짐
-    // ============================================================
-    // 스케일: 1.0 → 0.15 (멀어짐)
-    const groundScale = lerp(1.0, 0.15, clamp(altitude / 400, 0, 1));
-    // Y 위치: 화면 아래 → 더 아래로
-    const groundY = h + altitude * 1.2;
-    // 투명도: 가까울때 1.0, 멀어질수록 살짝 흐려짐
-    const groundAlpha = lerp(1.0, 0.5, clamp(altitude / 500, 0, 1));
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        time = Date.now() * 0.001;
 
-    ctx.save();
-    ctx.globalAlpha = groundAlpha;
-
-    const p1 = (camX * 0.05) % w;
-    const p2 = (camX * 0.08) % w;
-
-    // 먼 산 (항상 보이는 배경) - 높이에 따라 내려감
-    const mountainY = lerp(h * 0.4, h * 0.75, clamp(altitude / 300, 0, 1));
-    const mountainColor = lerpColor('#a8d4e6', '#5d6d7e', skyProgress);
-
-    ctx.fillStyle = mountainColor;
-    ctx.beginPath();
-    ctx.moveTo(-100, h);
-    for (let x = -100; x < w + 200; x += 120) {
-        const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
-        ctx.lineTo(x + 60, peakY);
-        ctx.lineTo(x + 120, mountainY + 30 * groundScale);
-    }
-    ctx.lineTo(w + 100, h);
-    ctx.closePath();
-    ctx.fill();
-
-    // 산 위의 눈
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(-100, mountainY + 20 * groundScale);
-    for (let x = -100; x < w + 200; x += 120) {
-        const peakY = mountainY + Math.sin((x + p1) * 0.008) * 60 * groundScale;
-        ctx.lineTo(x + 60, peakY);
-        ctx.lineTo(x + 80, peakY + 20 * groundScale);
-    }
-    ctx.lineTo(w + 100, mountainY + 20 * groundScale);
-    ctx.closePath();
-    ctx.fill();
-
-    // 이글루들 (원근감 적용)
-    if (groundScale > 0.15) {
-        const iglooBaseY = groundY;
-        const iglooOffset = (camX * 0.15) % (w * 2);
-
-        // 큰 이글루
-        drawScaledIgloo(ctx,
-            (w * 0.25 + iglooOffset) % w,
-            iglooBaseY,
-            groundScale * 0.9
-        );
-
-        // 작은 이글루
-        drawScaledIgloo(ctx,
-            (w * 0.7 + iglooOffset * 0.7) % w,
-            iglooBaseY,
-            groundScale * 0.6
-        );
-    }
-
-    // 펭귄들 (원근감 적용)
-    if (groundScale > 0.2) {
-        const penguinOffset = (camX * 0.2) % (w * 3);
-        for (let i = 0; i < 5; i++) {
-            const px = (w * 0.12 * i + penguinOffset + w) % w;
-            const py = groundY - 10 * groundScale;
-            const waddle = Math.sin(time * 3 + i) * 2;
-            drawScaledPenguin(ctx, px + waddle, py, groundScale * (0.5 + (i % 3) * 0.15));
+        // Camera & Player Interpolation
+        const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
+        if (window.gameState.stairs.length > 0 && !isFalling) {
+            window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
+            window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
         }
-    }
-
-    // 전경 눈밭 (가까운 눈)
-    if (altitude < 200) {
-        const foregroundAlpha = clamp(1 - altitude / 200, 0, 1);
-        ctx.globalAlpha = groundAlpha * foregroundAlpha;
-        ctx.fillStyle = '#f0f8ff';
-        ctx.fillRect(0, h * 0.88, w, h * 0.12);
-
-        // 눈 반짝임
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        for (let i = 0; i < 20; i++) {
-            const sx = (i * 137 + camX * 0.5) % w;
-            const sy = h * 0.89 + (i * 7) % 40;
-            const sparkle = Math.sin(time * 5 + i) * 0.5 + 0.5;
-            ctx.globalAlpha = sparkle * foregroundAlpha;
-            ctx.fillRect(sx, sy, 3, 3);
-        }
-    }
-
-    ctx.restore();
-
-    // ============================================================
-    // 4. ATMOSPHERIC EFFECTS: 높이에 따른 대기 효과
-    // ============================================================
-    // 높이 올라갈수록 찬 공기 느낌
-    if (altitude > 100) {
-        const hazeAlpha = clamp((altitude - 100) / 400, 0, 0.2);
-        const hazeGrad = ctx.createLinearGradient(0, h * 0.6, 0, h);
-        hazeGrad.addColorStop(0, `rgba(200, 220, 255, ${hazeAlpha})`);
-        hazeGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = hazeGrad;
-        ctx.fillRect(0, h * 0.6, w, h * 0.4);
-    }
-
-    // ============================================================
-    // ALWAYS: Falling Snow (눈이 항상 내림)
-    // ============================================================
-    drawFallingSnow(ctx, camX, camY, w, h, score);
-}
-
-// 스케일 적용된 이글루
-function drawScaledIgloo(ctx, x, y, scale) {
-    if (x < -100 || x > ctx.canvas.width + 100) return;
-    if (scale < 0.1) return;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-
-    // 돔
-    ctx.fillStyle = '#f5f5f5';
-    ctx.beginPath();
-    ctx.arc(0, 0, 60, Math.PI, 0, false);
-    ctx.lineTo(60, 0);
-    ctx.lineTo(-60, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    // 얼음 블록 라인
-    ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
-    ctx.lineWidth = 2;
-    for (let i = 1; i < 4; i++) {
-        ctx.beginPath();
-        ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
-        ctx.stroke();
-    }
-
-    // 입구
-    ctx.fillStyle = '#2d3436';
-    ctx.beginPath();
-    ctx.arc(0, 0, 20, Math.PI, 0, false);
-    ctx.lineTo(20, 0);
-    ctx.lineTo(-20, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-}
-
-// 스케일 적용된 펭귄
-function drawScaledPenguin(ctx, x, y, scale) {
-    if (x < -50 || x > ctx.canvas.width + 50) return;
-    if (scale < 0.1) return;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-
-    // 몸통 (검은색)
-    ctx.fillStyle = '#1a1a2e';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 18, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 배 (흰색)
-    ctx.fillStyle = '#f8f9fa';
-    ctx.beginPath();
-    ctx.ellipse(0, 5, 12, 20, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 부리 (주황색)
-    ctx.fillStyle = '#ff9500';
-    ctx.beginPath();
-    ctx.moveTo(-5, -15);
-    ctx.lineTo(0, -10);
-    ctx.lineTo(5, -15);
-    ctx.closePath();
-    ctx.fill();
-
-    // 눈
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(-6, -18, 4, 0, Math.PI * 2);
-    ctx.arc(6, -18, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(-6, -18, 2, 0, Math.PI * 2);
-    ctx.arc(6, -18, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-}
-
-
-
-// --- Phase 1: Ground Level (Penguins, Igloos) ---
-function drawWinterPhaseGround(ctx, camX, camY, w, h, score) {
-    // Sky gradient - cold winter day
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-    skyGrad.addColorStop(0, '#87ceeb'); // Light blue top
-    skyGrad.addColorStop(0.5, '#b0e0e6'); // Powder blue
-    skyGrad.addColorStop(1, '#e0f7fa'); // Ice white bottom
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, h);
-
-    // Distant mountains
-    const mountainOffset = (camX * 0.05) % w;
-    ctx.fillStyle = '#a8d4e6';
-    ctx.beginPath();
-    ctx.moveTo(-mountainOffset - 100, h);
-    for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
-        const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
-        ctx.lineTo(x + 75, peakY);
-        ctx.lineTo(x + 150, h * 0.65);
-    }
-    ctx.lineTo(w + 100, h);
-    ctx.closePath();
-    ctx.fill();
-
-    // Snow caps on mountains
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(-mountainOffset - 100, h * 0.55);
-    for (let x = -mountainOffset - 100; x < w + 200; x += 150) {
-        const peakY = h * 0.5 + Math.sin(x * 0.008) * 80;
-        ctx.lineTo(x + 75, peakY);
-        ctx.lineTo(x + 100, peakY + 30);
-    }
-    ctx.lineTo(w + 100, h * 0.55);
-    ctx.closePath();
-    ctx.fill();
-
-    // Draw Igloos
-    const iglooOffset = (camX * 0.15) % (w * 2);
-    drawIgloo(ctx, (w * 0.2 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.78, 1.0);
-    drawIgloo(ctx, (w * 0.7 + iglooOffset + w * 2) % (w * 2) - w * 0.3, h * 0.80, 0.7);
-
-    // Draw Penguins
-    const penguinOffset = (camX * 0.2) % (w * 3);
-    const time = Date.now() * 0.003;
-    for (let i = 0; i < 5; i++) {
-        const px = (w * 0.15 * i + penguinOffset + w * 3) % (w * 3) - w * 0.5;
-        const py = h * 0.82 + Math.sin(time + i) * 3;
-        drawPenguin(ctx, px, py, 0.6 + (i % 3) * 0.15);
-    }
-
-    // Ground snow
-    ctx.fillStyle = '#f0f8ff';
-    ctx.fillRect(0, h * 0.85, w, h * 0.15);
-
-    // Snow sparkles
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = 0; i < 30; i++) {
-        const sx = (i * 137 + camX * 0.5) % w;
-        const sy = h * 0.86 + (i * 7) % 50;
-        const sparkle = Math.sin(Date.now() * 0.01 + i) * 0.5 + 0.5;
-        ctx.globalAlpha = sparkle;
-        ctx.fillRect(sx, sy, 3, 3);
-    }
-    ctx.globalAlpha = 1;
-}
-
-// --- Phase 2: Mountain Climb (Pine Trees, Heavy Snow) ---
-function drawWinterPhaseMountain(ctx, camX, camY, w, h, score) {
-    const t = (score - 200) / 300;
-
-    // Darker sky as we climb
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-    skyGrad.addColorStop(0, lerpColor('#87ceeb', '#2c3e50', t));
-    skyGrad.addColorStop(1, lerpColor('#e0f7fa', '#5d6d7e', t));
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, h);
-
-    // Big snowy peaks
-    const peakOffset = (camX * 0.03) % w;
-    ctx.fillStyle = '#d5dbdb';
-    ctx.beginPath();
-    ctx.moveTo(-peakOffset - 200, h);
-    for (let x = -peakOffset - 200; x < w + 300; x += 200) {
-        const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
-        ctx.lineTo(x + 100, peakY);
-        ctx.lineTo(x + 200, h * 0.5);
-    }
-    ctx.lineTo(w + 200, h);
-    ctx.closePath();
-    ctx.fill();
-
-    // Snow on peaks
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(-peakOffset - 200, h * 0.35);
-    for (let x = -peakOffset - 200; x < w + 300; x += 200) {
-        const peakY = h * 0.3 + Math.sin(x * 0.005) * 100;
-        ctx.lineTo(x + 100, peakY);
-        ctx.lineTo(x + 130, peakY + 40);
-    }
-    ctx.lineTo(w + 200, h * 0.35);
-    ctx.closePath();
-    ctx.fill();
-
-    // Pine trees
-    const treeOffset = (camX * 0.1) % (w * 2);
-    for (let i = 0; i < 8; i++) {
-        const tx = (w * 0.12 * i + treeOffset + w * 2) % (w * 2) - w * 0.3;
-        const ty = h * 0.7 + (i % 3) * 30;
-        drawPineTree(ctx, tx, ty, 0.8 + (i % 4) * 0.2);
-    }
-
-    // Ground
-    ctx.fillStyle = '#ecf0f1';
-    ctx.fillRect(0, h * 0.8, w, h * 0.2);
-}
-
-// --- Phase 3: Aurora Borealis (Stars, Northern Lights) ---
-function drawWinterPhaseAurora(ctx, camX, camY, w, h, score) {
-    const t = Math.min(1, (score - 500) / 300);
-    const time = Date.now() * 0.001;
-
-    // Night sky
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-    skyGrad.addColorStop(0, '#0a0a23');
-    skyGrad.addColorStop(0.5, '#1a1a3e');
-    skyGrad.addColorStop(1, '#2d3436');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, h);
-
-    // Stars
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 100; i++) {
-        const sx = (Math.sin(i * 99) * 0.5 + 0.5) * w;
-        const sy = (Math.cos(i * 44) * 0.5 + 0.3) * h;
-        const twinkle = (Math.sin(time * 3 + i) * 0.5 + 0.5) * 3;
-        ctx.beginPath();
-        ctx.arc(sx, sy, twinkle, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // AURORA BOREALIS - The main attraction!
-    drawAuroraBorealis(ctx, w, h, time, t);
-
-    // Distant snowy ground
-    ctx.fillStyle = '#1a252f';
-    ctx.fillRect(0, h * 0.85, w, h * 0.15);
-
-    // Snow glow from below
-    const glowGrad = ctx.createLinearGradient(0, h * 0.85, 0, h);
-    glowGrad.addColorStop(0, 'rgba(100, 200, 255, 0.1)');
-    glowGrad.addColorStop(1, 'rgba(100, 200, 255, 0)');
-    ctx.fillStyle = glowGrad;
-    ctx.fillRect(0, h * 0.85, w, h * 0.15);
-}
-
-// --- Aurora Borealis Effect ---
-function drawAuroraBorealis(ctx, w, h, time, intensity) {
-    const colors = [
-        'rgba(0, 255, 127, 0.15)',   // Green
-        'rgba(64, 224, 208, 0.12)',  // Turquoise
-        'rgba(138, 43, 226, 0.10)',  // Purple
-        'rgba(0, 191, 255, 0.12)'    // Deep sky blue
-    ];
-
-    for (let layer = 0; layer < 4; layer++) {
-        ctx.beginPath();
-        ctx.moveTo(0, h * 0.2);
-
-        for (let x = 0; x <= w; x += 10) {
-            const wave1 = Math.sin(x * 0.01 + time * 0.5 + layer) * 50;
-            const wave2 = Math.sin(x * 0.02 + time * 0.3 + layer * 2) * 30;
-            const wave3 = Math.sin(x * 0.005 + time * 0.8) * 80;
-            const y = h * 0.25 + wave1 + wave2 + wave3 + layer * 40;
-            ctx.lineTo(x, y);
-        }
-
-        ctx.lineTo(w, h * 0.6);
-        ctx.lineTo(0, h * 0.6);
-        ctx.closePath();
-
-        ctx.fillStyle = colors[layer];
-        ctx.fill();
-    }
-
-    // Shimmering particles in aurora
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    for (let i = 0; i < 30; i++) {
-        const px = (Math.sin(i * 77 + time) * 0.5 + 0.5) * w;
-        const py = h * 0.2 + Math.sin(time * 2 + i) * 100 + i * 5;
-        const size = Math.sin(time * 5 + i) * 2 + 2;
-        ctx.beginPath();
-        ctx.arc(px, py, size, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// --- Falling Snow ---
-function drawFallingSnow(ctx, camX, camY, w, h, score) {
-    const time = Date.now() * 0.001;
-    const intensity = score > 200 ? 1.5 : 1.0; // Heavier snow at altitude
-
-    ctx.fillStyle = '#ffffff';
-    snowParticles.forEach((s, i) => {
-        // Update position
-        s.y += s.speed * intensity;
-        s.x += s.drift + Math.sin(time + i) * 0.5;
-
-        // Wrap around
-        if (s.y > h + 10) { s.y = -10; s.x = Math.random() * w; }
-        if (s.x < -10) s.x = w + 10;
-        if (s.x > w + 10) s.x = -10;
-
-        ctx.globalAlpha = s.opacity;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-}
-
-// --- Helper: Draw Igloo ---
-function drawIgloo(ctx, x, y, scale) {
-    if (x < -200 || x > ctx.canvas.width + 200) return;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-
-    // Dome
-    ctx.fillStyle = '#f5f5f5';
-    ctx.beginPath();
-    ctx.arc(0, 0, 60, Math.PI, 0, false);
-    ctx.lineTo(60, 0);
-    ctx.lineTo(-60, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    // Ice block lines
-    ctx.strokeStyle = 'rgba(173, 216, 230, 0.5)';
-    ctx.lineWidth = 2;
-    for (let i = 1; i < 4; i++) {
-        ctx.beginPath();
-        ctx.arc(0, 0, 60, Math.PI + (i * 0.15), -i * 0.15, false);
-        ctx.stroke();
-    }
-
-    // Entrance
-    ctx.fillStyle = '#2d3436';
-    ctx.beginPath();
-    ctx.arc(0, 0, 20, Math.PI, 0, false);
-    ctx.lineTo(20, 0);
-    ctx.lineTo(-20, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-}
-
-// --- Helper: Draw Penguin ---
-function drawPenguin(ctx, x, y, scale) {
-    if (x < -100 || x > ctx.canvas.width + 100) return;
-
-    const time = Date.now() * 0.005;
-    const waddle = Math.sin(time + x) * 3;
-
-    ctx.save();
-    ctx.translate(x + waddle, y);
-    ctx.scale(scale, scale);
-
-    // Body (black)
-    ctx.fillStyle = '#2d3436';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 18, 25, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Belly (white)
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.ellipse(0, 5, 12, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle = '#2d3436';
-    ctx.beginPath();
-    ctx.arc(0, -25, 14, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-5, -27, 4, 0, Math.PI * 2);
-    ctx.arc(5, -27, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(-5, -27, 2, 0, Math.PI * 2);
-    ctx.arc(5, -27, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Beak
-    ctx.fillStyle = '#f39c12';
-    ctx.beginPath();
-    ctx.moveTo(0, -24);
-    ctx.lineTo(-5, -20);
-    ctx.lineTo(5, -20);
-    ctx.closePath();
-    ctx.fill();
-
-    // Feet
-    ctx.fillStyle = '#f39c12';
-    ctx.fillRect(-12, 20, 8, 5);
-    ctx.fillRect(4, 20, 8, 5);
-
-    ctx.restore();
-}
-
-// --- Helper: Draw Pine Tree ---
-function drawPineTree(ctx, x, y, scale) {
-    if (x < -100 || x > ctx.canvas.width + 100) return;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-
-    // Trunk
-    ctx.fillStyle = '#5d4037';
-    ctx.fillRect(-8, 0, 16, 30);
-
-    // Snowy layers
-    for (let i = 0; i < 4; i++) {
-        const layerY = -i * 25;
-        const layerWidth = 50 - i * 10;
-
-        // Green part
-        ctx.fillStyle = '#1b5e20';
-        ctx.beginPath();
-        ctx.moveTo(0, layerY - 35);
-        ctx.lineTo(-layerWidth, layerY);
-        ctx.lineTo(layerWidth, layerY);
-        ctx.closePath();
-        ctx.fill();
-
-        // Snow on top
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.moveTo(0, layerY - 35);
-        ctx.lineTo(-layerWidth * 0.6, layerY - 15);
-        ctx.lineTo(layerWidth * 0.6, layerY - 15);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    ctx.restore();
-}
-
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    time = Date.now() * 0.001;
-
-    // Camera & Player Interpolation
-    const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
-    if (window.gameState.stairs.length > 0 && !isFalling) {
-        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
-        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
-    }
-    const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
-    const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode
-    const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
-
-    // Background
-    drawBackground(camX, camY);
-
-    // Stairs
-    window.gameState.stairs.forEach((s, i) => {
-        if (i < window.gameState.score - 5 || i > window.gameState.score + 18) return;
-        const sx = camX + s.x * STAIR_W;
-        const sy = camY - s.y * STAIR_H;
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
-
-        // Draw Stair Body
-        drawStair(ctx, sx, sy, currentStairSkin, i);
-
-        // Highlight
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
-
-        // Coin / Mineral / Crown
-        if (s.hasCoin) {
-            // ============================================================
-            // PHARAOH'S CROWN (파라오의 왕관) - 특별 아이템
-            // ============================================================
-            if (s.hasCrown) {
-                ctx.save();
-                ctx.translate(sx, sy - 35);
-
-                // 빛나는 아우라
-                const pulse = 1 + Math.sin(time * 5) * 0.1;
-                ctx.scale(pulse, pulse);
-
-                // 황금 빛 효과
-                ctx.shadowColor = '#ffd700';
-                ctx.shadowBlur = 20 + Math.sin(time * 8) * 10;
-
-                // 왕관 베이스 (황금)
-                ctx.fillStyle = '#ffd700';
-                ctx.beginPath();
-                ctx.moveTo(-18, 10);
-                ctx.lineTo(-18, 0);
-                ctx.lineTo(-12, -10);
-                ctx.lineTo(-6, 0);
-                ctx.lineTo(0, -15);
-                ctx.lineTo(6, 0);
-                ctx.lineTo(12, -10);
-                ctx.lineTo(18, 0);
-                ctx.lineTo(18, 10);
-                ctx.closePath();
-                ctx.fill();
-
-                // 왕관 테두리
-                ctx.strokeStyle = '#b8860b';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // 보석들 (루비, 사파이어, 에메랄드)
-                ctx.shadowBlur = 0;
-
-                // 중앙 루비
-                ctx.fillStyle = '#e74c3c';
-                ctx.beginPath();
-                ctx.arc(0, -8, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#c0392b';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // 좌측 사파이어
-                ctx.fillStyle = '#3498db';
-                ctx.beginPath();
-                ctx.arc(-10, -3, 3, 0, Math.PI * 2);
-                ctx.fill();
-
-                // 우측 에메랄드
-                ctx.fillStyle = '#2ecc71';
-                ctx.beginPath();
-                ctx.arc(10, -3, 3, 0, Math.PI * 2);
-                ctx.fill();
-
-                // 하이라이트 (반짝임)
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                ctx.beginPath();
-                ctx.arc(-3, -9, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // 회전하는 스파클 파티클
-                for (let p = 0; p < 4; p++) {
-                    const angle = time * 3 + (p * Math.PI / 2);
-                    const dist = 25 + Math.sin(time * 5 + p) * 5;
-                    const px = Math.cos(angle) * dist;
-                    const py = Math.sin(angle) * dist * 0.4;
-
-                    ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time * 4 + p) * 0.3})`;
-                    ctx.beginPath();
-                    ctx.arc(px, py - 5, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                ctx.restore();
-            } else if (s.hasSnowCrystal) {
+        const camX = -window.gameState.renderPlayer.x * STAIR_W + canvas.width / 2;
+        const offset = window.gameState.isReverseMode ? 0 : 100; // Center camera for Reverse Mode
+        const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
+
+        // Background
+        drawBackground(camX, camY);
+
+        // Stairs
+        window.gameState.stairs.forEach((s, i) => {
+            if (i < window.gameState.score - 5 || i > window.gameState.score + 18) return;
+            const sx = camX + s.x * STAIR_W;
+            const sy = camY - s.y * STAIR_H;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
+
+            // Draw Stair Body
+            drawStair(ctx, sx, sy, currentStairSkin, i);
+
+            // Highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
+
+            // Coin / Mineral / Crown
+            if (s.hasCoin) {
                 // ============================================================
-                // WINTER SNOW CRYSTAL (눈결정) - 특별 아이템
+                // PHARAOH'S CROWN (파라오의 왕관) - 특별 아이템
                 // ============================================================
-                ctx.save();
-                ctx.translate(sx, sy - 35);
-
-                // 차가운 아우라
-                const pulse = 1 + Math.sin(time * 4) * 0.1;
-                ctx.scale(pulse, pulse);
-
-                ctx.shadowColor = '#00d2d3';
-                ctx.shadowBlur = 20 + Math.sin(time * 6) * 10;
-
-                // 육각형 눈결정
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
-
-                for (let k = 0; k < 6; k++) {
+                if (s.hasCrown) {
                     ctx.save();
-                    ctx.rotate(k * Math.PI / 3);
+                    ctx.translate(sx, sy - 35);
 
-                    // 메인 가지
+                    // 빛나는 아우라
+                    const pulse = 1 + Math.sin(time * 5) * 0.1;
+                    ctx.scale(pulse, pulse);
+
+                    // 황금 빛 효과
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 20 + Math.sin(time * 8) * 10;
+
+                    // 왕관 베이스 (황금)
+                    ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(0, -18);
-                    ctx.stroke();
+                    ctx.moveTo(-18, 10);
+                    ctx.lineTo(-18, 0);
+                    ctx.lineTo(-12, -10);
+                    ctx.lineTo(-6, 0);
+                    ctx.lineTo(0, -15);
+                    ctx.lineTo(6, 0);
+                    ctx.lineTo(12, -10);
+                    ctx.lineTo(18, 0);
+                    ctx.lineTo(18, 10);
+                    ctx.closePath();
+                    ctx.fill();
 
-                    // 서브 가지
+                    // 왕관 테두리
+                    ctx.strokeStyle = '#b8860b';
                     ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -10);
-                    ctx.lineTo(-6, -16);
-                    ctx.moveTo(0, -10);
-                    ctx.lineTo(6, -16);
-
-                    ctx.moveTo(0, -6);
-                    ctx.lineTo(-4, -10);
-                    ctx.moveTo(0, -6);
-                    ctx.lineTo(4, -10);
                     ctx.stroke();
+
+                    // 보석들 (루비, 사파이어, 에메랄드)
+                    ctx.shadowBlur = 0;
+
+                    // 중앙 루비
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.arc(0, -8, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#c0392b';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // 좌측 사파이어
+                    ctx.fillStyle = '#3498db';
+                    ctx.beginPath();
+                    ctx.arc(-10, -3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 우측 에메랄드
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.beginPath();
+                    ctx.arc(10, -3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 하이라이트 (반짝임)
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.beginPath();
+                    ctx.arc(-3, -9, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 회전하는 스파클 파티클
+                    for (let p = 0; p < 4; p++) {
+                        const angle = time * 3 + (p * Math.PI / 2);
+                        const dist = 25 + Math.sin(time * 5 + p) * 5;
+                        const px = Math.cos(angle) * dist;
+                        const py = Math.sin(angle) * dist * 0.4;
+
+                        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time * 4 + p) * 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py - 5, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
 
                     ctx.restore();
-                }
+                } else if (s.hasSnowCrystal) {
+                    // ============================================================
+                    // WINTER SNOW CRYSTAL (눈결정) - 특별 아이템
+                    // ============================================================
+                    ctx.save();
+                    ctx.translate(sx, sy - 35);
 
-                // 중앙 보석 (사파이어)
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#74b9ff';
-                ctx.beginPath();
-                ctx.arc(0, 0, 4, 0, Math.PI * 2);
-                ctx.fill();
+                    // 차가운 아우라
+                    const pulse = 1 + Math.sin(time * 4) * 0.1;
+                    ctx.scale(pulse, pulse);
 
-                // 반짝임 효과
-                ctx.fillStyle = '#fff';
-                const sparkleOp = 0.5 + Math.sin(time * 10) * 0.5;
-                ctx.globalAlpha = sparkleOp;
-                ctx.beginPath();
-                ctx.arc(-5, -10, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.arc(8, 2, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.restore();
-            } else if (window.gameState.isReverseMode) {
-
-                // Draw Mineral
-                let mCol = '#9b59b6'; // 10
-                if (s.coinVal >= 50) mCol = '#3498db'; // 50
-                if (s.coinVal >= 100) mCol = '#f1c40f'; // 100
-                if (s.coinVal >= 500) mCol = '#ffffff'; // Super Diamond (White/Cyan)
-
-                const mSize = s.coinVal >= 500 ? 18 : 12; // Larger for super diamond
-
-                ctx.save();
-                ctx.translate(sx, sy - 30);
-                const rot = (time * 2 + i) % (Math.PI * 2);
-                ctx.rotate(rot);
-
-                ctx.fillStyle = mCol;
-                ctx.beginPath();
-                ctx.moveTo(0, -mSize);
-                ctx.lineTo(mSize * 0.8, 0);
-                ctx.lineTo(0, mSize);
-                ctx.lineTo(-mSize * 0.8, 0);
-                ctx.closePath();
-                ctx.fill();
-
-                if (s.coinVal >= 500) {
-                    // Extra glow for super diamond
-                    ctx.shadowBlur = 15;
                     ctx.shadowColor = '#00d2d3';
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                }
+                    ctx.shadowBlur = 20 + Math.sin(time * 6) * 10;
 
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(5, 0);
-                ctx.lineTo(0, 4);
-                ctx.fill();
-                ctx.restore();
-            } else {
-                // Draw Original Coin
-                let col = '#f1c40f';
-                if (s.coinVal === 5) col = '#00d2d3';
-                if (s.coinVal === 10) col = '#ff6b6b';
-                ctx.fillStyle = col;
-                ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx - 3, sy - 33, 2, 0, Math.PI * 2); ctx.fill();
+                    // 육각형 눈결정
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+
+                    for (let k = 0; k < 6; k++) {
+                        ctx.save();
+                        ctx.rotate(k * Math.PI / 3);
+
+                        // 메인 가지
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(0, -18);
+                        ctx.stroke();
+
+                        // 서브 가지
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -10);
+                        ctx.lineTo(-6, -16);
+                        ctx.moveTo(0, -10);
+                        ctx.lineTo(6, -16);
+
+                        ctx.moveTo(0, -6);
+                        ctx.lineTo(-4, -10);
+                        ctx.moveTo(0, -6);
+                        ctx.lineTo(4, -10);
+                        ctx.stroke();
+
+                        ctx.restore();
+                    }
+
+                    // 중앙 보석 (사파이어)
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#74b9ff';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 반짝임 효과
+                    ctx.fillStyle = '#fff';
+                    const sparkleOp = 0.5 + Math.sin(time * 10) * 0.5;
+                    ctx.globalAlpha = sparkleOp;
+                    ctx.beginPath();
+                    ctx.arc(-5, -10, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.arc(8, 2, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                } else if (window.gameState.isReverseMode) {
+
+                    // Draw Mineral
+                    let mCol = '#9b59b6'; // 10
+                    if (s.coinVal >= 50) mCol = '#3498db'; // 50
+                    if (s.coinVal >= 100) mCol = '#f1c40f'; // 100
+                    if (s.coinVal >= 500) mCol = '#ffffff'; // Super Diamond (White/Cyan)
+
+                    const mSize = s.coinVal >= 500 ? 18 : 12; // Larger for super diamond
+
+                    ctx.save();
+                    ctx.translate(sx, sy - 30);
+                    const rot = (time * 2 + i) % (Math.PI * 2);
+                    ctx.rotate(rot);
+
+                    ctx.fillStyle = mCol;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -mSize);
+                    ctx.lineTo(mSize * 0.8, 0);
+                    ctx.lineTo(0, mSize);
+                    ctx.lineTo(-mSize * 0.8, 0);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    if (s.coinVal >= 500) {
+                        // Extra glow for super diamond
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#00d2d3';
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -12);
+                    ctx.lineTo(5, 0);
+                    ctx.lineTo(0, 4);
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    // Draw Original Coin
+                    let col = '#f1c40f';
+                    if (s.coinVal === 5) col = '#00d2d3';
+                    if (s.coinVal === 10) col = '#ff6b6b';
+                    ctx.fillStyle = col;
+                    ctx.beginPath(); ctx.arc(sx, sy - 30, 10, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx - 3, sy - 33, 2, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+        });
+
+        // Player
+        const px = camX + window.gameState.renderPlayer.x * STAIR_W;
+        const py = camY - window.gameState.renderPlayer.y * STAIR_H;
+
+        // Pet
+        drawPet(ctx, px, py, currentPet, window.gameState.playerDir);
+
+        // Player
+        ctx.globalAlpha = 1.0; // Ensure full opacity for player
+        drawPlayerWithSkin(ctx, px, py, window.gameState.playerDir);
+
+        // Direction Arrow
+        ctx.fillStyle = '#ffeaa7';
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.shadowBlur = 4; ctx.shadowColor = 'black';
+        const bounce = Math.sin(Date.now() / 150) * 4;
+        ctx.fillText(window.gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
+        ctx.shadowBlur = 0;
+
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.life -= 0.02;
+            p.y += p.dy * p.life;
+            if (p.life <= 0) { particles.splice(i, 1); continue; }
+            const ppx = camX + p.x * STAIR_W;
+            const ppy = camY - p.y * STAIR_H - 50;
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.font = "bold 20px Arial";
+            ctx.fillText(p.val, ppx, ppy);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // Helper: Detailed Stair Drawing
+    function drawStair(ctx, x, y, skinId, index) {
+        const isCurrent = (index === window.gameState.score);
+        const left = x - STAIR_W / 2;
+        const top = y;
+
+        if (skinId === 'stair_glass') {
+            // Glass Skin: Transparent with cyan/white border
+            ctx.fillStyle = 'rgba(150, 240, 255, 0.25)';
+            ctx.strokeStyle = '#00d2d3';
+            ctx.lineWidth = 2;
+            ctx.fillRect(left, top, STAIR_W, STAIR_H);
+            ctx.strokeRect(left, top, STAIR_W, STAIR_H);
+
+            // Inner shine for glass
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.moveTo(left + 10, top + 10);
+            ctx.lineTo(left + STAIR_W - 10, top + 10);
+            ctx.stroke();
+        }
+        else if (skinId === 'stair_pharaoh') {
+            // Pharaoh Skin: Sandstone with Gold Trim
+            ctx.fillStyle = '#e0c090'; // Sandstone
+            ctx.fillRect(left, top, STAIR_W, STAIR_H);
+
+            // Gold Trim
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(left, top, STAIR_W, STAIR_H);
+
+            // Hieroglyphs (Symbolic)
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.6)'; // Luminous Blue
+            ctx.font = '12px Courier New';
+            const symbols = ['𓋹', '𓂀', '𓅓'];
+            const sym = symbols[index % 3];
+            ctx.fillText(sym, x - 5, y + STAIR_H / 2 + 5);
+
+            // Sand texture
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            for (let j = 0; j < 5; j++) {
+                ctx.fillRect(left + Math.random() * STAIR_W, top + Math.random() * STAIR_H, 2, 2);
             }
         }
-    });
+        else if (skinId === 'stair_ice') {
+            // Ice Skin: Cold Frosty Blue
+            const iceGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
+            iceGrad.addColorStop(0, '#dff9fb');
+            iceGrad.addColorStop(1, '#c7ecee');
+            ctx.fillStyle = iceGrad;
+            ctx.globalAlpha = 0.85;
+            ctx.fillRect(left, top, STAIR_W, STAIR_H);
+            ctx.globalAlpha = 1.0;
 
-    // Player
-    const px = camX + window.gameState.renderPlayer.x * STAIR_W;
-    const py = camY - window.gameState.renderPlayer.y * STAIR_H;
+            // Frosty edges
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(left, top, STAIR_W, STAIR_H);
+            ctx.setLineDash([]);
 
-    // Pet
-    drawPet(ctx, px, py, currentPet, window.gameState.playerDir);
-
-    // Player
-    ctx.globalAlpha = 1.0; // Ensure full opacity for player
-    drawPlayerWithSkin(ctx, px, py, window.gameState.playerDir);
-
-    // Direction Arrow
-    ctx.fillStyle = '#ffeaa7';
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "center";
-    ctx.shadowBlur = 4; ctx.shadowColor = 'black';
-    const bounce = Math.sin(Date.now() / 150) * 4;
-    ctx.fillText(window.gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
-    ctx.shadowBlur = 0;
-
-    // Particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.life -= 0.02;
-        p.y += p.dy * p.life;
-        if (p.life <= 0) { particles.splice(i, 1); continue; }
-        const ppx = camX + p.x * STAIR_W;
-        const ppy = camY - p.y * STAIR_H - 50;
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.font = "bold 20px Arial";
-        ctx.fillText(p.val, ppx, ppy);
-        ctx.globalAlpha = 1.0;
-    }
-}
-
-// Helper: Detailed Stair Drawing
-function drawStair(ctx, x, y, skinId, index) {
-    const isCurrent = (index === window.gameState.score);
-    const left = x - STAIR_W / 2;
-    const top = y;
-
-    if (skinId === 'stair_glass') {
-        // Glass Skin: Transparent with cyan/white border
-        ctx.fillStyle = 'rgba(150, 240, 255, 0.25)';
-        ctx.strokeStyle = '#00d2d3';
-        ctx.lineWidth = 2;
-        ctx.fillRect(left, top, STAIR_W, STAIR_H);
-        ctx.strokeRect(left, top, STAIR_W, STAIR_H);
-
-        // Inner shine for glass
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.beginPath();
-        ctx.moveTo(left + 10, top + 10);
-        ctx.lineTo(left + STAIR_W - 10, top + 10);
-        ctx.stroke();
-    }
-    else if (skinId === 'stair_pharaoh') {
-        // Pharaoh Skin: Sandstone with Gold Trim
-        ctx.fillStyle = '#e0c090'; // Sandstone
-        ctx.fillRect(left, top, STAIR_W, STAIR_H);
-
-        // Gold Trim
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(left, top, STAIR_W, STAIR_H);
-
-        // Hieroglyphs (Symbolic)
-        ctx.fillStyle = 'rgba(52, 152, 219, 0.6)'; // Luminous Blue
-        ctx.font = '12px Courier New';
-        const symbols = ['𓋹', '𓂀', '𓅓'];
-        const sym = symbols[index % 3];
-        ctx.fillText(sym, x - 5, y + STAIR_H / 2 + 5);
-
-        // Sand texture
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        for (let j = 0; j < 5; j++) {
-            ctx.fillRect(left + Math.random() * STAIR_W, top + Math.random() * STAIR_H, 2, 2);
+            // Snowflake pattern
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(x, y + STAIR_H / 2, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        else {
+            // Default Skin
+            const sGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
+            if (isCurrent) {
+                sGrad.addColorStop(0, '#ffffff'); sGrad.addColorStop(1, '#dfe6e9');
+            } else {
+                sGrad.addColorStop(0, '#a29bfe'); sGrad.addColorStop(1, '#6c5ce7');
+            }
+            ctx.fillStyle = sGrad;
+            ctx.fillRect(left, top, STAIR_W, STAIR_H);
         }
     }
-    else if (skinId === 'stair_ice') {
-        // Ice Skin: Cold Frosty Blue
-        const iceGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
-        iceGrad.addColorStop(0, '#dff9fb');
-        iceGrad.addColorStop(1, '#c7ecee');
-        ctx.fillStyle = iceGrad;
-        ctx.globalAlpha = 0.85;
-        ctx.fillRect(left, top, STAIR_W, STAIR_H);
-        ctx.globalAlpha = 1.0;
 
-        // Frosty edges
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.strokeRect(left, top, STAIR_W, STAIR_H);
-        ctx.setLineDash([]);
-
-        // Snowflake pattern
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    // Helper: Calculus-based Smooth Dunes (Cubic Bezier)
+    function drawCalculusDunes(ctx, startX, bottomY, width, color, waveHeight, frequency) {
+        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(x, y + STAIR_H / 2, 4, 0, Math.PI * 2);
+        // Start well before screen to ensure continuity
+        const ext = 600;
+        const step = 40; // Sampling step for derivatives
+        const startObj = startX - ext;
+        const endX = startX + width + ext;
+
+        ctx.moveTo(startObj, bottomY);
+
+        // Initial Point
+        let px = startObj;
+        // f(x) = bottomY * 0.85 - sin(freq*x)*H + cos(freq*2.5*x)*(H*0.2)
+        // We use numeric points for Bezier, but conceptually this models a smooth function
+        let py = bottomY * 0.85 - Math.sin(px * frequency) * waveHeight + Math.cos(px * frequency * 2.5) * (waveHeight * 0.2);
+
+        ctx.lineTo(px, py);
+
+        for (let x = px + step; x <= endX; x += step) {
+            let ny = bottomY * 0.85 - Math.sin(x * frequency) * waveHeight + Math.cos(x * frequency * 2.5) * (waveHeight * 0.2);
+
+            // Control Points using Catmull-Rom like tension (0.5)
+            // Or simple midpoint for smooth quadratic-like cubic
+            let cp1x = px + step * 0.5;
+            let cp1y = py;
+            let cp2x = x - step * 0.5;
+            let cp2y = ny;
+
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, ny);
+
+            px = x;
+            py = ny;
+        }
+
+        ctx.lineTo(endX, bottomY);
+        ctx.lineTo(startObj, bottomY);
+        ctx.closePath();
         ctx.fill();
     }
-    else {
-        // Default Skin
-        const sGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
-        if (isCurrent) {
-            sGrad.addColorStop(0, '#ffffff'); sGrad.addColorStop(1, '#dfe6e9');
-        } else {
-            sGrad.addColorStop(0, '#a29bfe'); sGrad.addColorStop(1, '#6c5ce7');
-        }
-        ctx.fillStyle = sGrad;
-        ctx.fillRect(left, top, STAIR_W, STAIR_H);
-    }
-}
 
-// Helper: Calculus-based Smooth Dunes (Cubic Bezier)
-function drawCalculusDunes(ctx, startX, bottomY, width, color, waveHeight, frequency) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    // Start well before screen to ensure continuity
-    const ext = 600;
-    const step = 40; // Sampling step for derivatives
-    const startObj = startX - ext;
-    const endX = startX + width + ext;
+    // Scale-ready Pharaoh Statue
+    function drawScaledPharaohStatue(ctx, x, y, scale) {
+        if (x < -100 || x > ctx.canvas.width + 100) return;
+        if (scale < 0.1) return;
 
-    ctx.moveTo(startObj, bottomY);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
 
-    // Initial Point
-    let px = startObj;
-    // f(x) = bottomY * 0.85 - sin(freq*x)*H + cos(freq*2.5*x)*(H*0.2)
-    // We use numeric points for Bezier, but conceptually this models a smooth function
-    let py = bottomY * 0.85 - Math.sin(px * frequency) * waveHeight + Math.cos(px * frequency * 2.5) * (waveHeight * 0.2);
+        // Body
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(-15, -80, 30, 80);
 
-    ctx.lineTo(px, py);
+        // Head
+        ctx.fillStyle = '#d4a860';
+        ctx.beginPath();
+        ctx.arc(0, -95, 20, 0, Math.PI * 2);
+        ctx.fill();
 
-    for (let x = px + step; x <= endX; x += step) {
-        let ny = bottomY * 0.85 - Math.sin(x * frequency) * waveHeight + Math.cos(x * frequency * 2.5) * (waveHeight * 0.2);
+        // Crown
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.moveTo(-15, -100);
+        ctx.lineTo(0, -130);
+        ctx.lineTo(15, -100);
+        ctx.closePath();
+        ctx.fill();
 
-        // Control Points using Catmull-Rom like tension (0.5)
-        // Or simple midpoint for smooth quadratic-like cubic
-        let cp1x = px + step * 0.5;
-        let cp1y = py;
-        let cp2x = x - step * 0.5;
-        let cp2y = ny;
+        // Beard/Details
+        ctx.fillStyle = '#000';
+        ctx.globalAlpha = 0.2;
+        ctx.fillRect(-5, -85, 10, 10);
+        ctx.globalAlpha = 1.0;
 
-        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, ny);
-
-        px = x;
-        py = ny;
+        ctx.restore();
     }
 
-    ctx.lineTo(endX, bottomY);
-    ctx.lineTo(startObj, bottomY);
-    ctx.closePath();
-    ctx.fill();
-}
+    // Scale-ready Polar Bear
+    function drawScaledPolarBear(ctx, x, y, scale) {
+        if (x < -100 || x > ctx.canvas.width + 100) return;
+        if (scale < 0.1) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // Flip if near left edge for variety (optional, but keep simple for now)
+
+        // Body (White)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 35, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(-25, -15, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        ctx.beginPath();
+        ctx.arc(-15, 15, 8, 0, Math.PI * 2);
+        ctx.arc(15, 15, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye/Nose
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(-30, -18, 2, 0, Math.PI * 2); // Eye
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-38, -15, 3, 2, 0, 0, Math.PI * 2); // Nose
+        ctx.fill();
+
+        ctx.restore();
+    }

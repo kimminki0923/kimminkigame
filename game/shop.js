@@ -23,8 +23,8 @@ const PET_DATA = {
 
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
-    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!' },
-    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!' }
+    map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!', previewImg: 'assets/desert_map_preview.png' },
+    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' }
 };
 
 console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
@@ -70,19 +70,20 @@ function createShopItemElement(id, data, category) {
     }
 
 
+    let previewImgTag = '';
+    if (data.previewImg) {
+        previewImgTag = `<img src="${data.previewImg}" alt="${data.name} preview" style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px;"/>`;
+    }
     div.innerHTML = `
-        <div style="font-size: 40px; margin-bottom: 10px;">${data.icon}</div>
+        ${previewImgTag}
+        <div style="font-size: 40px; margin-bottom: 5px;">${data.icon}</div>
         <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
         ${requirementDisplay}
-        ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 10px;">💰 ${data.price}</div>` : ''}
+        ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 8px;">💰 ${data.price}</div>` : ''}
         ${effectDisplay}
         <button id="btn-${id}" 
             class="${isOwned ? 'equip-btn' : 'buy-btn'}"
-            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold;
-            background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')};
-            color: #fff;">
-            ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
-        </button>
+            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')}; color: #fff;">${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}</button>
     `;
 
     return div;
