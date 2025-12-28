@@ -73,15 +73,24 @@ function setupEnvironment(isReverse = false) {
 }
 
 // Actual Game Start
-function initGame(forceReverse = null) {
+// Actual Game Start
+window.startGame = function (forceReverse = null) {
     if (forceReverse !== null) window.gameState.isReverseMode = forceReverse;
 
     // Reset state but keep mode
     const mode = window.gameState.isReverseMode;
-    setupEnvironment(mode);
+    // Check if setupEnvironment exists, otherwise just log warning
+    if (typeof setupEnvironment === 'function') {
+        setupEnvironment(mode);
+    } else {
+        console.warn("setupEnvironment not found, skipping map setup");
+    }
 
     window.gameState.running = true;
-    menuOverlay.style.display = 'none';
+
+    // Safety check for UI elements
+    const menuOverlay = document.getElementById('menu-overlay');
+    if (menuOverlay) menuOverlay.style.display = 'none';
 
     // ============================================================
     // PHARAOH FULL SET CHECK (파라오 풀셋 보너스 알림)
@@ -93,8 +102,10 @@ function initGame(forceReverse = null) {
     );
 
     if (isPharaohFullSet && !window.isTraining && !window.isAutoPlaying) {
-        statusEl.innerText = "👑 파라오 풀셋 보너스! 골드 100%!";
-        statusEl.style.color = "#f1c40f";
+        if (typeof statusEl !== 'undefined' && statusEl) {
+            statusEl.innerText = "👑 파라오 풀셋 보너스! 골드 100%!";
+            statusEl.style.color = "#f1c40f";
+        }
         console.log("[BONUS] Pharaoh Full Set Activated! 100% Gold Spawn + Better Coins!");
     }
 
@@ -108,25 +119,31 @@ function initGame(forceReverse = null) {
     );
 
     if (isWinterFullSet && !window.isTraining && !window.isAutoPlaying) {
-        statusEl.innerText = "❄️ 겨울왕국 풀셋 보너스! 골드 100%!";
-        statusEl.style.color = "#00d2d3";
+        if (typeof statusEl !== 'undefined' && statusEl) {
+            statusEl.innerText = "❄️ 겨울왕국 풀셋 보너스! 골드 100%!";
+            statusEl.style.color = "#00d2d3";
+        }
         console.log("[BONUS] Winter Full Set Activated! 100% Gold Spawn + Better Coins!");
     }
 
     if (window.isTraining || window.isAutoPlaying) {
-        stopBtn.style.display = 'inline-block';
+        if (typeof stopBtn !== 'undefined' && stopBtn) stopBtn.style.display = 'inline-block';
     } else {
-        stopBtn.style.display = 'none';
-        timerBar.parentElement.style.opacity = 1;
+        if (typeof stopBtn !== 'undefined' && stopBtn) stopBtn.style.display = 'none';
+        if (typeof timerBar !== 'undefined' && timerBar.parentElement) timerBar.parentElement.style.opacity = 1;
     }
-
-
 
     if (window.isTraining || window.isAutoPlaying) {
         if (window.isAutoPlaying) {
-            statusEl.innerText = mode ? "Reverse Robot..." : "Robot Playing...";
+            if (typeof statusEl !== 'undefined' && statusEl) statusEl.innerText = mode ? "Reverse Robot..." : "Robot Playing...";
         }
-        aiTick();
+        if (typeof aiTick === 'function') aiTick();
+    }
+
+    // Ensure Game Loop Starts
+    if (!window.gameLoopStarted) {
+        window.gameLoopStarted = true;
+        requestAnimationFrame(gameLoop);
     }
 }
 
@@ -523,13 +540,13 @@ function gameOver() {
         episodeCountEl.innerText = episode;
         learningStatusEl.innerText = `Learning... Ep: ${episode} | Best: ${isReverse ? reverseHighScore : aiHighScore}`;
         if (epsilon > MIN_EPSILON) epsilon *= EPSILON_DECAY;
-        setTimeout(initGame, 20);
+        setTimeout(startGame, 20);
         return;
     }
 
     if (window.isAutoPlaying) {
         statusEl.innerText = "Robot Failed. Retry...";
-        setTimeout(initGame, 1000);
+        setTimeout(startGame, 1000);
         return;
     }
 
@@ -564,7 +581,7 @@ function gameOver() {
 }
 
 // Main Game Loop
-function loop() {
+function gameLoop(timestamp) {
     if (window.gameState.running) {
         // 난이도 조절: 점수가 높을수록 시간이 더 빨리 줄어듦 (더 가파르게 수정)
         let currentDecay = TIMER_DECAY + (Math.log(window.gameState.score + 10) * 0.15);
@@ -590,7 +607,7 @@ function loop() {
 
     if (isFalling) updateFall();
     render();
-    requestAnimationFrame(loop);
+    requestAnimationFrame(gameLoop);
 }
 
 // Event Listeners
@@ -598,7 +615,7 @@ startBtn.addEventListener('click', () => {
     if (window.resumeAudio) window.resumeAudio();
     window.isTraining = false;
     window.isAutoPlaying = false;
-    initGame(); // Uses currently selected mode in window.gameState.isReverseMode
+    startGame(); // Uses currently selected mode in window.gameState.isReverseMode
 });
 
 trainBtn.addEventListener('click', () => {
@@ -646,8 +663,8 @@ window.addEventListener('keydown', (e) => {
         cheatBuffer += e.key.toLowerCase();
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
-        if (cheatBuffer.endsWith('kimminki')) {
-            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
+        if (cheatBuffer.endsWith('kimminki') || cheatBuffer.endsWith('kimiminki')) {
+            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
 
             // 1. Jump to 1000 steps
             const needed = 1000 - window.gameState.score;
