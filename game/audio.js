@@ -6,14 +6,33 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
 function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new AudioContext();
-    }
-    // Resume context if suspended (browser security)
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+    try {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+        // Resume context if suspended (browser security)
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(err => {
+                // Silently fail - this is expected before user interaction
+                console.log("[Audio] Waiting for user gesture to start AudioContext...");
+            });
+        }
+    } catch (e) {
+        console.warn("[Audio] Could not initialize AudioContext:", e);
     }
 }
+
+// Global helper to force resume on UI interaction
+window.resumeAudio = function () {
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            console.log("[Audio] AudioContext resumed successfully!");
+        }).catch(err => {
+            console.error("[Audio] Failed to resume AudioContext:", err);
+        });
+    }
+};
 
 /**
  * Play a character-specific jump/step sound

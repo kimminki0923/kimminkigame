@@ -622,6 +622,7 @@ trainBtn.addEventListener('click', () => {
     window.isTraining = !window.isTraining;
     window.isAutoPlaying = false;
     if (window.isTraining) {
+        if (window.resumeAudio) window.resumeAudio();
         trainBtn.innerText = "⏹️ 학습 중지";
         trainBtn.style.background = "#c0392b";
         initGame();
@@ -631,12 +632,14 @@ trainBtn.addEventListener('click', () => {
 });
 
 autoPlayBtn.addEventListener('click', () => {
+    if (window.resumeAudio) window.resumeAudio();
     window.isAutoPlaying = true;
     window.isTraining = false;
     initGame();
 });
 
 document.getElementById('reverse-start-btn').addEventListener('click', () => {
+    if (window.resumeAudio) window.resumeAudio();
     const nextMode = !window.gameState.isReverseMode;
     console.log(`[Mode] Switching to ${nextMode ? 'REVERSE' : 'NORMAL'}`);
     setupEnvironment(nextMode);
