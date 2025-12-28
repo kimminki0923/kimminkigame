@@ -16,7 +16,7 @@ const PET_DATA = {
     pet_eagle: { name: '독수리', icon: '🦅', price: 10000, type: 'air' },
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
-    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '눈결정 15개 수집 시 해금!' }
+    pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' }
 };
 
 

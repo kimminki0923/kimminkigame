@@ -647,7 +647,7 @@ window.addEventListener('keydown', (e) => {
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
         if (cheatBuffer.endsWith('kimminki')) {
-            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 10,000G reward.");
+            console.log("🛠️ Debug: Cheat code 'kimminki' activated! Teleporting to 1000 + 1,000,000G reward.");
 
             // 1. Jump to 1000 steps
             const needed = 1000 - window.gameState.score;
@@ -665,8 +665,8 @@ window.addEventListener('keydown', (e) => {
                 if (hsEl) hsEl.innerText = aiHighScore;
             }
 
-            // 3. Grant 10,000 gold and save to localStorage
-            totalCoins += 10000;
+            // 3. Grant 1,000,000 gold and save to localStorage
+            totalCoins += 1000000;
             localStorage.setItem('infinite_stairs_coins', totalCoins);
             if (coinEl) coinEl.innerText = totalCoins;
             const shopGold = document.getElementById('shop-gold');
@@ -681,7 +681,7 @@ window.addEventListener('keydown', (e) => {
                 window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
             }
 
-            alert("🎁 이스터에그 발견! 1000계단 점프 + 10,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
+            alert("🎁 이스터에그 발견! 1000계단 점프 + 1,000,000골드 획득!\n(모든 데이터가 저장되었습니다!)");
             cheatBuffer = "";
         }
     }
