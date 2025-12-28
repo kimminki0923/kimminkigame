@@ -125,7 +125,7 @@ function createEnvironment() {
 function createCloud() {
     const cloudGroup = new THREE.Group();
     const geom = new THREE.IcosahedronGeometry(1, 0);
-    const mat = new THREE.MeshFlatMaterial({ color: 0xFFFFFF, opacity: 0.9, transparent: true });
+    const mat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, opacity: 0.9, transparent: true });
 
     const nBlobs = 3 + Math.floor(Math.random() * 4);
     for (let i = 0; i < nBlobs; i++) {
