@@ -2048,7 +2048,13 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
         const camY = window.gameState.renderPlayer.y * STAIR_H + canvas.height / 2 + offset;
 
         // Background
-        drawBackground(camX, camY);
+        if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_desert') {
+            drawDesertBackgroundArtistic(camX, camY, window.gameState.score, canvas.width, canvas.height);
+        } else if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
+            drawWinterBackground(camX, camY, window.gameState.score, canvas.width, canvas.height);
+        } else {
+            drawBackground(camX, camY);
+        }
 
         // Stairs
         window.gameState.stairs.forEach((s, i) => {
@@ -2299,6 +2305,61 @@ function drawArtisticSphinx(ctx, x, y, scale = 1) {
             ctx.font = "bold 20px Arial";
             ctx.fillText(p.val, ppx, ppy);
             ctx.globalAlpha = 1.0;
+        }
+
+        // Render Environment Effects (Heat, Frost, etc.)
+        drawEnvironmentEffects(ctx, canvas.width, canvas.height, time);
+    }
+
+    // ============================================================
+    // ENVIRONMENT EFFECTS (스크린 이펙트)
+    // ============================================================
+    function drawEnvironmentEffects(ctx, w, h, time) {
+        // 1. Pharaoh Effects (Heat Haze & Fire Particles)
+        if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_desert') {
+            // Warm Overlay (Vignette)
+            const gradient = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.8);
+            gradient.addColorStop(0, 'rgba(255, 100, 0, 0)');
+            gradient.addColorStop(1, 'rgba(255, 60, 0, 0.15)'); // Orange/Red edges
+
+            ctx.fillStyle = gradient;
+            ctx.globalCompositeOperation = 'screen'; // Additive blending for heat
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over'; // Reset
+
+            // Heat Waves (Rising distortion lines)
+            ctx.save();
+            ctx.globalAlpha = 0.05;
+            ctx.fillStyle = '#ffcc00';
+            for (let i = 0; i < 5; i++) {
+                const yPos = (time * 50 + i * 150) % h;
+                const waveH = 50;
+                ctx.fillRect(0, h - yPos, w, waveH);
+            }
+            ctx.restore();
+        }
+
+        // 2. Winter Effects (Frost & Coldness)
+        if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
+            // Cold Overlay (Blueish Vignette)
+            const gradient = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.8);
+            gradient.addColorStop(0, 'rgba(0, 200, 255, 0)');
+            gradient.addColorStop(1, 'rgba(135, 206, 250, 0.2)'); // Light Blue edges
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, w, h);
+
+            // Frost Crystals at corners
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            // Top Left
+            ctx.moveTo(0, 0); ctx.lineTo(100, 0); ctx.quadraticCurveTo(50, 50, 0, 100); ctx.fill();
+            // Top Right
+            ctx.moveTo(w, 0); ctx.lineTo(w - 100, 0); ctx.quadraticCurveTo(w - 50, 50, w, 100); ctx.fill();
+            // Bottom Left
+            ctx.moveTo(0, h); ctx.lineTo(100, h); ctx.quadraticCurveTo(50, h - 50, 0, h - 100); ctx.fill();
+            // Bottom Right
+            ctx.moveTo(w, h); ctx.lineTo(w - 100, h); ctx.quadraticCurveTo(w - 50, h - 50, w, h - 100); ctx.fill();
         }
     }
 
