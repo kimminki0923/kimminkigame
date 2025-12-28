@@ -8,6 +8,7 @@ const STAIR_SKIN_DATA = {
     stair_pharaoh: { name: '파라오의 황금 계단', icon: '👑', price: 3000, type: 'pharaoh' },
     stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' }
 };
+window.STAIR_SKIN_DATA = STAIR_SKIN_DATA;
 
 const PET_DATA = {
     none: { name: '없음', icon: '❌' },
@@ -18,7 +19,7 @@ const PET_DATA = {
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
     pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' }
 };
-
+window.PET_DATA = PET_DATA;
 
 
 const MAP_DATA = {
@@ -26,6 +27,7 @@ const MAP_DATA = {
     map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!', previewImg: 'assets/desert_map_preview.png' },
     map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' }
 };
+window.MAP_DATA = MAP_DATA;
 
 console.log('[Shop] Initialized. MAP_DATA:', MAP_DATA);
 

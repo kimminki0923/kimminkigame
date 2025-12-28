@@ -46,13 +46,14 @@ window.isTraining = false;
 window.isAutoPlaying = false;
 
 // Graphics Asset Arrays
-const buildings = [];
-const clouds = [];
-const planets = [];
-const stars = [];
-const particles = [];
-const minerals = []; // Underground objects
-const snowParticles = []; // Winter map snow
+// Graphics Asset Arrays
+window.buildings = window.buildings || [];
+window.clouds = window.clouds || [];
+window.planets = window.planets || [];
+window.stars = window.stars || [];
+window.particles = window.particles || [];
+window.minerals = window.minerals || []; // Underground objects
+window.snowParticles = window.snowParticles || []; // Winter map snow
 
 // Persistent State (loaded from storage/Firebase)
 // Persistent State (loaded from storage/Firebase)

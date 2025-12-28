@@ -529,3 +529,54 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
 
     ctx.restore();
 }
+
+// ============================================================
+// Pet Drawing Logic (Emoji Based - Restored Original Style)
+// ============================================================
+window.drawPet = function (ctx, playerX, playerY, petType, dir) {
+    if (!petType || petType === 'none') return;
+
+    // Check global PET_DATA first
+    const petData = (window.PET_DATA && window.PET_DATA[petType])
+        ? window.PET_DATA[petType]
+        : { icon: '❓' }; // Fallback
+
+    const icon = petData.icon;
+
+    // Bobbing animation
+    const time = Date.now() * 0.005;
+    const bob = Math.sin(time * 2) * 5;
+
+    // Position: Behind player
+    const offsetDir = dir === 1 ? -1 : 1;
+    const petX = playerX + (offsetDir * 35);
+    const petY = playerY - 15 + bob;
+
+    ctx.save();
+    ctx.translate(petX, petY);
+
+    // Floating animation rotation (light shake)
+    const rot = Math.sin(time * 3) * 0.1;
+    ctx.rotate(rot);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 20 - bob, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Emoji
+    ctx.font = "30px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Flip emoji if needed (scale X)
+    ctx.scale(dir === 1 ? 1 : -1, 1);
+
+    ctx.shadowColor = 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(icon, 0, 0);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+};

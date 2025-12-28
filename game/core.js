@@ -13,6 +13,10 @@ const timerBar = document.getElementById('timer-bar');
 const coinEl = document.getElementById('coin-count');
 
 const menuOverlay = document.getElementById('menu-overlay');
+
+// EXPOSE CANVAS GLOBALLY FOR RENDERER
+window.canvas = canvas;
+window.ctx = ctx;
 const startBtn = document.getElementById('start-btn');
 const trainBtn = document.getElementById('train-btn');
 const autoPlayBtn = document.getElementById('auto-play-btn');
@@ -606,9 +610,21 @@ function gameLoop(timestamp) {
     }
 
     if (isFalling) updateFall();
-    render();
+
+    // RESTORED: Smooth Player Movement Interpolation
+    const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
+    if (window.gameState.stairs.length > 0) {
+        window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * 0.2;
+        window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * 0.2;
+    }
+
+    drawGameState();
+    // Start Loop
     requestAnimationFrame(gameLoop);
 }
+
+// Compatibility Alias (for buttons calling initGame)
+window.initGame = window.startGame;
 
 // Event Listeners
 startBtn.addEventListener('click', () => {
@@ -754,8 +770,8 @@ window.gameState.stairs = [];
 for (let i = 0; i < 30; i++) window.gameState.stairs.push({ x: 0, y: 0, hasCoin: false, coinVal: 0 });
 window.gameState.renderPlayer = { x: 0, y: 0 };
 initBackgroundObjects();
-render();
-loop();
+drawGameState();
+gameLoop();
 
 // Bind shop events
 bindShopEvents();
@@ -775,3 +791,32 @@ window.addEventListener('beforeunload', () => {
 setInterval(() => {
     window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
 }, 30000);
+// --- Data Bridge (Connected to auth.js) ---
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStair, pets, cPet, maps, cMap, crowns, crystals) {
+    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
+    window.aiHighScore = score;
+    if (highScoreEl) highScoreEl.innerText = window.aiHighScore;
+
+    window.totalCoins = coins;
+    if (coinEl) coinEl.innerText = window.totalCoins;
+
+    if (skins) window.ownedSkins = skins;
+    if (cSkin) window.currentSkin = cSkin;
+
+    // Sync Missing Data Types
+    if (stairSkins) window.ownedStairSkins = stairSkins;
+    if (cStair) window.currentStairSkin = cStair;
+
+    if (pets) window.ownedPets = pets;
+    if (cPet) window.currentPet = cPet;
+
+    if (maps) window.ownedMaps = maps;
+    if (cMap) window.currentMap = cMap;
+
+    if (crowns !== undefined) window.pharaohCrowns = crowns;
+    if (crystals !== undefined) window.snowCrystals = crystals;
+
+    window.isDataLoaded = true; // Unlock saving
+    updateShopUI();
+    if (typeof updateUnlockStatus === 'function') updateUnlockStatus();
+};
