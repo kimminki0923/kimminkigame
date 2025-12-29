@@ -57,9 +57,12 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
 
     const flash = window.playerFlash;
 
+    const skinLv = window.skinLevels?.[currentSkin] || 1;
+    const lvScale = 1 + (skinLv - 1) * 0.02; // Slightly bigger per level
+
     ctx.save();
 
-    // Position ON the stair (not floating) - move down to touch stair
+    // Position ON the stair (not touching) - move down to touch stair
     const groundOffset = skin.type === 'circle' ? 5 : 0;
 
     // Special Floating Logic for Floating Skins
@@ -69,6 +72,47 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
     }
 
     ctx.translate(px, py - groundOffset + floatY);
+    ctx.scale(lvScale, lvScale);
+
+    // ============================================================
+    // ENHANCEMENT AURA (강화 오라)
+    // ============================================================
+    if (skinLv > 1) {
+        ctx.save();
+        const auraAlpha = 0.2 + Math.min(skinLv * 0.05, 0.5);
+        const auraSize = 30 + (skinLv * 2);
+        const auraHue = (time * 50 + (skinLv * 20)) % 360;
+
+        ctx.shadowColor = `hsla(${auraHue}, 100%, 70%, ${auraAlpha})`;
+        ctx.shadowBlur = auraSize + Math.sin(time * 4) * 10;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'transparent';
+        ctx.fill();
+        ctx.restore();
+
+        // Orbiting Level Particles
+        const particleCount = Math.min(skinLv - 1, 8);
+        for (let i = 0; i < particleCount; i++) {
+            ctx.save();
+            const orbitSpeed = 1 + (skinLv * 0.1);
+            const angle = (time * orbitSpeed) + (i * Math.PI * 2 / particleCount);
+            const dist = 35 + (skinLv * 1);
+            const ox = Math.cos(angle) * dist;
+            const oy = Math.sin(angle) * dist * 0.4;
+
+            const pSize = 2 + (skinLv * 0.5);
+            ctx.fillStyle = `hsl(${auraHue}, 100%, 80%)`;
+            ctx.shadowColor = `hsl(${auraHue}, 100%, 50%)`;
+            ctx.shadowBlur = 10;
+
+            ctx.beginPath();
+            ctx.arc(ox, oy, pSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
 
     // Apply rotation for non-circle skins (except Floating ones)
     if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby' && skin.type !== 'cosmic') {
