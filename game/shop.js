@@ -539,6 +539,7 @@ function enhanceSkin(id) {
 function bindEnhanceOverlayEvents() {
     const openBtn = document.getElementById('enhance-open-btn');
     const closeBtn = document.getElementById('close-enhance-btn');
+    const closeBtnBottom = document.getElementById('close-enhance-btn-bottom');
     const overlay = document.getElementById('enhance-overlay');
 
     if (openBtn) {
@@ -550,6 +551,12 @@ function bindEnhanceOverlayEvents() {
 
     if (closeBtn) {
         closeBtn.onclick = () => {
+            overlay.style.display = 'none';
+        };
+    }
+
+    if (closeBtnBottom) {
+        closeBtnBottom.onclick = () => {
             overlay.style.display = 'none';
         };
     }
