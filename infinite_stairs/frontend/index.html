@@ -470,6 +470,18 @@
                                     style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">끄기</button>
                             </div>
 
+                            <!-- Touchpad Size Slider -->
+                            <div
+                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; margin-bottom:25px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                    <div style="color:#fff; font-weight:bold; font-size:16px;">📱 터치패드 크기</div>
+                                    <div style="color:#2ecc71; font-weight:bold;" id="touchpad-size-display">100%</div>
+                                </div>
+                                <input type="range" id="touchpad-size-slider" min="50" max="200" value="100" step="10"
+                                    style="width:100%; cursor:pointer;">
+                            </div>
+
+
                             <!-- Reset Button -->
                             <button id="reset-keys-btn"
                                 style="width:100%; background:rgba(255,255,255,0.1); color:#aaa; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:10px; cursor:pointer; margin-bottom:20px;">🔄

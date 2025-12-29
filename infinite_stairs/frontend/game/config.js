@@ -81,8 +81,13 @@ window.isDataLoaded = false;
 // Pharaoh's Crown Collection (파라오 왕관 수집)
 window.pharaohCrowns = parseInt(localStorage.getItem('infinite_stairs_crowns') || 0);
 
+
 // Winter Kingdom Snow Crystal Collection (겨울왕국 눈결정 수집)
 window.snowCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystals') || 0);
+
+// Touchpad Size Setting (Mobile Controls)
+window.touchpadSize = parseInt(localStorage.getItem('touchpadSize') || 100);
+
 
 
 
