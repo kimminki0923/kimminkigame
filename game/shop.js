@@ -99,9 +99,9 @@ function createShopItemElement(id, data, category) {
             </button>
             ${isOwned && category === 'char' ? `
             <button class="enhance-btn" data-id="${id}"
-                style="flex: 1; padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid #f1c40f; background: #111; color: #f1c40f; font-size: 11px; font-weight: bold;">
-                강화<br>(${enhanceCost})
-            </button>` : ''}
+                style="flex: 1.2; padding: 10px 5px; border-radius: 8px; cursor: pointer; border: 2px solid #f1c40f; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; font-size: 11px; font-weight: 900; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); text-transform: uppercase;">
+                STRENGTHEN<br>(${enhanceCost})
+            </button>` : `<div style="flex: 1; font-size: 10px; color: #666; display: flex; align-items: center; justify-content: center;">구매 후<br>강화가능</div>`}
         </div>
     `;
 
