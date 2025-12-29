@@ -531,3 +531,140 @@ function enhanceSkin(id) {
         updateShopUI();
     }
 }
+
+// ============================================================
+// Enhancement Overlay Functions
+// ============================================================
+
+function bindEnhanceOverlayEvents() {
+    const openBtn = document.getElementById('enhance-open-btn');
+    const closeBtn = document.getElementById('close-enhance-btn');
+    const overlay = document.getElementById('enhance-overlay');
+
+    if (openBtn) {
+        openBtn.onclick = () => {
+            updateEnhanceUI();
+            overlay.style.display = 'flex';
+        };
+    }
+
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            overlay.style.display = 'none';
+        };
+    }
+
+    // Clicking outside the content closes the overlay
+    if (overlay) {
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                overlay.style.display = 'none';
+            }
+        };
+    }
+
+    console.log('[Shop] Enhancement overlay events bound.');
+}
+
+function updateEnhanceUI() {
+    const goldDisplay = document.getElementById('enhance-gold-display');
+    const listContainer = document.getElementById('enhance-skin-list');
+
+    if (goldDisplay) {
+        goldDisplay.textContent = (window.totalCoins || 0).toLocaleString();
+    }
+
+    if (!listContainer) return;
+
+    // Clear and rebuild owned skins list
+    listContainer.innerHTML = '';
+
+    const ownedSkins = window.ownedSkins || ['default'];
+    const skinData = window.SKIN_DATA || {};
+
+    ownedSkins.forEach(skinId => {
+        const data = skinData[skinId];
+        if (!data) return;
+
+        const currentLevel = (window.skinLevels && window.skinLevels[skinId]) || 1;
+        const isMaxLevel = currentLevel >= 5;
+
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1);';
+
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:32px;">${data.icon || '⚪'}</span>
+                <div>
+                    <div style="color:#fff; font-weight:bold;">${data.name || skinId}</div>
+                    <div style="color:#f1c40f; font-size:13px;">Lv.${currentLevel}</div>
+                </div>
+            </div>
+            ${isMaxLevel
+                ? '<span style="color:#2ecc71; font-weight:bold; font-size:18px;">✨MAX</span>'
+                : `<button class="perform-enhance-btn" data-skin-id="${skinId}" style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">강화</button>`
+            }
+        `;
+
+        listContainer.appendChild(item);
+    });
+
+    // Bind enhance button events
+    listContainer.querySelectorAll('.perform-enhance-btn').forEach(btn => {
+        btn.onclick = () => {
+            const skinId = btn.dataset.skinId;
+            performEnhancement(skinId);
+        };
+    });
+}
+
+function performEnhancement(skinId) {
+    const currentLevel = (window.skinLevels && window.skinLevels[skinId]) || 1;
+
+    if (currentLevel >= 5) {
+        return alert('✨ 이미 최대 레벨(Lv.5)입니다!');
+    }
+
+    // Cost: 5000 -> 10000 -> 20000 -> 40000
+    const cost = 5000 * Math.pow(2, currentLevel - 1);
+    // Success rates: Lv1->2: 100%, Lv2->3: 80%, Lv3->4: 50%, Lv4->5: 10%
+    const successRates = [100, 80, 50, 10];
+    const successRate = successRates[currentLevel - 1] || 0;
+
+    if ((window.totalCoins || 0) < cost) {
+        return alert(`❌ 골드가 부족합니다! (필요: ${cost.toLocaleString()}G)`);
+    }
+
+    const skinName = (window.SKIN_DATA && window.SKIN_DATA[skinId] && window.SKIN_DATA[skinId].name) || skinId;
+    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n\n비용: ${cost.toLocaleString()}G\n성공확률: ${successRate}%\n\n⚠️ 실패 시 골드만 소모됩니다!`)) {
+        // Deduct gold
+        window.totalCoins -= cost;
+        localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+
+        // Roll for success
+        const roll = Math.random() * 100;
+        const success = roll < successRate;
+
+        if (success) {
+            if (!window.skinLevels) window.skinLevels = {};
+            window.skinLevels[skinId] = currentLevel + 1;
+            localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+            alert(`✨ 강화 성공! ${skinName} Lv.${window.skinLevels[skinId]} 달성!`);
+        } else {
+            alert(`💥 강화 실패... (${cost.toLocaleString()}G 소모)\n다음에 다시 도전해보세요!`);
+        }
+
+        // Sync and Update UI
+        if (window.saveData) {
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+        }
+        updateEnhanceUI();
+    }
+}
+
+// Auto-bind enhancement events when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindEnhanceOverlayEvents);
+} else {
+    bindEnhanceOverlayEvents();
+}

@@ -322,9 +322,9 @@
             const dx = Math.abs(character.x - tileCenter.x);
             const dy = Math.abs(character.y - tileCenter.y);
 
-            // 마름모 형태 근사 (대각선 거리)
-            const halfWidth = CONFIG.TILE_WIDTH / 2;
-            const halfHeight = CONFIG.TILE_HEIGHT / 4;
+            // 마름모 형태 근사 (대각선 거리) - 더 넓은 충돌 범위
+            const halfWidth = CONFIG.TILE_WIDTH * 0.8;  // 충돌 너비 확장
+            const halfHeight = CONFIG.TILE_HEIGHT * 0.6; // 충돌 높이 확장
 
             if (dx < halfWidth && dy < halfHeight) {
                 onAnyTile = true;
