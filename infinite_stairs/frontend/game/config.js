@@ -37,8 +37,13 @@ window.gameState = {
     gameOver: false,
     timer: 100,
     renderPlayer: { x: 0, y: 0 },
-    isReverseMode: false // New: Version 2
+    isReverseMode: false, // Version 2
+    isDungeonMode: false  // Pharaoh Dungeon Mode
 };
+
+// Dungeon Mode Projectiles
+window.dungeonProjectiles = [];
+
 
 // AI State
 window.qTable = {};
