@@ -2155,11 +2155,11 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     time = Date.now() * 0.001;
 
-    // Camera & Player Interpolation (버터 스무스)
+    // Camera & Player Interpolation (적당한 부드러움)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
-        // 매우 부드러운 이동: 낮은 lerp = 더 부드러움
-        const smoothness = 0.03; // 극강 버터 스무스
+        // 0.12 = 적당히 빠른 반응, 덜 미끄러움
+        const smoothness = 0.12;
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }

@@ -629,10 +629,10 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // 버터처럼 부드러운 플레이어 이동
+    // 부드러운 플레이어 이동 (0.12 = 적당히 빠른 반응, 덜 미끄러움)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.03; // 극강 버터 스무스
+        const smoothness = 0.12; // 0.03은 너무 미끄러움, 0.12는 적당
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
