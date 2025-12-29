@@ -80,8 +80,11 @@ function createShopItemElement(id, data, category) {
         previewImgTag = `<img src="${data.previewImg}" alt="${data.name} preview" style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px;"/>`;
     }
     const currentLevel = window.skinLevels?.[id] || 1;
-    const enhanceCost = currentLevel * 5000;
-    const nextBonus = (currentLevel + 1) * 5; // Example: Level 2 = 10% bonus coins
+    // Cost doubles each level: 5000 -> 10000 -> 20000 -> 40000
+    const enhanceCost = 5000 * Math.pow(2, currentLevel - 1);
+    // Success rates: Lv1->2: 100%, Lv2->3: 80%, Lv3->4: 50%, Lv4->5: 10%
+    const successRates = [100, 80, 50, 10, 0];
+    const nextSuccessRate = successRates[currentLevel - 1] || 0;
 
     div.innerHTML = `
         ${previewImgTag}
@@ -98,12 +101,11 @@ function createShopItemElement(id, data, category) {
                 ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
             </button>
             ${category === 'char' ? (
-            isOwned ? `
+            isOwned && currentLevel < 5 ? `
                 <button class="enhance-btn" data-id="${id}"
-                    style="flex: 1.2; padding: 10px 5px; border-radius: 8px; cursor: pointer; border: 2px solid #f1c40f; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; font-size: 11px; font-weight: 900; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); text-transform: uppercase;">
-                    STRENGTHEN<br>(${enhanceCost})
-                </button>` : `
-                <div style="flex: 1; font-size: 10px; color: #666; display: flex; align-items: center; justify-content: center;">구매 후<br>강화가능</div>`
+                    style="flex: 1.2; padding: 8px 5px; border-radius: 8px; cursor: pointer; border: 2px solid #f1c40f; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; font-size: 10px; font-weight: 900; box-shadow: 0 0 12px rgba(241, 196, 15, 0.6);">
+                    강화<br>${enhanceCost}G<br><span style="font-size:9px; color:#333;">(${nextSuccessRate}%)</span>
+                </button>` : (isOwned && currentLevel >= 5 ? `<div style="flex: 1; font-size: 10px; color: #f1c40f; display: flex; align-items: center; justify-content: center; font-weight: bold;">✨MAX</div>` : `<div style="flex: 1; font-size: 10px; color: #666; display: flex; align-items: center; justify-content: center;">구매 후<br>강화가능</div>`)
         ) : ''}
         </div>
     `;
@@ -369,25 +371,43 @@ function bindBuyEquipButtons() {
 
 function enhanceSkin(id) {
     const currentLevel = window.skinLevels[id] || 1;
-    const cost = currentLevel * 5000;
+
+    if (currentLevel >= 5) {
+        return alert('✨ 이미 최대 레벨(Lv.5)입니다!');
+    }
+
+    // Cost doubles each level: 5000 -> 10000 -> 20000 -> 40000
+    const cost = 5000 * Math.pow(2, currentLevel - 1);
+    // Success rates: Lv1->2: 100%, Lv2->3: 80%, Lv3->4: 50%, Lv4->5: 10%
+    const successRates = [100, 80, 50, 10];
+    const successRate = successRates[currentLevel - 1] || 0;
 
     if (window.totalCoins < cost) {
         return alert(`❌ 골드가 부족합니다! (필요: ${cost}G)`);
     }
 
-    if (confirm(`${SKIN_DATA[id].name} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n(비용: ${cost}G)\n\n효과: 코인 보너스 및 타이머 효율 증가!`)) {
+    const skinName = window.SKIN_DATA?.[id]?.name || id;
+    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n\n비용: ${cost}G\n성공확률: ${successRate}%\n\n⚠️ 실패 시 골드만 소모됩니다!`)) {
+        // Deduct gold first
         window.totalCoins -= cost;
-        window.skinLevels[id] = currentLevel + 1;
-
         localStorage.setItem('infinite_stairs_coins', window.totalCoins);
-        localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+
+        // Roll for success
+        const roll = Math.random() * 100;
+        const success = roll < successRate;
+
+        if (success) {
+            window.skinLevels[id] = currentLevel + 1;
+            localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+            alert(`✨ 강화 성공! ${skinName} Lv.${window.skinLevels[id]} 달성!`);
+        } else {
+            alert(`💥 강화 실패... (${cost}G 소모)\n다음에 다시 도전해보세요!`);
+        }
 
         // Sync and Update UI
         if (window.saveData) {
             window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
         }
-
-        alert(`✨ 강화 성공! ${SKIN_DATA[id].name} Lv.${window.skinLevels[id]} 달성!`);
         updateShopUI();
     }
 }
