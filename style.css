@@ -433,6 +433,33 @@ canvas {
     pointer-events: none;
 }
 
+/* Ad Close Button */
+.ad-close-btn {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    pointer-events: auto !important;
+    z-index: 100;
+}
+
+.ad-close-btn:hover {
+    background: #e74c3c;
+    border-color: white;
+    transform: scale(1.1);
+}
+
 /* User Profile UI */
 #user-container {
     position: absolute;
@@ -574,19 +601,24 @@ button:active {
     display: none;
     /* Hidden by default, script can enable if mobile logic exists */
     position: absolute;
-    bottom: 20px;
+    bottom: 25vh;
+    /* Moved up for better accessibility on pads */
     width: 100%;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 40px;
+    /* More padding for larger screens */
     box-sizing: border-box;
     pointer-events: none;
 }
 
 #mobile-controls button {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    /* Increased from 100px */
+    height: 120px;
+    /* Increased from 100px */
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 22px;
+    /* Increased from 18px */
     background: rgba(255, 255, 255, 0.2);
     border: 2px solid #fff;
     backdrop-filter: blur(5px);
@@ -617,6 +649,8 @@ button:active {
 (pointer: coarse) {
     #mobile-controls {
         display: flex;
+        bottom: 20vh;
+        /* Responsive height for mobile/tablets */
     }
 
     #score {
@@ -663,9 +697,12 @@ button:active {
     }
 
     #mobile-controls button {
-        width: 80px;
-        height: 80px;
-        font-size: 14px;
+        width: 100px;
+        /* Increased from 80px */
+        height: 100px;
+        /* Increased from 80px */
+        font-size: 18px;
+        /* Increased from 14px */
     }
 }
 
@@ -685,8 +722,10 @@ button:active {
     }
 
     #mobile-controls button {
-        width: 70px;
-        height: 70px;
+        width: 85px;
+        /* Increased from 70px */
+        height: 85px;
+        /* Increased from 70px */
     }
 }
 

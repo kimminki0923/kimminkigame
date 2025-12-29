@@ -113,7 +113,6 @@
         <button onclick="showPage('page-stairs')" class="nav-btn active" id="nav-stairs">Infinite Stairs</button>
         <button onclick="showPage('page-liar')" class="nav-btn" id="nav-liar">Liar Game</button>
         <button onclick="showPage('page-mafia')" class="nav-btn" id="nav-mafia">Mafia Game</button>
-        <button onclick="showPage('page-flight')" class="nav-btn" id="nav-flight">Flight Aerobatics ✈️</button>
     </nav>
 
     <div id="page-stairs" class="page active">
@@ -145,6 +144,8 @@
                 <!-- KakaoAdFit Advertisement (160x600 Vertical) -->
                 <div id="kakao-ad-sidebar-left"
                     style="position:absolute; top:50%; left:10px; transform:translateY(-50%); z-index:90; pointer-events:auto;">
+                    <button class="ad-close-btn" onclick="this.parentElement.style.display='none'"
+                        title="광고 닫기">×</button>
                     <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-XoD5fo0hmlkjAbdI"
                         data-ad-width="160" data-ad-height="600"></ins>
                     <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
@@ -152,7 +153,9 @@
 
                 <!-- Leaderboard Panel (Bottom Right) -->
                 <div id="leaderboard"
-                    style="position:absolute; bottom:80px; right:10px; background:rgba(0,0,0,0.85); padding:15px 20px; border-radius:15px; color:white; font-size:13px; min-width:180px; border:2px solid #f1c40f; z-index:100; backdrop-filter:blur(5px);">
+                    style="position:absolute; bottom:120px; right:10px; background:rgba(0,0,0,0.85); padding:15px 20px; border-radius:15px; color:white; font-size:13px; min-width:180px; border:2px solid #f1c40f; z-index:100; backdrop-filter:blur(5px);">
+                    <button class="ad-close-btn" onclick="this.parentElement.style.display='none'"
+                        style="top:-15px; right:-15px; width:25px; height:25px; font-size:14px;">×</button>
                     <h4 style="margin:0 0 10px 0; text-align:center; color:#f1c40f; font-size:16px;">🏆 TOP 10</h4>
                     <ol id="leaderboard-list" style="margin:0; padding-left:20px; line-height:1.8;">
                         <li>Loading...</li>
@@ -856,13 +859,7 @@
         </div>
     </div>
 
-    <!-- Flight Game Page -->
-    <div id="page-flight" class="page">
-        <div id="flight-game-container" style="width:100%; height:100%; display:flex; flex-direction:column;">
-            <iframe src="flight_game/index.html" style="width:100%; height:100%; border:none;"
-                title="Flight Aerobatics"></iframe>
-        </div>
-    </div>
+
 
     <!-- UI Overlays -->
     <div id="turn-overlay"
@@ -871,7 +868,9 @@
     </div>
 
     <div id="scoreboard"
-        style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+        style="display:none; position:fixed; bottom:60px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+        <button class="ad-close-btn" onclick="this.parentElement.style.display='none'"
+            style="top:-15px; right:-15px; width:25px; height:25px; font-size:14px;">×</button>
         <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small id="score-limit"
                 style="color:#aaa; font-size:12px;"></small></h4>
         <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
