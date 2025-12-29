@@ -97,11 +97,14 @@ function createShopItemElement(id, data, category) {
                 style="flex: 2; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')}; color: #fff;">
                 ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
             </button>
-            ${isOwned && category === 'char' ? `
-            <button class="enhance-btn" data-id="${id}"
-                style="flex: 1.2; padding: 10px 5px; border-radius: 8px; cursor: pointer; border: 2px solid #f1c40f; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; font-size: 11px; font-weight: 900; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); text-transform: uppercase;">
-                STRENGTHEN<br>(${enhanceCost})
-            </button>` : `<div style="flex: 1; font-size: 10px; color: #666; display: flex; align-items: center; justify-content: center;">구매 후<br>강화가능</div>`}
+            ${category === 'char' ? (
+            isOwned ? `
+                <button class="enhance-btn" data-id="${id}"
+                    style="flex: 1.2; padding: 10px 5px; border-radius: 8px; cursor: pointer; border: 2px solid #f1c40f; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000; font-size: 11px; font-weight: 900; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); text-transform: uppercase;">
+                    STRENGTHEN<br>(${enhanceCost})
+                </button>` : `
+                <div style="flex: 1; font-size: 10px; color: #666; display: flex; align-items: center; justify-content: center;">구매 후<br>강화가능</div>`
+        ) : ''}
         </div>
     `;
 
