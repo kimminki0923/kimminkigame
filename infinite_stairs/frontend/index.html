@@ -200,22 +200,22 @@
 
                 <!-- Special Modes Overlay -->
                 <div id="special-modes-overlay"
-                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
+                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; pointer-events:auto;">
                     <div
-                        style="background:linear-gradient(135deg, #1a1a2e, #16213e); padding:30px; border-radius:30px; max-width:400px; width:90%; border:3px solid #e74c3c; box-shadow: 0 0 50px rgba(231, 76, 60, 0.3);">
+                        style="background:linear-gradient(135deg, #1a1a2e, #16213e); padding:30px; border-radius:30px; max-width:400px; width:90%; border:3px solid #e74c3c; box-shadow: 0 0 50px rgba(231, 76, 60, 0.3); pointer-events:auto;">
                         <!-- Header -->
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 2px solid rgba(231, 76, 60, 0.3); padding-bottom: 15px;">
                             <h2 style="margin:0; color:#e74c3c; font-size:24px;">🎲 특별 모드</h2>
                             <button id="close-special-modes-btn"
-                                style="background:#e74c3c; color:white; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; font-weight:bold;">×</button>
+                                style="background:#e74c3c; color:white; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; font-weight:bold; pointer-events:auto;">×</button>
                         </div>
 
                         <!-- Mode Buttons -->
                         <div style="display:flex; flex-direction:column; gap:15px;">
                             <!-- Reverse Mode -->
                             <button id="reverse-start-btn"
-                                style="background: linear-gradient(135deg, #8e44ad, #6c5ce7); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left; opacity:0.5;"
+                                style="background: linear-gradient(135deg, #8e44ad, #6c5ce7); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left; opacity:0.5; pointer-events:auto;"
                                 disabled>
                                 <div style="display:flex; align-items:center; gap:15px;">
                                     <span style="font-size:32px;">🔽</span>
@@ -228,7 +228,7 @@
 
                             <!-- Pharaoh Dungeon -->
                             <button id="dungeon-start-btn"
-                                style="background: linear-gradient(135deg, #d4a860, #8B7355); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left;">
+                                style="background: linear-gradient(135deg, #d4a860, #8B7355); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left; pointer-events:auto;">
                                 <div style="display:flex; align-items:center; gap:15px;">
                                     <span style="font-size:32px;">🏛️</span>
                                     <div>
@@ -248,11 +248,12 @@
 
                         <!-- Close Button -->
                         <button id="close-special-modes-btn-bottom"
-                            style="width:100%; margin-top:20px; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold;">
+                            style="width:100%; margin-top:20px; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold; pointer-events:auto;">
                             ✕ 닫기
                         </button>
                     </div>
                 </div>
+
 
 
                 <button id="stop-btn"
