@@ -784,12 +784,15 @@ function spawnProjectile() {
 
     if (Math.random() < spawnChance) {
         const fromLeft = Math.random() < 0.5;
-        const speed = 3 + (score * 0.02); // Speed increases
-        const playerY = window.gameState.renderPlayer.y;
+        const speed = 5 + (score * 0.03); // Speed increases
+
+        // Use screen coordinates - player is always at center
+        const playerScreenY = window.canvas.height / 2 - 30;
+        const yVariation = (Math.random() - 0.5) * 150; // Random Y offset
 
         window.dungeonProjectiles.push({
             x: fromLeft ? -50 : window.canvas.width + 50,
-            y: playerY * STAIR_H + (Math.random() - 0.5) * 100, // Near player height
+            y: playerScreenY + yVariation, // Screen space Y
             vx: fromLeft ? speed : -speed,
             type: Math.random() < 0.5 ? 'spear' : 'arrow'
         });
@@ -799,9 +802,11 @@ function spawnProjectile() {
 function updateProjectiles() {
     if (!window.gameState.isDungeonMode) return;
 
+    // Player is always rendered at center of screen
     const playerScreenX = window.canvas.width / 2;
-    const playerScreenY = window.canvas.height / 2 - 50;
-    const hitRadius = 25;
+    const playerScreenY = window.canvas.height / 2 - 30;
+    const hitRadius = 20; // Player hitbox radius
+    const projectileRadius = 25; // Projectile hitbox radius
 
     for (let i = window.dungeonProjectiles.length - 1; i >= 0; i--) {
         const p = window.dungeonProjectiles[i];
@@ -813,12 +818,12 @@ function updateProjectiles() {
             continue;
         }
 
-        // Collision check (simple circle collision)
+        // Collision check (circle collision in screen space)
         const dx = p.x - playerScreenX;
         const dy = p.y - playerScreenY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < hitRadius + 15) {
+        if (dist < hitRadius + projectileRadius) {
             console.log('[Dungeon] Player hit by projectile!');
             window.dungeonProjectiles = [];
             dungeonGameOver(false);
@@ -826,6 +831,7 @@ function updateProjectiles() {
         }
     }
 }
+
 
 function dungeonGameOver(isVictory) {
     window.gameState.running = false;
