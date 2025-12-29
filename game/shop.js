@@ -501,13 +501,21 @@ function enhanceSkin(id) {
     // Success rates: Lv1->2: 100%, Lv2->3: 80%, Lv3->4: 50%, Lv4->5: 10%
     const successRates = [100, 80, 50, 10];
     const successRate = successRates[currentLevel - 1] || 0;
+    // Destruction rates (only on failure, Lv2+): 0%, 10%, 15%, 20%
+    const destructionRates = [0, 10, 15, 20];
+    const destructionRate = destructionRates[currentLevel - 1] || 0;
 
     if (window.totalCoins < cost) {
         return alert(`❌ 골드가 부족합니다! (필요: ${cost}G)`);
     }
 
     const skinName = window.SKIN_DATA?.[id]?.name || id;
-    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n\n비용: ${cost}G\n성공확률: ${successRate}%\n\n⚠️ 실패 시 골드만 소모됩니다!`)) {
+    let warningText = '⚠️ 실패 시 골드만 소모됩니다!';
+    if (currentLevel >= 2) {
+        warningText = `⚠️ 실패 시 골드 소모\n💥 ${destructionRate}% 확률로 파괴 (레벨 하락)`;
+    }
+
+    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시견습니까?\n\n비용: ${cost}G\n성공확률: ${successRate}%\n\n${warningText}`)) {
         // Deduct gold first
         window.totalCoins -= cost;
         localStorage.setItem('infinite_stairs_coins', window.totalCoins);
@@ -521,7 +529,15 @@ function enhanceSkin(id) {
             localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
             alert(`✨ 강화 성공! ${skinName} Lv.${window.skinLevels[id]} 달성!`);
         } else {
-            alert(`💥 강화 실패... (${cost}G 소모)\n다음에 다시 도전해보세요!`);
+            // Check for destruction
+            const destroyRoll = Math.random() * 100;
+            if (currentLevel >= 2 && destroyRoll < destructionRate) {
+                window.skinLevels[id] = currentLevel - 1;
+                localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+                alert(`💥 파괴!! ${skinName}이(가) Lv.${window.skinLevels[id]}로 하락했습니다...\n(${cost}G 소모)`);
+            } else {
+                alert(`💥 강화 실패... (${cost}G 소모)\n다음에 다시 도전해보세요!`);
+            }
         }
 
         // Sync and Update UI
@@ -632,13 +648,21 @@ function performEnhancement(skinId) {
     // Success rates: Lv1->2: 100%, Lv2->3: 80%, Lv3->4: 50%, Lv4->5: 10%
     const successRates = [100, 80, 50, 10];
     const successRate = successRates[currentLevel - 1] || 0;
+    // Destruction rates (only on failure, Lv2+): 0%, 10%, 15%, 20%
+    const destructionRates = [0, 10, 15, 20];
+    const destructionRate = destructionRates[currentLevel - 1] || 0;
 
     if ((window.totalCoins || 0) < cost) {
         return alert(`❌ 골드가 부족합니다! (필요: ${cost.toLocaleString()}G)`);
     }
 
     const skinName = (window.SKIN_DATA && window.SKIN_DATA[skinId] && window.SKIN_DATA[skinId].name) || skinId;
-    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n\n비용: ${cost.toLocaleString()}G\n성공확률: ${successRate}%\n\n⚠️ 실패 시 골드만 소모됩니다!`)) {
+    let warningText = '⚠️ 실패 시 골드만 소모됩니다!';
+    if (currentLevel >= 2) {
+        warningText = `⚠️ 실패 시 골드 소모\n💥 ${destructionRate}% 확률로 파괴 (레벨 하락)`;
+    }
+
+    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시견습니까?\n\n비용: ${cost.toLocaleString()}G\n성공확률: ${successRate}%\n\n${warningText}`)) {
         // Deduct gold
         window.totalCoins -= cost;
         localStorage.setItem('infinite_stairs_coins', window.totalCoins);
@@ -653,7 +677,16 @@ function performEnhancement(skinId) {
             localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
             alert(`✨ 강화 성공! ${skinName} Lv.${window.skinLevels[skinId]} 달성!`);
         } else {
-            alert(`💥 강화 실패... (${cost.toLocaleString()}G 소모)\n다음에 다시 도전해보세요!`);
+            // Check for destruction
+            const destroyRoll = Math.random() * 100;
+            if (currentLevel >= 2 && destroyRoll < destructionRate) {
+                if (!window.skinLevels) window.skinLevels = {};
+                window.skinLevels[skinId] = currentLevel - 1;
+                localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+                alert(`💥 파괴!! ${skinName}이(가) Lv.${window.skinLevels[skinId]}로 하락했습니다...\n(${cost.toLocaleString()}G 소모)`);
+            } else {
+                alert(`💥 강화 실패... (${cost.toLocaleString()}G 소모)\n다음에 다시 도전해보세요!`);
+            }
         }
 
         // Sync and Update UI
