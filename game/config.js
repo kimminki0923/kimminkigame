@@ -64,6 +64,11 @@ window.reverseHighScore = parseInt(localStorage.getItem('infinite_stairs_reverse
 window.totalCoins = parseInt(localStorage.getItem('infinite_stairs_coins') || 0);
 window.currentSkin = localStorage.getItem('currentSkin') || 'default';
 window.ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["default"]');
+window.skinLevels = JSON.parse(localStorage.getItem('skinLevels') || '{}');
+// Initialize levels for owned skins
+window.ownedSkins.forEach(skin => {
+    if (!window.skinLevels[skin]) window.skinLevels[skin] = 1;
+});
 window.currentStairSkin = localStorage.getItem('currentStairSkin') || 'default';
 window.ownedStairSkins = JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]');
 window.currentPet = localStorage.getItem('currentPet') || 'none';

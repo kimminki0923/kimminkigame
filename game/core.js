@@ -454,6 +454,14 @@ function performAction(action) {
             }
             actualCoinVal *= petMultiplier;
 
+            // SKIN LEVEL BONUS: Level 2 = +10% coins, Level 3 = +20% ...
+            const skinLv = window.skinLevels?.[currentSkin] || 1;
+            if (skinLv > 1) {
+                const bonusMult = 1 + (skinLv - 1) * 0.1;
+                actualCoinVal = Math.ceil(actualCoinVal * bonusMult);
+                console.log(`[BONUS] Skin Lv.${skinLv} x${bonusMult} coin: ${actualCoinVal}`);
+            }
+
 
             window.gameState.coinCount += actualCoinVal;
             if (!window.isTraining && !window.isAutoPlaying) {
@@ -599,6 +607,14 @@ function gameLoop(timestamp) {
         if (typeof window.currentPet !== 'undefined' &&
             (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin')) {
             currentDecay /= 1.5;
+        }
+
+        // SKIN LEVEL BONUS: Timer Efficiency
+        const skinLv = window.skinLevels?.[currentSkin] || 1;
+        if (skinLv > 1) {
+            // Level 2: 5% slower decay, Level 3: 10% ...
+            const efficiency = 1 + (skinLv - 1) * 0.05;
+            currentDecay /= efficiency;
         }
 
         window.gameState.timer -= currentDecay;
@@ -747,8 +763,8 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 
 // Data Bridge for Firebase
 // Data Bridge for Firebase
-window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap) {
-    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap, crowns, crystals, skinLevels) {
+    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}, Levels:`, skinLevels);
     aiHighScore = parseInt(score || 0);
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
     totalCoins = parseInt(coins || 0);
@@ -761,9 +777,15 @@ window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSki
     if (cPet) currentPet = cPet;
     if (maps) ownedMaps = maps;
     if (cMap) currentMap = cMap;
+    if (skinLevels) window.skinLevels = skinLevels;
+
+    // Safety check for crowns/crystals
+    if (crowns !== undefined) window.pharaohCrowns = crowns;
+    if (crystals !== undefined) window.snowCrystals = crystals;
+
     isDataLoaded = true;
     updateShopUI();
-    updateUnlockStatus(); // Fix: Ensure Reverse Mode button unlocks on refresh
+    updateUnlockStatus();
 }
 
 // Initialize
@@ -787,39 +809,10 @@ if (window.initAuth) window.initAuth();
 
 // Save data when page closes/refreshes
 window.addEventListener('beforeunload', () => {
-    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
 });
 
 // Periodic save (every 30 seconds)
 setInterval(() => {
-    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
 }, 30000);
-// --- Data Bridge (Connected to auth.js) ---
-window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStair, pets, cPet, maps, cMap, crowns, crystals) {
-    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}`);
-    window.aiHighScore = score;
-    if (highScoreEl) highScoreEl.innerText = window.aiHighScore;
-
-    window.totalCoins = coins;
-    if (coinEl) coinEl.innerText = window.totalCoins;
-
-    if (skins) window.ownedSkins = skins;
-    if (cSkin) window.currentSkin = cSkin;
-
-    // Sync Missing Data Types
-    if (stairSkins) window.ownedStairSkins = stairSkins;
-    if (cStair) window.currentStairSkin = cStair;
-
-    if (pets) window.ownedPets = pets;
-    if (cPet) window.currentPet = cPet;
-
-    if (maps) window.ownedMaps = maps;
-    if (cMap) window.currentMap = cMap;
-
-    if (crowns !== undefined) window.pharaohCrowns = crowns;
-    if (crystals !== undefined) window.snowCrystals = crystals;
-
-    window.isDataLoaded = true; // Unlock saving
-    updateShopUI();
-    if (typeof updateUnlockStatus === 'function') updateUnlockStatus();
-};

@@ -79,16 +79,30 @@ function createShopItemElement(id, data, category) {
     if (data.previewImg) {
         previewImgTag = `<img src="${data.previewImg}" alt="${data.name} preview" style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px;"/>`;
     }
+    const currentLevel = window.skinLevels?.[id] || 1;
+    const enhanceCost = currentLevel * 5000;
+    const nextBonus = (currentLevel + 1) * 5; // Example: Level 2 = 10% bonus coins
+
     div.innerHTML = `
         ${previewImgTag}
         <div style="font-size: 40px; margin-bottom: 5px;">${data.icon}</div>
-        <div style="font-weight: bold; margin-bottom: 5px;">${data.name}</div>
+        <div style="font-weight: bold; margin-bottom: 2px;">${data.name}</div>
+        ${isOwned && category === 'char' ? `<div style="color: #2ecc71; font-size: 14px; font-weight: bold; margin-bottom: 5px;">Lv. ${currentLevel}</div>` : ''}
         ${requirementDisplay}
         ${!isOwned && data.price ? `<div style="color: #f1c40f; font-size: 14px; margin-bottom: 8px;">💰 ${data.price}</div>` : ''}
         ${effectDisplay}
-        <button id="btn-${id}" 
-            class="${isOwned ? 'equip-btn' : 'buy-btn'}"
-            style="width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')}; color: #fff;">${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}</button>
+        <div style="display: flex; gap: 5px; margin-top: 8px;">
+            <button id="btn-${id}" 
+                class="${isOwned ? 'equip-btn' : 'buy-btn'}"
+                style="flex: 2; padding: 8px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; background: ${isOwned ? (isEquipped ? '#555' : '#27ae60') : (data.price ? '#e67e22' : '#7f8c8d')}; color: #fff;">
+                ${isOwned ? (isEquipped ? '장착됨' : '장착하기') : (data.price ? '구매하기' : '잠김')}
+            </button>
+            ${isOwned && category === 'char' ? `
+            <button class="enhance-btn" data-id="${id}"
+                style="flex: 1; padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid #f1c40f; background: #111; color: #f1c40f; font-size: 11px; font-weight: bold;">
+                강화<br>(${enhanceCost})
+            </button>` : ''}
+        </div>
     `;
 
     return div;
@@ -339,4 +353,38 @@ function bindBuyEquipButtons() {
             }
         };
     });
+
+    // Enhance Button Clicks
+    document.querySelectorAll('.enhance-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            enhanceSkin(id);
+        };
+    });
+}
+
+function enhanceSkin(id) {
+    const currentLevel = window.skinLevels[id] || 1;
+    const cost = currentLevel * 5000;
+
+    if (window.totalCoins < cost) {
+        return alert(`❌ 골드가 부족합니다! (필요: ${cost}G)`);
+    }
+
+    if (confirm(`${SKIN_DATA[id].name} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n(비용: ${cost}G)\n\n효과: 코인 보너스 및 타이머 효율 증가!`)) {
+        window.totalCoins -= cost;
+        window.skinLevels[id] = currentLevel + 1;
+
+        localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+        localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+
+        // Sync and Update UI
+        if (window.saveData) {
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+        }
+
+        alert(`✨ 강화 성공! ${SKIN_DATA[id].name} Lv.${window.skinLevels[id]} 달성!`);
+        updateShopUI();
+    }
 }
