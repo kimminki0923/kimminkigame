@@ -227,7 +227,127 @@ function bindShopEvents() {
         const btn = document.getElementById(`tab-${t}`);
         if (btn) btn.onclick = () => switchShopTab(t);
     });
+
+    // Enhancement Overlay Events
+    bindEnhanceEvents();
 }
+
+// ============================================================
+// Enhancement Overlay Functions
+// ============================================================
+function bindEnhanceEvents() {
+    const openBtn = document.getElementById('enhance-open-btn');
+    const overlay = document.getElementById('enhance-overlay');
+    const closeBtns = [document.getElementById('close-enhance-btn'), document.getElementById('close-enhance-btn-bottom')];
+
+    if (openBtn) {
+        openBtn.onclick = () => {
+            overlay.style.display = 'flex';
+            updateEnhanceUI();
+        };
+    }
+
+    closeBtns.forEach(btn => {
+        if (btn) btn.onclick = () => overlay.style.display = 'none';
+    });
+}
+
+function updateEnhanceUI() {
+    // Update gold display
+    const goldDisplay = document.getElementById('enhance-gold-display');
+    if (goldDisplay) goldDisplay.innerText = window.totalCoins;
+
+    // Update skin list
+    const skinList = document.getElementById('enhance-skin-list');
+    if (!skinList) return;
+
+    skinList.innerHTML = '';
+
+    window.ownedSkins.forEach(id => {
+        const skinData = window.SKIN_DATA?.[id];
+        if (!skinData) return;
+
+        const currentLevel = window.skinLevels?.[id] || 1;
+        const isMaxLevel = currentLevel >= 5;
+        const cost = 5000 * Math.pow(2, currentLevel - 1);
+        const successRates = [100, 80, 50, 10];
+        const successRate = successRates[currentLevel - 1] || 0;
+
+        const itemDiv = document.createElement('div');
+        itemDiv.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);';
+
+        itemDiv.innerHTML = `
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span style="font-size:32px;">${skinData.icon}</span>
+                <div>
+                    <div style="color:#fff; font-weight:bold; font-size:14px;">${skinData.name}</div>
+                    <div style="color:#2ecc71; font-size:13px; font-weight:bold;">Lv. ${currentLevel}${isMaxLevel ? ' <span style="color:#f1c40f;">✨MAX</span>' : ''}</div>
+                </div>
+            </div>
+            ${isMaxLevel ?
+                '<div style="color:#f1c40f; font-weight:bold; font-size:12px;">최대 레벨!</div>' :
+                `<button class="enhance-action-btn" data-id="${id}" 
+                    style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:900; font-size:12px; box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);">
+                    강화<br>${cost}G (${successRate}%)
+                </button>`
+            }
+        `;
+
+        skinList.appendChild(itemDiv);
+    });
+
+    // Bind enhance action buttons
+    document.querySelectorAll('.enhance-action-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            performEnhancement(id);
+        };
+    });
+}
+
+function performEnhancement(id) {
+    const currentLevel = window.skinLevels[id] || 1;
+
+    if (currentLevel >= 5) {
+        return alert('✨ 이미 최대 레벨(Lv.5)입니다!');
+    }
+
+    const cost = 5000 * Math.pow(2, currentLevel - 1);
+    const successRates = [100, 80, 50, 10];
+    const successRate = successRates[currentLevel - 1] || 0;
+
+    if (window.totalCoins < cost) {
+        return alert(`❌ 골드가 부족합니다! (필요: ${cost}G)`);
+    }
+
+    const skinName = window.SKIN_DATA?.[id]?.name || id;
+    if (confirm(`${skinName} 스킨을 Lv.${currentLevel + 1}로 강화하시겠습니까?\n\n비용: ${cost}G\n성공확률: ${successRate}%\n\n⚠️ 실패 시 골드만 소모됩니다!`)) {
+        // Deduct gold first
+        window.totalCoins -= cost;
+        localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+
+        // Roll for success
+        const roll = Math.random() * 100;
+        const success = roll < successRate;
+
+        if (success) {
+            window.skinLevels[id] = currentLevel + 1;
+            localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+            alert(`✨ 강화 성공! ${skinName} Lv.${window.skinLevels[id]} 달성!`);
+        } else {
+            alert(`💥 강화 실패... (${cost}G 소모)\n다음에 다시 도전해보세요!`);
+        }
+
+        // Sync and Update UI
+        if (window.saveData) {
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+        }
+        updateEnhanceUI();
+        updateShopUI();
+    }
+}
+
 
 function equipStairSkin(id) {
     console.log('[Shop] Equipping stair skin:', id);
