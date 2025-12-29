@@ -171,6 +171,7 @@
                             style="background:#9b59b6; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #8e44ad; transition:transform 0.1s;">🛒
                             아이템 상점</button>
                         <button id="enhance-open-btn"
+                            onclick="if(typeof updateEnhanceUI==='function')updateEnhanceUI();document.getElementById('enhance-overlay').style.display='flex';"
                             style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:900; box-shadow:0 4px 0 #d68910, 0 0 20px rgba(241, 196, 15, 0.5); transition:transform 0.1s;">⚔️
                             스킨 강화</button>
                         <button id="settings-open-btn"
@@ -214,6 +215,7 @@
                             style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 2px solid rgba(241, 196, 15, 0.3); padding-bottom: 15px;">
                             <h2 style="margin:0; color:#f1c40f; font-size:24px;">⚔️ 스킨 강화</h2>
                             <button id="close-enhance-btn"
+                                onclick="document.getElementById('enhance-overlay').style.display='none'"
                                 style="background:#e74c3c; color:white; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; font-weight:bold;">×</button>
                         </div>
 
@@ -252,6 +254,7 @@
 
                         <!-- Close Button -->
                         <button id="close-enhance-btn-bottom"
+                            onclick="document.getElementById('enhance-overlay').style.display='none'"
                             style="width:100%; margin-top:25px; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold;">
                             ✕ 닫기
                         </button>
@@ -963,7 +966,7 @@
     <script src="game/graphics.js?v=1.90"></script>
     <script src="game/player.js?v=1.90"></script>
     <script src="game/ai.js?v=1.90"></script>
-    <script src="game/shop.js?v=1.91"></script>
+    <script src="game/shop.js?v=1.92"></script>
     <script src="game/settings.js?v=1.90"></script>
     <script src="game/audio.js?v=1.90"></script>
     <!-- Core Game Controller -->

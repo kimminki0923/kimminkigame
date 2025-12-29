@@ -609,21 +609,16 @@ function updateEnhanceUI() {
             </div>
             ${isMaxLevel
                 ? '<span style="color:#2ecc71; font-weight:bold; font-size:18px;">✨MAX</span>'
-                : `<button class="perform-enhance-btn" data-skin-id="${skinId}" style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">강화</button>`
+                : `<button onclick="performEnhancement('${skinId}')" style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">강화</button>`
             }
         `;
 
         listContainer.appendChild(item);
     });
-
-    // Bind enhance button events
-    listContainer.querySelectorAll('.perform-enhance-btn').forEach(btn => {
-        btn.onclick = () => {
-            const skinId = btn.dataset.skinId;
-            performEnhancement(skinId);
-        };
-    });
 }
+
+// Make performEnhancement globally accessible for inline onclick
+window.performEnhancement = performEnhancement;
 
 function performEnhancement(skinId) {
     const currentLevel = (window.skinLevels && window.skinLevels[skinId]) || 1;
