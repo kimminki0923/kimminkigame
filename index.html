@@ -111,6 +111,7 @@
 <body>
     <nav id="nav-bar">
         <button onclick="showPage('page-stairs')" class="nav-btn active" id="nav-stairs">Infinite Stairs</button>
+        <button onclick="showPage('page-zigzag')" class="nav-btn" id="nav-zigzag">ZigZag</button>
         <button onclick="showPage('page-liar')" class="nav-btn" id="nav-liar">Liar Game</button>
         <button onclick="showPage('page-mafia')" class="nav-btn" id="nav-mafia">Mafia Game</button>
     </nav>
@@ -650,6 +651,21 @@
         </div>
     </div>
 
+    <!-- ZigZag Game Page -->
+    <div id="page-zigzag" class="page">
+        <div id="zigzag-game-container"
+            style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, #1a252f 0%, #34495e 100%); position:relative;">
+            <canvas id="zigzagCanvas" style="border-radius:20px; box-shadow:0 10px 40px rgba(0,0,0,0.5);"></canvas>
+
+            <!-- ZigZag 게임 설명 패널 -->
+            <div id="zigzag-info-panel"
+                style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); padding:15px 30px; border-radius:15px; color:#fff; font-size:14px; text-align:center; backdrop-filter:blur(10px);">
+                <span style="color:#f39c12;">🎮</span>
+                <span style="color:#95a5a6;">클릭 또는 스페이스바로 방향 전환</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Liar Game Page -->
     <div id="page-liar" class="page">
         <div id="liar-game-container">
@@ -895,6 +911,7 @@
     <script src="game/audio.js?v=1.60"></script>
     <!-- Core Game Controller -->
     <script src="game/core.js?v=1.60"></script>
+    <script src="zigzag_game.js?v=1.60"></script>
     <script src="liar_game.js"></script>
     <script src="mafia_game.js"></script>
 </body>

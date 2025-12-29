@@ -26,4 +26,17 @@ window.showPage = function (pageId) {
             if (mobileControls) mobileControls.style.display = 'flex';
         }
     }
+
+    // ZigZag game page handling
+    if (pageId === 'page-zigzag') {
+        // Resume/init ZigZag game when switching to its page
+        if (window.zigzagGame && typeof window.zigzagGame.resume === 'function') {
+            window.zigzagGame.resume();
+        }
+    } else {
+        // Pause ZigZag game when leaving its page
+        if (window.zigzagGame && typeof window.zigzagGame.pause === 'function') {
+            window.zigzagGame.pause();
+        }
+    }
 }
