@@ -176,4 +176,89 @@ function bindSettingsEvents() {
 
     // Key capture listener
     document.addEventListener('keydown', handleKeyCapture, true);
+
+    // Touchpad Size Slider Logic
+    const sizeSlider = document.getElementById('touchpad-size-slider');
+    const sizeDisplay = document.getElementById('touchpad-size-display');
+
+    if (sizeSlider && sizeDisplay) {
+        // Init with current value
+        sizeSlider.value = window.touchpadSize;
+        sizeDisplay.innerText = window.touchpadSize + '%';
+        applyTouchpadSize(window.touchpadSize);
+
+        // On Change
+        sizeSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            sizeDisplay.innerText = val + '%';
+            window.touchpadSize = val;
+            applyTouchpadSize(val);
+        });
+
+        // On Save
+        sizeSlider.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value);
+            localStorage.setItem('touchpadSize', val);
+            console.log(`[Settings] Touchpad Size Saved: ${val}%`);
+        });
+    }
 }
+
+
+function applyTouchpadSize(sizePercent) {
+    const scale = sizePercent / 100;
+    const baseSize = 80; // Base size for mobile buttons
+    // Actually, let's just scale whatever the CSS default is.
+    // CSS for #mobile-controls button is width: 100px / 120px depending on media query.
+    // We will inject specific styles to override CSS.
+
+    const jumpBtn = document.getElementById('btn-jump');
+    const turnBtn = document.getElementById('btn-turn');
+
+    if (jumpBtn && turnBtn) {
+        // We need to adhere to the base size logic.
+        // Let's assume a base size of 100px roughly.
+        // It's better to use transform: scale() to avoid layout break
+        // OR simply set width/height/fontSize inline.
+
+        // Let's use specific Width/Height based on "Base Size 100px" as reference point
+        // and let CSS media queries handle position.
+
+        // Actually a better way: adjust transform scale on the buttons? No, that might affect hit area weirdly or position.
+        // Best way: Set width/height explicitly.
+
+        // Base size logic:
+        // PC/Tablet Base: 120px
+        // Mobile Base: 100px
+        // Small Mobile Base: 85px
+
+        // We can't easily know which media query is active in JS without checking window.innerWidth.
+        // Simple approach: Use a CSS variable or just modify the style directly.
+
+        // Let's use a scale factor relative to a nominal size, or just update CSS var if possible.
+        // Since we don't have CSS vars defined for this, let's set inline styles.
+
+        // However, user might be on PC resizing window.
+        // Let's rely on a base size of roughly 100px for calculation simplicity.
+
+        // Dynamic Base Size Check
+        let base = 100;
+        if (window.innerWidth <= 480) base = 85;
+        else if (window.innerWidth <= 1024) base = 100;
+        else base = 120;
+
+        const newSize = base * scale;
+        const newFontSize = (base * 0.22) * scale; // Roughly 22% of size
+
+        [jumpBtn, turnBtn].forEach(btn => {
+            btn.style.width = `${newSize}px`;
+            btn.style.height = `${newSize}px`;
+            btn.style.fontSize = `${newFontSize}px`;
+        });
+    }
+}
+
+// Ensure size is applied on resize too (to handle media query base changes)
+window.addEventListener('resize', () => {
+    if (window.touchpadSize) applyTouchpadSize(window.touchpadSize);
+});

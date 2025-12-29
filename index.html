@@ -170,6 +170,9 @@
                         <button id="shop-open-btn"
                             style="background:#9b59b6; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #8e44ad; transition:transform 0.1s;">🛒
                             아이템 상점</button>
+                        <button id="enhance-open-btn"
+                            style="background:linear-gradient(135deg, #f1c40f, #f39c12); color:#000; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:900; box-shadow:0 4px 0 #d68910, 0 0 20px rgba(241, 196, 15, 0.5); transition:transform 0.1s;">⚔️
+                            스킨 강화</button>
                         <button id="settings-open-btn"
                             style="background:#3498db; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #2980b9; transition:transform 0.1s;">⚙️
                             설정</button>
@@ -181,12 +184,11 @@
                         <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
                     </div>
 
-                    <!-- Version 2: Reverse Mode Button -->
+                    <!-- Special Modes Button -->
                     <div style="margin-top:15px;">
-                        <button id="reverse-start-btn" class="ai-btn"
-                            style="background: linear-gradient(135deg, #8e44ad, #6c5ce7); border: 2px solid #fff; opacity: 0.5; position: relative;"
-                            disabled>
-                            🔽 리버스 모드 (Lv.1000 해금)
+                        <button id="special-modes-btn" class="ai-btn"
+                            style="background: linear-gradient(135deg, #e74c3c, #c0392b); border: 2px solid #fff;">
+                            🎲 특별 모드
                         </button>
                     </div>
 
@@ -198,8 +200,119 @@
                     </div>
                 </div>
 
+                <!-- Special Modes Overlay -->
+                <div id="special-modes-overlay"
+                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
+                    <div
+                        style="background:linear-gradient(135deg, #1a1a2e, #16213e); padding:30px; border-radius:30px; max-width:400px; width:90%; border:3px solid #e74c3c; box-shadow: 0 0 50px rgba(231, 76, 60, 0.3);">
+                        <!-- Header -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 2px solid rgba(231, 76, 60, 0.3); padding-bottom: 15px;">
+                            <h2 style="margin:0; color:#e74c3c; font-size:24px;">🎲 특별 모드</h2>
+                            <button id="close-special-modes-btn"
+                                style="background:#e74c3c; color:white; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; font-weight:bold;">×</button>
+                        </div>
+
+                        <!-- Mode Buttons -->
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            <!-- Reverse Mode -->
+                            <button id="reverse-start-btn"
+                                style="background: linear-gradient(135deg, #8e44ad, #6c5ce7); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left; opacity:0.5;"
+                                disabled>
+                                <div style="display:flex; align-items:center; gap:15px;">
+                                    <span style="font-size:32px;">🔽</span>
+                                    <div>
+                                        <div>리버스 모드</div>
+                                        <div style="font-size:12px; opacity:0.7;">Lv.1000 해금</div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- Pharaoh Dungeon -->
+                            <button id="dungeon-start-btn"
+                                style="background: linear-gradient(135deg, #d4a860, #8B7355); color:white; border:none; padding:20px; font-size:18px; border-radius:15px; cursor:pointer; font-weight:bold; text-align:left;">
+                                <div style="display:flex; align-items:center; gap:15px;">
+                                    <span style="font-size:32px;">🏛️</span>
+                                    <div>
+                                        <div>파라오 던전</div>
+                                        <div style="font-size:12px; opacity:0.7;">👑 왕관 3개 소모 | 💰 클리어 시 100,000G</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Crown Count Display -->
+                        <div
+                            style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:10px; text-align:center;">
+                            <span style="color:#f1c40f; font-size:18px;">👑 보유 왕관: <span
+                                    id="crown-count-display">0</span>개</span>
+                        </div>
+
+                        <!-- Close Button -->
+                        <button id="close-special-modes-btn-bottom"
+                            style="width:100%; margin-top:20px; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold;">
+                            ✕ 닫기
+                        </button>
+                    </div>
+                </div>
+
+
                 <button id="stop-btn"
                     style="display:none; position:absolute; top:10px; right:10px; background:#c0392b;">STOP</button>
+
+                <!-- Enhancement Overlay (Modal Style) -->
+                <div id="enhance-overlay"
+                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
+                    <div
+                        style="background:linear-gradient(135deg, #1a1a2e, #16213e); padding:30px; border-radius:30px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; border:3px solid #f1c40f; box-shadow: 0 0 50px rgba(241, 196, 15, 0.3);">
+                        <!-- Header -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 2px solid rgba(241, 196, 15, 0.3); padding-bottom: 15px;">
+                            <h2 style="margin:0; color:#f1c40f; font-size:24px;">⚔️ 스킨 강화</h2>
+                            <button id="close-enhance-btn"
+                                style="background:#e74c3c; color:white; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; font-weight:bold;">×</button>
+                        </div>
+
+                        <!-- Gold Display -->
+                        <div
+                            style="background:rgba(241,196,15,0.15); padding:15px 20px; border-radius:15px; margin-bottom:20px; text-align:center; border:1px solid #f1c40f;">
+                            <span style="color:#aaa; font-size:14px;">보유 골드</span>
+                            <div style="font-size:28px; color:#f1c40f; font-weight:900;">🪙 <span
+                                    id="enhance-gold-display">0</span> G</div>
+                        </div>
+
+                        <!-- Enhancement Info -->
+                        <div
+                            style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; margin-bottom:20px;">
+                            <h4 style="margin:0 0 10px 0; color:#fff;">📊 강화 확률표</h4>
+                            <div
+                                style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; text-align:center; font-size:12px;">
+                                <div style="background:#27ae60; padding:8px; border-radius:8px; color:#fff;">
+                                    Lv.1→2<br><b>100%</b><br>5,000G</div>
+                                <div style="background:#3498db; padding:8px; border-radius:8px; color:#fff;">
+                                    Lv.2→3<br><b>80%</b><br>10,000G</div>
+                                <div style="background:#e67e22; padding:8px; border-radius:8px; color:#fff;">
+                                    Lv.3→4<br><b>50%</b><br>20,000G</div>
+                                <div style="background:#e74c3c; padding:8px; border-radius:8px; color:#fff;">
+                                    Lv.4→5<br><b>10%</b><br>40,000G</div>
+                            </div>
+                            <p style="color:#aaa; font-size:11px; margin:10px 0 0 0; text-align:center;">⚠️ 실패 시 골드만
+                                소모됩니다!</p>
+                        </div>
+
+                        <!-- Skin List -->
+                        <h4 style="color:#fff; margin:0 0 15px 0;">👤 보유 캐릭터 목록</h4>
+                        <div id="enhance-skin-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <!-- Dynamically populated -->
+                        </div>
+
+                        <!-- Close Button -->
+                        <button id="close-enhance-btn-bottom"
+                            style="width:100%; margin-top:25px; padding:15px; border-radius:15px; font-size:16px; background:#e74c3c; color:white; border:none; cursor:pointer; font-weight:bold;">
+                            ✕ 닫기
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Shop Overlay (Modal Style) -->
                 <div id="shop-overlay"
@@ -412,6 +525,18 @@
                                 <button id="toggle-sfx-btn"
                                     style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">끄기</button>
                             </div>
+
+                            <!-- Touchpad Size Slider -->
+                            <div
+                                style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; margin-bottom:25px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                    <div style="color:#fff; font-weight:bold; font-size:16px;">📱 터치패드 크기</div>
+                                    <div style="color:#2ecc71; font-weight:bold;" id="touchpad-size-display">100%</div>
+                                </div>
+                                <input type="range" id="touchpad-size-slider" min="50" max="200" value="100" step="10"
+                                    style="width:100%; cursor:pointer;">
+                            </div>
+
 
                             <!-- Reset Button -->
                             <button id="reset-keys-btn"
@@ -906,12 +1031,12 @@
     <script src="game/graphics.js?v=1.90"></script>
     <script src="game/player.js?v=1.90"></script>
     <script src="game/ai.js?v=1.90"></script>
-    <script src="game/shop.js?v=1.92"></script>
+    <script src="game/shop.js?v=1.90"></script>
     <script src="game/settings.js?v=1.90"></script>
     <script src="game/audio.js?v=1.90"></script>
     <!-- Core Game Controller -->
     <script src="game/core.js?v=1.90"></script>
-    <script src="zigzag_game.js?v=1.91"></script>
+    <script src="zigzag_game.js?v=1.60"></script>
     <script src="liar_game.js"></script>
     <script src="mafia_game.js"></script>
 </body>

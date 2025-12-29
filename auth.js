@@ -325,8 +325,7 @@ function updateUI_LoggedIn(user) {
                     JSON.parse(localStorage.getItem('ownedMaps') || '["default"]'),
                     localStorage.getItem('currentMap') || 'default',
                     parseInt(localStorage.getItem('pharaohCrowns') || 0),
-                    parseInt(localStorage.getItem('snowCrystals') || 0),
-                    JSON.parse(localStorage.getItem('skinLevels') || '{}')
+                    parseInt(localStorage.getItem('snowCrystals') || 0)
                 );
             }
             // Update local display if initialized

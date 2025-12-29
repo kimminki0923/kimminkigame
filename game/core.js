@@ -596,14 +596,15 @@ function gameOver() {
 function gameLoop(timestamp) {
     if (window.gameState.running) {
         // 난이도 조절: 처음엔 아주 느리게, 점수 올라갈수록 빨라짐
-        // 0점: 0.05, 100점: 0.25, 200점: 0.45, 500점: 1.0
         let currentDecay = 0.05 + (window.gameState.score * 0.002);
-        currentDecay = Math.min(currentDecay, 1.0); // 최대 감소량 제한
+        currentDecay = Math.min(currentDecay, 1.0);
 
-        // ============================================================
-        // POLAR BEAR & PENGUIN PET EFFECT (북극곰/펭귄 펫 효과)
-        // 효과: 강인한 체력으로 타이머 감소 속도 1.5배 완화
-        // ============================================================
+        // Dungeon mode: faster timer decay
+        if (window.gameState.isDungeonMode) {
+            currentDecay *= 1.5;
+        }
+
+        // POLAR BEAR & PENGUIN PET EFFECT
         if (typeof window.currentPet !== 'undefined' &&
             (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin')) {
             currentDecay /= 1.5;
@@ -612,7 +613,6 @@ function gameLoop(timestamp) {
         // SKIN LEVEL BONUS: Timer Efficiency
         const skinLv = window.skinLevels?.[currentSkin] || 1;
         if (skinLv > 1) {
-            // Level 2: 5% slower decay, Level 3: 10% ...
             const efficiency = 1 + (skinLv - 1) * 0.05;
             currentDecay /= efficiency;
         }
@@ -625,22 +625,33 @@ function gameLoop(timestamp) {
         if (window.gameState.timer < 30) col = '#f44336';
         else if (window.gameState.timer < 60) col = '#ff9800';
         timerBar.style.background = col;
+
+        // ============================================================
+        // DUNGEON MODE: Projectile System
+        // ============================================================
+        if (window.gameState.isDungeonMode) {
+            spawnProjectile();
+            updateProjectiles();
+
+            // Check victory
+            if (checkDungeonVictory()) return;
+        }
     }
 
     if (isFalling) updateFall();
 
-    // 부드러운 플레이어 이동 (0.07 = 적당한 부드러움과 반응성)
+    // 버터처럼 부드러운 플레이어 이동
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.07; // 0.03(부드러움) < 0.07 < 0.12(딱딱함)
+        const smoothness = 0.03;
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
 
     drawGameState();
-    // Start Loop
     requestAnimationFrame(gameLoop);
 }
+
 
 // Compatibility Alias (for buttons calling initGame)
 window.initGame = window.startGame;
@@ -673,18 +684,181 @@ autoPlayBtn.addEventListener('click', () => {
     initGame();
 });
 
+// ============================================================
+// SPECIAL MODES UI
+// ============================================================
+const specialModesBtn = document.getElementById('special-modes-btn');
+const specialModesOverlay = document.getElementById('special-modes-overlay');
+const closeSpecialModesBtn = document.getElementById('close-special-modes-btn');
+const closeSpecialModesBtnBottom = document.getElementById('close-special-modes-btn-bottom');
+const dungeonStartBtn = document.getElementById('dungeon-start-btn');
+const crownCountDisplay = document.getElementById('crown-count-display');
+
+// Open Special Modes
+if (specialModesBtn) {
+    specialModesBtn.addEventListener('click', () => {
+        specialModesOverlay.style.display = 'flex';
+        if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
+        updateUnlockStatus();
+    });
+}
+
+// Close Special Modes
+[closeSpecialModesBtn, closeSpecialModesBtnBottom].forEach(btn => {
+    if (btn) btn.addEventListener('click', () => {
+        specialModesOverlay.style.display = 'none';
+    });
+});
+
+// Reverse Mode Toggle (now inside Special Modes)
 document.getElementById('reverse-start-btn').addEventListener('click', () => {
     if (window.resumeAudio) window.resumeAudio();
     const nextMode = !window.gameState.isReverseMode;
     console.log(`[Mode] Switching to ${nextMode ? 'REVERSE' : 'NORMAL'}`);
-    setupEnvironment(nextMode);
 
-    // Update button text to show what's selected
-    const btn = document.getElementById('reverse-start-btn');
-    if (btn) {
-        btn.innerText = nextMode ? "🔼 일반 모드로 변경" : "🔽 리버스 모드 변경";
-    }
+    // Reset dungeon mode if switching
+    window.gameState.isDungeonMode = false;
+
+    setupEnvironment(nextMode);
+    specialModesOverlay.style.display = 'none';
+
+    // Start the game
+    window.isTraining = false;
+    window.isAutoPlaying = false;
+    startGame();
 });
+
+// ============================================================
+// PHARAOH DUNGEON MODE
+// ============================================================
+const DUNGEON_CROWN_COST = 3;
+const DUNGEON_CLEAR_GOAL = 200;
+const DUNGEON_CLEAR_REWARD = 100000;
+
+if (dungeonStartBtn) {
+    dungeonStartBtn.addEventListener('click', () => {
+        // Check crown count
+        if ((window.pharaohCrowns || 0) < DUNGEON_CROWN_COST) {
+            alert(`왕관이 부족합니다! (보유: ${window.pharaohCrowns || 0}개 / 필요: ${DUNGEON_CROWN_COST}개)`);
+            return;
+        }
+
+        // Confirm entry
+        if (!confirm(`👑 왕관 ${DUNGEON_CROWN_COST}개를 사용하여 파라오 던전에 입장하시겠습니까?\n\n🎯 목표: ${DUNGEON_CLEAR_GOAL}계단 클리어\n💰 보상: ${DUNGEON_CLEAR_REWARD.toLocaleString()}G`)) {
+            return;
+        }
+
+        // Deduct crowns
+        window.pharaohCrowns -= DUNGEON_CROWN_COST;
+        localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
+        console.log(`[Dungeon] Entered! Crowns spent: ${DUNGEON_CROWN_COST}. Remaining: ${window.pharaohCrowns}`);
+
+        // Start Dungeon Mode
+        if (window.resumeAudio) window.resumeAudio();
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = true;
+        window.dungeonProjectiles = [];
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "🏛️ 파라오 던전 모드!";
+            statusEl.style.color = "#d4a860";
+        }
+    });
+}
+
+// ============================================================
+// PROJECTILE SYSTEM
+// ============================================================
+function spawnProjectile() {
+    if (!window.gameState.isDungeonMode || !window.gameState.running) return;
+
+    const score = window.gameState.score;
+    // Spawn rate increases with score
+    const spawnChance = 0.02 + (score * 0.0002); // 2% base + 0.02% per stair
+
+    if (Math.random() < spawnChance) {
+        const fromLeft = Math.random() < 0.5;
+        const speed = 3 + (score * 0.02); // Speed increases
+        const playerY = window.gameState.renderPlayer.y;
+
+        window.dungeonProjectiles.push({
+            x: fromLeft ? -50 : window.canvas.width + 50,
+            y: playerY * STAIR_H + (Math.random() - 0.5) * 100, // Near player height
+            vx: fromLeft ? speed : -speed,
+            type: Math.random() < 0.5 ? 'spear' : 'arrow'
+        });
+    }
+}
+
+function updateProjectiles() {
+    if (!window.gameState.isDungeonMode) return;
+
+    const playerScreenX = window.canvas.width / 2;
+    const playerScreenY = window.canvas.height / 2 - 50;
+    const hitRadius = 25;
+
+    for (let i = window.dungeonProjectiles.length - 1; i >= 0; i--) {
+        const p = window.dungeonProjectiles[i];
+        p.x += p.vx;
+
+        // Remove if off screen
+        if (p.x < -100 || p.x > window.canvas.width + 100) {
+            window.dungeonProjectiles.splice(i, 1);
+            continue;
+        }
+
+        // Collision check (simple circle collision)
+        const dx = p.x - playerScreenX;
+        const dy = p.y - playerScreenY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < hitRadius + 15) {
+            console.log('[Dungeon] Player hit by projectile!');
+            window.dungeonProjectiles = [];
+            dungeonGameOver(false);
+            return;
+        }
+    }
+}
+
+function dungeonGameOver(isVictory) {
+    window.gameState.running = false;
+    window.gameState.gameOver = true;
+    window.gameState.isDungeonMode = false;
+
+    if (isVictory) {
+        // Victory!
+        totalCoins += DUNGEON_CLEAR_REWARD;
+        localStorage.setItem('infinite_stairs_coins', totalCoins);
+        if (coinEl) coinEl.innerText = totalCoins;
+
+        alert(`🎉 파라오 던전 클리어!\n\n💰 ${DUNGEON_CLEAR_REWARD.toLocaleString()}G 획득!`);
+        console.log(`[Dungeon] Victory! Reward: ${DUNGEON_CLEAR_REWARD}G`);
+    } else {
+        alert('💀 파라오의 저주에 맞았습니다...\n\n다시 도전하세요!');
+        console.log('[Dungeon] Failed - hit by projectile');
+    }
+
+    menuOverlay.style.display = 'block';
+    startBtn.style.display = 'inline-block';
+    if (statusEl) statusEl.innerText = 'Ready';
+}
+
+// Check dungeon victory condition
+function checkDungeonVictory() {
+    if (window.gameState.isDungeonMode && window.gameState.score >= DUNGEON_CLEAR_GOAL) {
+        dungeonGameOver(true);
+        return true;
+    }
+    return false;
+}
+
 resetAiBtn.addEventListener('click', () => {
     if (confirm("AI Reset?")) {
         window.qTable = {}; episode = 0; epsilon = 1.0; aiHighScore = 0;

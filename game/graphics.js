@@ -253,6 +253,175 @@ function drawDesertBackground(camX, camY, score, w, h) {
     ctx.fillRect(0, h * 0.85, w, h * 0.15);
 }
 
+// ============================================================
+// DUNGEON BACKGROUND (파라오 던전 내부)
+// ============================================================
+function drawDungeonBackground(camX, camY, score, w, h) {
+    // Dark stone gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#1a1a1a');
+    grad.addColorStop(0.5, '#2d2d2d');
+    grad.addColorStop(1, '#0d0d0d');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Stone brick pattern (parallax)
+    const brickW = 80;
+    const brickH = 40;
+    const offsetX = (camX * 0.1) % brickW;
+    const offsetY = (camY * 0.1) % brickH;
+
+    ctx.strokeStyle = 'rgba(100, 80, 60, 0.3)';
+    ctx.lineWidth = 2;
+
+    for (let y = -brickH; y < h + brickH; y += brickH) {
+        const rowOffset = ((y / brickH) % 2 === 0) ? 0 : brickW / 2;
+        for (let x = -brickW; x < w + brickW; x += brickW) {
+            ctx.strokeRect(x - offsetX + rowOffset, y - offsetY, brickW, brickH);
+        }
+    }
+
+    // Hieroglyphics on walls (decorative)
+    ctx.font = '24px serif';
+    ctx.fillStyle = 'rgba(212, 168, 96, 0.2)';
+    const hieroglyphs = ['𓀀', '𓀁', '𓂀', '𓃒', '𓆣', '𓇯', '𓊃', '𓌹', '𓏏', '𓃭'];
+    for (let i = 0; i < 15; i++) {
+        const hx = (i * 150 + camX * 0.05) % (w + 100) - 50;
+        const hy = 50 + (i % 3) * 30;
+        ctx.fillText(hieroglyphs[i % hieroglyphs.length], hx, hy);
+    }
+
+    // Torches on sides (animated)
+    const torchY = h * 0.4;
+    drawTorch(ctx, 50, torchY, time);
+    drawTorch(ctx, w - 50, torchY, time);
+    drawTorch(ctx, 50, torchY + 200, time + 0.5);
+    drawTorch(ctx, w - 50, torchY + 200, time + 0.5);
+
+    // Golden glow from torches
+    const torchGlow = ctx.createRadialGradient(w / 2, h / 2, 100, w / 2, h / 2, h);
+    torchGlow.addColorStop(0, 'rgba(255, 180, 80, 0.1)');
+    torchGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = torchGlow;
+    ctx.fillRect(0, 0, w, h);
+
+    // Danger indicator based on score
+    const progress = score / 200;
+    if (progress > 0.5) {
+        ctx.fillStyle = `rgba(255, 0, 0, ${(progress - 0.5) * 0.1})`;
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    // Progress bar at top
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(w * 0.2, 15, w * 0.6, 20);
+    ctx.fillStyle = `rgb(${255 - progress * 155}, ${progress * 200}, 50)`;
+    ctx.fillRect(w * 0.2, 15, w * 0.6 * Math.min(1, progress), 20);
+    ctx.strokeStyle = '#d4a860';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w * 0.2, 15, w * 0.6, 20);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`🏛️ ${score} / 200`, w * 0.5, 30);
+}
+
+function drawTorch(ctx, x, y, timeOffset) {
+    // Torch base
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(x - 5, y, 10, 40);
+
+    // Flame (animated)
+    const flameHeight = 25 + Math.sin(time * 10 + timeOffset) * 5;
+    const flameWidth = 15 + Math.sin(time * 15 + timeOffset) * 3;
+
+    // Outer glow
+    const glowGrad = ctx.createRadialGradient(x, y - 10, 0, x, y - 10, 50);
+    glowGrad.addColorStop(0, 'rgba(255, 150, 50, 0.3)');
+    glowGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flame layers
+    ctx.fillStyle = '#ff6600';
+    ctx.beginPath();
+    ctx.moveTo(x - flameWidth, y);
+    ctx.quadraticCurveTo(x, y - flameHeight * 1.5, x + flameWidth, y);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.moveTo(x - flameWidth * 0.6, y);
+    ctx.quadraticCurveTo(x, y - flameHeight, x + flameWidth * 0.6, y);
+    ctx.fill();
+}
+
+// ============================================================
+// PROJECTILE RENDERING (발사체 렌더링)
+// ============================================================
+function drawProjectiles() {
+    if (!window.gameState.isDungeonMode || !window.dungeonProjectiles) return;
+
+    window.dungeonProjectiles.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+
+        // Rotate based on direction
+        if (p.vx < 0) ctx.scale(-1, 1);
+
+        if (p.type === 'spear') {
+            // Spear
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, -3, 40, 6); // Handle
+
+            ctx.fillStyle = '#c0c0c0';
+            ctx.beginPath();
+            ctx.moveTo(40, -8);
+            ctx.lineTo(55, 0);
+            ctx.lineTo(40, 8);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            // Arrow
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, -2, 30, 4); // Shaft
+
+            // Feathers
+            ctx.fillStyle = '#dc143c';
+            ctx.beginPath();
+            ctx.moveTo(0, -2);
+            ctx.lineTo(-10, -8);
+            ctx.lineTo(5, -2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(0, 2);
+            ctx.lineTo(-10, 8);
+            ctx.lineTo(5, 2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Arrowhead
+            ctx.fillStyle = '#c0c0c0';
+            ctx.beginPath();
+            ctx.moveTo(30, -5);
+            ctx.lineTo(40, 0);
+            ctx.lineTo(30, 5);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.restore();
+    });
+}
+
+// Make drawProjectiles globally available
+window.drawProjectiles = drawProjectiles;
+
+
 function drawBackground(camX, camY) {
     // High-Quality Anti-Aliasing Enforcement
     ctx.imageSmoothingEnabled = true;
@@ -265,6 +434,12 @@ function drawBackground(camX, camY) {
     const w = canvas.width;
     const h = canvas.height;
 
+    // Check if Dungeon Mode
+    if (window.gameState.isDungeonMode) {
+        drawDungeonBackground(camX, camY, score, w, h);
+        return;
+    }
+
     // Check if using Winter Map
     if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_winter') {
         drawWinterBackground(camX, camY, score, w, h);
@@ -276,6 +451,7 @@ function drawBackground(camX, camY) {
         drawDesertBackgroundArtistic(camX, camY, score, w, h);
         return;
     }
+
 
     // Uses global time updated in render()
 
@@ -2155,11 +2331,11 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     time = Date.now() * 0.001;
 
-    // Camera & Player Interpolation (적당한 부드러움과 반응성)
+    // Camera & Player Interpolation (버터 스무스)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0 && !isFalling) {
-        // 0.03(부드러움) < 0.07 < 0.12(딱딱함)
-        const smoothness = 0.07;
+        // 매우 부드러운 이동: 낮은 lerp = 더 부드러움
+        const smoothness = 0.03; // 극강 버터 스무스
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
@@ -2431,6 +2607,12 @@ function render() {
     const bounce = Math.sin(Date.now() / 150) * 4;
     ctx.fillText(window.gameState.playerDir === 1 ? "→" : "←", px, py - 45 + bounce);
     ctx.shadowBlur = 0;
+
+    // Dungeon Projectiles
+    if (typeof drawProjectiles === 'function') {
+        drawProjectiles();
+    }
+
 
     // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
