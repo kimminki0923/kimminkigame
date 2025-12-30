@@ -495,18 +495,17 @@ function bindBuyEquipButtons() {
             } else {
                 alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
             }
-        }
-    };
-});
+        };
+    });
 
-// Enhance Button Clicks
-document.querySelectorAll('.enhance-btn').forEach(btn => {
-    btn.onclick = (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        enhanceSkin(id);
-    };
-});
+    // Enhance Button Clicks
+    document.querySelectorAll('.enhance-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            enhanceSkin(id);
+        };
+    });
 }
 
 function enhanceSkin(id) {
