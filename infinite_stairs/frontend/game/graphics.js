@@ -596,6 +596,12 @@ function drawBackground(camX, camY) {
         return;
     }
 
+    // Check if using Heaven Map
+    if (typeof window.currentMap !== 'undefined' && window.currentMap === 'map_heaven') {
+        drawHeavenBackground(camX, camY, score, w, h);
+        return;
+    }
+
 
     // Uses global time updated in render()
 
@@ -1140,6 +1146,11 @@ function drawPet(ctx, px, py, petType, playerDir) {
         ctx.ellipse(0, 0, 5, 12, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
+    } else if (petType === 'pet_unicorn') {
+        // ============================================================
+        // UNICORN PET (유니콘 펫) - 골드 x3 + 천국의 축복
+        // ============================================================
+        drawUnicornPet(ctx, bounce, time);
     } else {
 
 
@@ -3051,6 +3062,53 @@ function drawStair(ctx, x, y, skinId, index) {
         ctx.arc(x, y + STAIR_H / 2, 4, 0, Math.PI * 2);
         ctx.fill();
     }
+    else if (skinId === 'stair_heaven') {
+        // ============================================================
+        // HEAVEN STAIR (천국의 계단) - Divine White & Gold Design
+        // ============================================================
+        const time = Date.now() * 0.001;
+
+        // White marble gradient
+        const heavenGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
+        heavenGrad.addColorStop(0, '#ffffff');
+        heavenGrad.addColorStop(0.3, '#f8f9fa');
+        heavenGrad.addColorStop(0.7, '#e9ecef');
+        heavenGrad.addColorStop(1, '#dee2e6');
+        ctx.fillStyle = heavenGrad;
+        ctx.fillRect(left, top, STAIR_W, STAIR_H);
+
+        // Divine golden glow
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 15 + Math.sin(time * 3 + index) * 5;
+
+        // Gold border
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(left, top, STAIR_W, STAIR_H);
+        ctx.shadowBlur = 0;
+
+        // Inner shine
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.fillRect(left + 3, top + 2, STAIR_W - 6, 3);
+
+        // Angel wing decoration on sides
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '12px serif';
+        ctx.textAlign = 'center';
+        if (index % 3 === 0) {
+            ctx.fillText('🕊️', left + 10, top + STAIR_H / 2 + 4);
+            ctx.fillText('🕊️', left + STAIR_W - 10, top + STAIR_H / 2 + 4);
+        }
+
+        // Rainbow shimmer effect
+        const shimmerX = left + ((time * 50 + index * 20) % STAIR_W);
+        const shimmerGrad = ctx.createLinearGradient(shimmerX - 10, 0, shimmerX + 10, 0);
+        shimmerGrad.addColorStop(0, 'transparent');
+        shimmerGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.6)');
+        shimmerGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = shimmerGrad;
+        ctx.fillRect(left, top, STAIR_W, STAIR_H);
+    }
     else {
         // Default Skin
         const sGrad = ctx.createLinearGradient(x, y, x, y + STAIR_H);
@@ -3245,6 +3303,232 @@ function drawMummy(ctx, x, y, dir, time) {
     ctx.restore();
 }
 
+
+// ============================================================
+// HEAVEN BACKGROUND (천국 맵 배경)
+// ============================================================
+function drawHeavenBackground(camX, camY, score, w, h) {
+    // Heavenly gradient sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#87CEEB'); // Light sky blue
+    skyGrad.addColorStop(0.3, '#E0F7FA'); // Soft cyan
+    skyGrad.addColorStop(0.6, '#FFFDE7'); // Pale gold
+    skyGrad.addColorStop(1, '#FFF8E1'); // Warm white
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Divine golden sun rays
+    ctx.save();
+    const rayCount = 12;
+    const rayAlpha = 0.15 + Math.sin(time * 2) * 0.05;
+    ctx.globalAlpha = rayAlpha;
+    ctx.fillStyle = '#FFD700';
+    for (let i = 0; i < rayCount; i++) {
+        const angle = (i / rayCount) * Math.PI * 2 + time * 0.2;
+        ctx.save();
+        ctx.translate(w / 2, -50);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-30, h * 1.5);
+        ctx.lineTo(30, h * 1.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+    ctx.restore();
+
+    // Fluffy clouds
+    ctx.globalAlpha = 0.9;
+    const cloudData = [
+        { x: 100, y: 150, size: 60 },
+        { x: 300, y: 80, size: 50 },
+        { x: 500, y: 180, size: 70 },
+        { x: 700, y: 100, size: 55 },
+        { x: 200, y: 250, size: 45 },
+        { x: 600, y: 280, size: 65 }
+    ];
+    cloudData.forEach(c => {
+        const cx = ((c.x + camX * 0.1) % (w + 200)) - 100;
+        const cy = c.y + Math.sin(time + c.x * 0.01) * 10;
+
+        // Cloud glow
+        const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, c.size * 1.5);
+        glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, c.size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cloud body
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, c.size, 0, Math.PI * 2);
+        ctx.arc(cx + c.size * 0.6, cy - c.size * 0.3, c.size * 0.8, 0, Math.PI * 2);
+        ctx.arc(cx - c.size * 0.6, cy - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+        ctx.arc(cx + c.size * 0.3, cy + c.size * 0.3, c.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Rainbow arc (subtle)
+    if (score > 100) {
+        const rainbowAlpha = Math.min(0.4, (score - 100) / 200);
+        ctx.globalAlpha = rainbowAlpha;
+        const rainbowColors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd'];
+        const rainbowY = h * 0.3;
+        rainbowColors.forEach((color, i) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(w / 2, h + 100, 350 + i * 15, Math.PI, 0);
+            ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // Floating feathers / angel particles
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    for (let i = 0; i < 20; i++) {
+        const fx = ((i * 137 + time * 20) % (w + 100)) - 50;
+        const fy = ((i * 89 + time * 30) % (h + 100)) - 50;
+        const fSize = 3 + Math.sin(time * 3 + i) * 2;
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.rotate(time * 0.5 + i);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, fSize * 2, fSize, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Heaven high score indicator (if wearing mummy + heaven set)
+    const isHeavenSet = window.currentMap === 'map_heaven' &&
+        window.currentPet === 'pet_unicorn' &&
+        window.currentStairSkin === 'stair_heaven' &&
+        window.currentSkin === 'skin_mummy';
+
+    if (isHeavenSet) {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#FFD700';
+        ctx.fillText(`👑 천국 부활 도전: ${score} / 10,000`, w / 2, 30);
+        ctx.shadowBlur = 0;
+
+        // Progress bar
+        const progress = Math.min(1, score / 10000);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(w * 0.2, 40, w * 0.6, 10);
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(w * 0.2, 40, w * 0.6 * progress, 10);
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w * 0.2, 40, w * 0.6, 10);
+    }
+}
+
+// ============================================================
+// UNICORN PET GRAPHICS (유니콘 펫)
+// ============================================================
+function drawUnicornPet(ctx, bounce, time) {
+    const unicornBounce = bounce * 0.4;
+
+    // Magical rainbow aura
+    ctx.shadowBlur = 20 + Math.sin(time * 4) * 10;
+    ctx.shadowColor = '#e056fd';
+
+    // Body (white unicorn)
+    const bodyGrad = ctx.createLinearGradient(-20, 0, 20, 0);
+    bodyGrad.addColorStop(0, '#fff');
+    bodyGrad.addColorStop(0.5, '#f8e8ff');
+    bodyGrad.addColorStop(1, '#fff');
+
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, unicornBounce + 5, 20, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-15, unicornBounce + 15, 6, 12);
+    ctx.fillRect(9, unicornBounce + 15, 6, 12);
+
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(-16, unicornBounce - 5, 12, 10, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden horn
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.moveTo(-22, unicornBounce - 12);
+    ctx.lineTo(-18, unicornBounce - 30);
+    ctx.lineTo(-14, unicornBounce - 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // Horn spiral
+    ctx.strokeStyle = '#FFA500';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-20 + i * 0.5, unicornBounce - 13 - i * 4);
+        ctx.lineTo(-16 - i * 0.5, unicornBounce - 15 - i * 4);
+        ctx.stroke();
+    }
+
+    // Rainbow mane
+    const maneColors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd'];
+    maneColors.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        const maneX = -10 + i * 3;
+        const maneY = unicornBounce - 8 + Math.sin(time * 5 + i) * 3;
+        ctx.ellipse(maneX, maneY, 4, 8, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Rainbow tail
+    maneColors.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        const tailX = 18 + i * 2;
+        const tailY = unicornBounce + Math.sin(time * 4 + i * 0.5) * 5;
+        ctx.ellipse(tailX, tailY, 3, 6, 0.5 + Math.sin(time * 3) * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Eye
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-20, unicornBounce - 5, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye shine
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-19, unicornBounce - 6, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Magical sparkles around unicorn
+    for (let sp = 0; sp < 5; sp++) {
+        const spAngle = time * 2 + sp * (Math.PI * 2 / 5);
+        const spDist = 35 + Math.sin(time * 4 + sp) * 5;
+        const spX = Math.cos(spAngle) * spDist;
+        const spY = Math.sin(spAngle) * spDist * 0.5 + unicornBounce;
+
+        ctx.fillStyle = maneColors[sp % maneColors.length];
+        ctx.globalAlpha = 0.6 + Math.sin(time * 5 + sp) * 0.3;
+        ctx.beginPath();
+        ctx.arc(spX, spY, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
 
 // ============================================================
 // drawGameState - Main Game Rendering Function

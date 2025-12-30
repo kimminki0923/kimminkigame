@@ -478,6 +478,10 @@ function performAction(action) {
                 petMultiplier = 2;
                 bonusEmoji = '🐷x2 ';
                 console.log(`[BONUS] Golden Pig x2 coin: ${next.coinVal} -> ${actualCoinVal * petMultiplier}`);
+            } else if (typeof currentPet !== 'undefined' && currentPet === 'pet_unicorn') {
+                petMultiplier = 3;
+                bonusEmoji = '🦄x3 ';
+                console.log(`[BONUS] Unicorn x3 coin: ${next.coinVal} -> ${actualCoinVal * petMultiplier}`);
             }
             actualCoinVal *= petMultiplier;
 
@@ -608,6 +612,28 @@ function gameOver() {
         highScoreEl.innerText = isReverse ? reverseHighScore : aiHighScore;
     }
 
+    // ============================================================
+    // HEAVEN MAP HIGH SCORE (파라오 부활을 위한 천국 기록)
+    // ============================================================
+    const isHeavenSet = window.currentMap === 'map_heaven' &&
+        window.currentPet === 'pet_unicorn' &&
+        window.currentStairSkin === 'stair_heaven' &&
+        window.currentSkin === 'skin_mummy';
+
+    if (isHeavenSet && currentScore > (window.heavenHighScore || 0)) {
+        window.heavenHighScore = currentScore;
+        localStorage.setItem('infinite_stairs_heaven_highscore', window.heavenHighScore);
+        console.log(`[HEAVEN] New Heaven High Score: ${window.heavenHighScore}`);
+
+        // 만계단 달성 시 파라오 해금!
+        if (window.heavenHighScore >= 10000 && !window.ownedSkins.includes('skin_pharaoh')) {
+            window.ownedSkins.push('skin_pharaoh');
+            localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
+            alert('👑 미라가 파라오로 부활했습니다!\n파라오 스킨이 해금되었습니다!');
+            console.log('[UNLOCK] Pharaoh skin unlocked via Heaven Resurrection!');
+        }
+    }
+
     if (window.saveData && isDataLoaded) {
         window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
     }
@@ -638,9 +664,10 @@ function gameLoop(timestamp) {
             currentDecay *= 1.5;
         }
 
-        // POLAR BEAR & PENGUIN PET EFFECT
+        // POLAR BEAR & PENGUIN & UNICORN PET EFFECT
+        // 천국의 축복: 타이머 감소 1.5배 느려짐
         if (typeof window.currentPet !== 'undefined' &&
-            (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin')) {
+            (window.currentPet === 'pet_polarbear' || window.currentPet === 'pet_penguin' || window.currentPet === 'pet_unicorn')) {
             currentDecay /= 1.5;
         }
 

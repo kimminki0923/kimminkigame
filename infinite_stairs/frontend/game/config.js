@@ -19,7 +19,8 @@ window.SKIN_DATA = {
     skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
     skin_mummy: { name: '미라', icon: '🧟', type: 'mummy', price: 0, requirement: 'dungeon_clears', requirementCount: 10 },
     skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 },
-    skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 }
+    skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 },
+    skin_pharaoh: { name: '파라오', icon: '👑', type: 'pharaoh', price: 0, requirement: 'heaven_resurrection', prereq: 'skin_mummy', desc: '미라 + 천국효과 + 만계단 도달 시 해금!' }
 };
 
 // AI Constants
@@ -98,6 +99,9 @@ window.snowCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystal
 
 // Dungeon Clears (for Mummy Skin Unlock)
 window.dungeonClears = parseInt(localStorage.getItem('infinite_stairs_dungeon_clears') || 0);
+
+// Heaven High Score (for Pharaoh Skin Unlock - Mummy resurrection)
+window.heavenHighScore = parseInt(localStorage.getItem('infinite_stairs_heaven_highscore') || 0);
 
 // Touchpad Size Setting (Mobile Controls)
 window.touchpadSize = parseInt(localStorage.getItem('touchpadSize') || 100);

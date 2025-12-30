@@ -6,7 +6,8 @@ const STAIR_SKIN_DATA = {
     default: { name: '기본 계단', icon: '🏢' },
     stair_glass: { name: '유리 계단', icon: '🧊', price: 3000, type: 'glass' },
     stair_pharaoh: { name: '파라오의 황금 계단', icon: '👑', price: 3000, type: 'pharaoh' },
-    stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' }
+    stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' },
+    stair_heaven: { name: '천국의 계단', icon: '✨', price: 300000, type: 'heaven' }
 };
 window.STAIR_SKIN_DATA = STAIR_SKIN_DATA;
 
@@ -18,7 +19,8 @@ const PET_DATA = {
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
     pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' },
-    pet_penguin: { name: '펭귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' }
+    pet_penguin: { name: '펭귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' },
+    pet_unicorn: { name: '유니콘', icon: '🦄', price: 500000, type: 'air', desc: '⚡ 골드 x3 | 🕊️ 천국의 축복' }
 };
 window.PET_DATA = PET_DATA;
 
@@ -26,7 +28,8 @@ window.PET_DATA = PET_DATA;
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
     map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!', previewImg: 'assets/desert_map_preview.png' },
-    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' }
+    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' },
+    map_heaven: { name: '천국', icon: '☁️', price: 1000000, desc: '구름 위의 낙원, 천사들의 세계!' }
 };
 window.MAP_DATA = MAP_DATA;
 
@@ -68,6 +71,20 @@ function createShopItemElement(id, data, category) {
         const canUnlock = clears >= needed;
         requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#e74c3c'}; font-size: 11px; margin-bottom: 5px;">🏛️ 던전 클리어 ${clears}/${needed}</div>`;
     }
+    // Pharaoh Skin Requirement (Heaven Resurrection)
+    else if (data.requirement === 'heaven_resurrection') {
+        const hasMummy = window.ownedSkins?.includes('skin_mummy');
+        const hasHeavenSet = window.currentMap === 'map_heaven' &&
+            window.currentPet === 'pet_unicorn' &&
+            window.currentStairSkin === 'stair_heaven';
+        const heavenHighScore = window.heavenHighScore || 0;
+        const canUnlock = hasMummy && hasHeavenSet && heavenHighScore >= 10000;
+        requirementDisplay = `
+            <div style="color: ${hasMummy ? '#2ecc71' : '#e74c3c'}; font-size: 10px;">🧟 미라 스킨 ${hasMummy ? '✓' : '✗'}</div>
+            <div style="color: ${hasHeavenSet ? '#2ecc71' : '#e056fd'}; font-size: 10px;">☁️ 천국 세트 ${hasHeavenSet ? '✓' : '✗'}</div>
+            <div style="color: ${heavenHighScore >= 10000 ? '#2ecc71' : '#f1c40f'}; font-size: 10px;">📊 천국 기록: ${heavenHighScore}/10,000</div>
+        `;
+    }
 
     // 특수 효과 표시
     let effectDisplay = '';
@@ -79,6 +96,8 @@ function createShopItemElement(id, data, category) {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
     } else if (id === 'pet_penguin') {
         effectDisplay = '<div style="color: #74b9ff; font-size: 11px; margin-top: 5px;">🛡️ 체력 감소 1.5배 느려짐</div>';
+    } else if (id === 'pet_unicorn') {
+        effectDisplay = '<div style="color: #e056fd; font-size: 11px; margin-top: 5px;">⚡ 골드 x3 | 🕊️ 천국의 축복</div>';
     }
 
 
@@ -428,6 +447,24 @@ function bindBuyEquipButtons() {
                         else if (item && item.requirement && typeof item.requirement === 'number') {
                             if (aiHighScore < item.requirement) {
                                 return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                            }
+                        }
+                        // 3. Pharaoh Heaven Resurrection Check
+                        else if (item && item.requirement === 'heaven_resurrection') {
+                            const hasMummy = window.ownedSkins?.includes('skin_mummy');
+                            const hasHeavenSet = window.currentMap === 'map_heaven' &&
+                                window.currentPet === 'pet_unicorn' &&
+                                window.currentStairSkin === 'stair_heaven';
+                            const heavenScore = window.heavenHighScore || 0;
+
+                            if (!hasMummy) {
+                                return alert('🔒 미라 스킨이 필요합니다!');
+                            }
+                            if (!hasHeavenSet) {
+                                return alert('🔒 천국 세트(맵, 펫, 계단)를 모두 장착해주세요!');
+                            }
+                            if (heavenScore < 10000) {
+                                return alert(`🔒 천국 맵에서 만계단(10,000) 도달 필요!\n현재 기록: ${heavenScore}`);
                             }
                         }
                     } else if (category === 'pet') {
