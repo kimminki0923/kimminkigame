@@ -802,7 +802,38 @@ if (dungeonStartBtn) {
 // ============================================================
 // GLASS MODE (유리 모드)
 // ============================================================
+// ============================================================
+// NORMAL MODE RESET
+// ============================================================
+const normalModeBtn = document.getElementById('normal-mode-btn');
+if (normalModeBtn) {
+    normalModeBtn.addEventListener('click', () => {
+        if (window.resumeAudio) window.resumeAudio();
+
+        // Reset all modes
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = false;
+        window.gameState.isGlassMode = false;
+        window.gameState.isGlassHardMode = false;
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "Normal Mode";
+            statusEl.style.color = "white";
+        }
+    });
+}
+
+// ============================================================
+// GLASS MODE (유리 모드 & HARD)
+// ============================================================
 const glassStartBtn = document.getElementById('glass-start-btn');
+const glassHardStartBtn = document.getElementById('glass-hard-start-btn');
 
 // Check if diamond skin equipped to unlock glass mode
 function updateGlassModeUnlock() {
@@ -811,9 +842,17 @@ function updateGlassModeUnlock() {
         if (hasDiamond) {
             glassStartBtn.disabled = false;
             glassStartBtn.style.opacity = '1';
+            if (glassHardStartBtn) {
+                glassHardStartBtn.disabled = false;
+                glassHardStartBtn.style.opacity = '1';
+            }
         } else {
             glassStartBtn.disabled = true;
             glassStartBtn.style.opacity = '0.5';
+            if (glassHardStartBtn) {
+                glassHardStartBtn.disabled = true;
+                glassHardStartBtn.style.opacity = '0.5';
+            }
         }
     }
 }
@@ -851,11 +890,12 @@ if (glassStartBtn) {
             return;
         }
 
-        // Start Glass Mode
+        // Start Glass Mode (Normal)
         if (window.resumeAudio) window.resumeAudio();
         window.gameState.isReverseMode = false;
         window.gameState.isDungeonMode = false;
         window.gameState.isGlassMode = true;
+        window.gameState.isGlassHardMode = false; // Disable Hard Mode
 
         specialModesOverlay.style.display = 'none';
 
@@ -864,8 +904,36 @@ if (glassStartBtn) {
         startGame();
 
         if (statusEl) {
-            statusEl.innerText = "💎 유리 모드!";
+            statusEl.innerText = "💎 유리 모드";
             statusEl.style.color = "#74b9ff";
+        }
+    });
+}
+
+if (glassHardStartBtn) {
+    glassHardStartBtn.addEventListener('click', () => {
+        // Check if diamond skin is equipped
+        if (window.currentSkin !== 'skin_diamond') {
+            alert('💎 다이아몬드 스킨을 장착해야 유리 모드를 플레이할 수 있습니다!');
+            return;
+        }
+
+        // Start Glass Mode (HARD)
+        if (window.resumeAudio) window.resumeAudio();
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = false;
+        window.gameState.isGlassMode = false; // Disable Normal Glass Mode
+        window.gameState.isGlassHardMode = true; // Enable Hard Mode
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "🔮 유리 모드 (HARD)";
+            statusEl.style.color = "#a29bfe";
         }
     });
 }
