@@ -659,11 +659,12 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // 버터처럼 부드러운 플레이어 이동
+    // 유연함 조절 (높을수록 덜 미끄러움/빠릿함)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.03;
+        const smoothness = 0.3; // 0.03 -> 0.3 (훨씬 덜 미끄럽게)
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
 
