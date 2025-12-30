@@ -1070,14 +1070,14 @@ window.addEventListener('keydown', (e) => {
         cheatBuffer += e.key.toLowerCase();
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
-        if (cheatBuffer.endsWith('kimminki') || cheatBuffer.endsWith('kimiminki')) {
-            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
+        if (cheatBuffer.endsWith('rlaalsrl')) {
+            console.log("🛠️ Debug: Cheat code activated! Teleporting to 10000 + 1,000,000G + 15 Crowns + 15 Crystals!");
 
-            // 1. Jump to 1000 steps
-            const needed = 1000 - window.gameState.score;
+            // 1. Jump to 10000 steps (만계단)
+            const needed = 10000 - window.gameState.score;
             if (needed > 0) {
                 for (let i = 0; i < needed; i++) addStair();
-                window.gameState.score = 1000;
+                window.gameState.score = 10000;
                 if (scoreEl) scoreEl.innerText = window.gameState.score;
             }
 
@@ -1104,7 +1104,7 @@ window.addEventListener('keydown', (e) => {
 
             // 5. UI feedback & Timer reset
             window.gameState.timer = MAX_TIMER;
-            if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
+            if (statusEl) statusEl.innerText = "✨ CHEAT ACTIVATED! ✨";
 
             // 6. Cloud Persistence (with crowns and crystals)
             if (window.saveData && isDataLoaded) {
@@ -1112,7 +1112,7 @@ window.addEventListener('keydown', (e) => {
             }
 
 
-            alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
+            alert("🛠️ 치트 활성화!\n- 만계단(10,000) 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개");
             cheatBuffer = "";
         }
     }

@@ -1162,13 +1162,13 @@ window.addEventListener('keydown', (e) => {
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
         if (cheatBuffer.endsWith('rlaalsrl')) {
-            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals + 10 Dungeon Clears!");
+            console.log("🛠️ Debug: Cheat code activated! Teleporting to 10000 + 1,000,000G + 15 Crowns + 15 Crystals + 10 Dungeon Clears!");
 
-            // 1. Jump to 1000 steps
-            const needed = 1000 - window.gameState.score;
+            // 1. Jump to 10000 steps (만계단)
+            const needed = 10000 - window.gameState.score;
             if (needed > 0) {
                 for (let i = 0; i < needed; i++) addStair();
-                window.gameState.score = 1000;
+                window.gameState.score = 10000;
                 if (scoreEl) scoreEl.innerText = window.gameState.score;
             }
 
@@ -1194,7 +1194,7 @@ window.addEventListener('keydown', (e) => {
             // Update UI
             if (coinEl) coinEl.innerText = window.totalCoins;
             updateShopUI(); // Reflect unlocks immediately
-            alert("🛠️ 치트 활성화!\n- 1000계단 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개\n- 던전 클리어 10회 (미라 해금!)");
+            alert("🛠️ 치트 활성화!\n- 만계단(10,000) 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개\n- 던전 클리어 10회 (미라 해금!)");
         }
 
 
