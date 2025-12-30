@@ -77,12 +77,12 @@ function createShopItemElement(id, data, category) {
         const hasHeavenSet = window.currentMap === 'map_heaven' &&
             window.currentPet === 'pet_unicorn' &&
             window.currentStairSkin === 'stair_heaven';
-        const heavenHighScore = window.heavenHighScore || 0;
-        const canUnlock = hasMummy && hasHeavenSet && heavenHighScore >= 10000;
+        const heavenTotalStairs = window.heavenTotalStairs || 0;
+        const canUnlock = hasMummy && hasHeavenSet && heavenTotalStairs >= 10000;
         requirementDisplay = `
             <div style="color: ${hasMummy ? '#2ecc71' : '#e74c3c'}; font-size: 10px;">🧟 미라 스킨 ${hasMummy ? '✓' : '✗'}</div>
             <div style="color: ${hasHeavenSet ? '#2ecc71' : '#e056fd'}; font-size: 10px;">☁️ 천국 세트 ${hasHeavenSet ? '✓' : '✗'}</div>
-            <div style="color: ${heavenHighScore >= 10000 ? '#2ecc71' : '#f1c40f'}; font-size: 10px;">📊 천국 기록: ${heavenHighScore}/10,000</div>
+            <div style="color: ${heavenTotalStairs >= 10000 ? '#2ecc71' : '#f1c40f'}; font-size: 10px;">📊 누적 계단: ${heavenTotalStairs.toLocaleString()}/10,000</div>
         `;
     }
 
@@ -455,7 +455,7 @@ function bindBuyEquipButtons() {
                             const hasHeavenSet = window.currentMap === 'map_heaven' &&
                                 window.currentPet === 'pet_unicorn' &&
                                 window.currentStairSkin === 'stair_heaven';
-                            const heavenScore = window.heavenHighScore || 0;
+                            const heavenTotalStairs = window.heavenTotalStairs || 0;
 
                             if (!hasMummy) {
                                 return alert('🔒 미라 스킨이 필요합니다!');
@@ -463,8 +463,8 @@ function bindBuyEquipButtons() {
                             if (!hasHeavenSet) {
                                 return alert('🔒 천국 세트(맵, 펫, 계단)를 모두 장착해주세요!');
                             }
-                            if (heavenScore < 10000) {
-                                return alert(`🔒 천국 맵에서 만계단(10,000) 도달 필요!\n현재 기록: ${heavenScore}`);
+                            if (heavenTotalStairs < 10000) {
+                                return alert(`🔒 천국 맵에서 누적 만계단(10,000) 도달 필요!\n현재 누적: ${heavenTotalStairs.toLocaleString()}계단`);
                             }
                         }
                     } else if (category === 'pet') {

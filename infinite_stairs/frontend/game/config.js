@@ -100,8 +100,8 @@ window.snowCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystal
 // Dungeon Clears (for Mummy Skin Unlock)
 window.dungeonClears = parseInt(localStorage.getItem('infinite_stairs_dungeon_clears') || 0);
 
-// Heaven High Score (for Pharaoh Skin Unlock - Mummy resurrection)
-window.heavenHighScore = parseInt(localStorage.getItem('infinite_stairs_heaven_highscore') || 0);
+// Heaven Total Stairs (for Pharaoh Skin Unlock - Mummy resurrection via cumulative stairs)
+window.heavenTotalStairs = parseInt(localStorage.getItem('infinite_stairs_heaven_total') || 0);
 
 // Touchpad Size Setting (Mobile Controls)
 window.touchpadSize = parseInt(localStorage.getItem('touchpadSize') || 100);

@@ -613,20 +613,21 @@ function gameOver() {
     }
 
     // ============================================================
-    // HEAVEN MAP HIGH SCORE (파라오 부활을 위한 천국 기록)
+    // HEAVEN MAP TOTAL STAIRS (파라오 부활을 위한 천국 누적 계단)
     // ============================================================
     const isHeavenSet = window.currentMap === 'map_heaven' &&
         window.currentPet === 'pet_unicorn' &&
         window.currentStairSkin === 'stair_heaven' &&
         window.currentSkin === 'skin_mummy';
 
-    if (isHeavenSet && currentScore > (window.heavenHighScore || 0)) {
-        window.heavenHighScore = currentScore;
-        localStorage.setItem('infinite_stairs_heaven_highscore', window.heavenHighScore);
-        console.log(`[HEAVEN] New Heaven High Score: ${window.heavenHighScore}`);
+    if (isHeavenSet && currentScore > 0) {
+        // 누적 계단에 현재 게임 점수 추가
+        window.heavenTotalStairs = (window.heavenTotalStairs || 0) + currentScore;
+        localStorage.setItem('infinite_stairs_heaven_total', window.heavenTotalStairs);
+        console.log(`[HEAVEN] Added ${currentScore} stairs. Total: ${window.heavenTotalStairs}/10,000`);
 
-        // 만계단 달성 시 파라오 해금!
-        if (window.heavenHighScore >= 10000 && !window.ownedSkins.includes('skin_pharaoh')) {
+        // 만계단(누적) 달성 시 파라오 해금!
+        if (window.heavenTotalStairs >= 10000 && !window.ownedSkins.includes('skin_pharaoh')) {
             window.ownedSkins.push('skin_pharaoh');
             localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
             alert('👑 미라가 파라오로 부활했습니다!\n파라오 스킨이 해금되었습니다!');
