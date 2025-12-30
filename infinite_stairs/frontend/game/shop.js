@@ -61,6 +61,13 @@ function createShopItemElement(id, data, category) {
         const canUnlock = crystals >= needed;
         requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#00d2d3'}; font-size: 12px; margin-bottom: 5px;">❄️ ${crystals}/${needed}</div>`;
     }
+    // Mummy Skin Requirement
+    else if (data.requirement === 'dungeon_clears') {
+        const clears = window.dungeonClears || 0;
+        const needed = data.requirementCount || 10;
+        const canUnlock = clears >= needed;
+        requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#e74c3c'}; font-size: 11px; margin-bottom: 5px;">🏛️ 던전 클리어 ${clears}/${needed}</div>`;
+    }
 
     // 특수 효과 표시
     let effectDisplay = '';
@@ -424,6 +431,19 @@ function bindBuyEquipButtons() {
                                     return alert(`🔒 눈결정이 부족합니다! (${window.snowCrystals || 0}/${item.requirementCount})`);
                                 }
                             }
+                        }
+                    }
+                    // Char requirement check (e.g. Mummy)
+                    else if (category === 'char') {
+                        const item = window.SKIN_DATA[id];
+                        if (item && item.requirement === 'dungeon_clears') {
+                            if ((window.dungeonClears || 0) < item.requirementCount) {
+                                return alert(`🔒 파라오 던전 ${item.requirementCount}회 클리어 필요! (현재: ${window.dungeonClears})`);
+                            }
+                        }
+                        // Existing high score check logic (handled below/above or integrated here)
+                        if (item && item.requirement && typeof item.requirement === 'number' && aiHighScore < item.requirement) {
+                            return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
                         }
                     }
                     // Else free, proceed to buy (add to owned)

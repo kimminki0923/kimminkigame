@@ -2825,6 +2825,64 @@ function render() {
         drawProjectiles();
     }
 
+    // ============================================================
+    // MUMMY CHARACTER RENDERING
+    // ============================================================
+    if (window.gameState.isDungeonMode && !isNaN(window.gameState.mummyIndex)) {
+        const mIdx = window.gameState.mummyIndex;
+        // Find position on stairs
+        // Calculate interpolated position
+        const floorIdx = Math.floor(mIdx);
+        const ceilIdx = Math.ceil(mIdx);
+        const fraction = mIdx - floorIdx;
+
+        // Get stair coordinates. 
+        // Note: stairs array might not have negative indices if mummy starts at -10.
+        // We need to extrapolate or just hide if index < 0.
+
+        // Helper to get stair pos safely
+        const getStairPos = (idx) => {
+            if (idx < 0) {
+                // Extrapolate backwards from 0
+                const s0 = window.gameState.stairs[0];
+                if (!s0) return { x: 0, y: 0, dir: 1 };
+                // Assume straight line down? or just hide.
+                // Let's just create a virtual position based on stair logic? Too complex.
+                // Simply return start pos but shifted down.
+                return { x: s0.x - idx, y: s0.y + idx, dir: 1 }; // Fake
+            }
+            return window.gameState.stairs[idx] || window.gameState.stairs[window.gameState.stairs.length - 1];
+        };
+
+        if (mIdx >= 0 && floorIdx < window.gameState.stairs.length) {
+            const s1 = window.gameState.stairs[floorIdx];
+            // If at very end, s2 is s1
+            const s2 = window.gameState.stairs[ceilIdx] || s1;
+
+            if (s1 && s2) {
+                // Interpolate position
+                const mx = s1.x + (s2.x - s1.x) * fraction;
+                const my = s1.y + (s2.y - s1.y) * fraction;
+
+                const screenMx = camX + mx * STAIR_W;
+                const screenMy = camY - my * STAIR_H;
+
+                // Determine direction based on movement
+                // If s2.x > s1.x -> moving right (+1)
+                // If s2.x < s1.x -> moving left (-1)
+                // If s1.x == s2.x -> typically changing dir or moving up? 
+                // Wait, infinite stairs moves X on every step? No.
+                // Stairs have x, y. 
+                // x changes on turn. y always increments.
+
+                // Direction: Look at next step
+                const mDir = (s2.x > s1.x) ? 1 : (s2.x < s1.x) ? -1 : s1.dir;
+
+                drawMummy(ctx, screenMx, screenMy, mDir, time);
+            }
+        }
+    }
+
 
     // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
@@ -3120,6 +3178,68 @@ function drawScaledPolarBear(ctx, x, y, scale) {
     ctx.beginPath();
     ctx.ellipse(-38, -15, 3, 2, 0, 0, Math.PI * 2); // Nose
     ctx.fill();
+
+    ctx.restore();
+}
+
+// ============================================================
+// MUMMY CHARACTER DRAWING
+// ============================================================
+function drawMummy(ctx, x, y, dir, time) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Scale and separate coordinate system
+    ctx.scale(dir, 1); // Flip based on direction
+
+    // Bobbing animation
+    const bob = Math.sin(time * 15) * 5;
+    ctx.translate(0, bob - 40); // Move up to stand on stair
+
+    // Aura/Glow (Curse Effect)
+    ctx.shadowColor = '#800080'; // Purple/Black curse
+    ctx.shadowBlur = 15 + Math.sin(time * 10) * 5;
+
+    // Body (Bandages)
+    ctx.fillStyle = '#dcdde1'; // Dirty white
+    ctx.fillRect(-10, -20, 20, 30);
+
+    // Head (Bandages)
+    ctx.beginPath();
+    ctx.arc(0, -30, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bandage details (Lines)
+    ctx.strokeStyle = '#7f8c8d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-10, -15); ctx.lineTo(10, -10);
+    ctx.moveTo(-10, -5); ctx.lineTo(10, 0);
+    ctx.moveTo(-10, 5); ctx.lineTo(10, 10);
+    // Head bandages
+    ctx.moveTo(-8, -35); ctx.lineTo(8, -32);
+    ctx.moveTo(-10, -28); ctx.lineTo(10, -26);
+    ctx.stroke();
+
+    // Eyes (Glowing Red)
+    ctx.shadowColor = '#ff0000';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(3, -32, 3, 0, Math.PI * 2); // Right eye visible in 2D side view
+    // ctx.arc(-3, -32, 2, 0, Math.PI * 2); 
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Arms (Reaching out zombie style)
+    ctx.fillStyle = '#dcdde1';
+    ctx.beginPath();
+    ctx.moveTo(5, -18);
+    ctx.lineTo(18, -25); // Arm out
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#dcdde1';
+    ctx.lineCap = 'round';
+    ctx.stroke();
 
     ctx.restore();
 }

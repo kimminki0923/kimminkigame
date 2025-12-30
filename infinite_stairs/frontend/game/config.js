@@ -17,6 +17,7 @@ window.SKIN_DATA = {
     skin_triangle: { name: '삼각형', icon: '🔺', type: 'triangle', price: 5000 },
     skin_diamond: { name: '다이아몬드', icon: '💎', type: 'diamond', price: 10000 },
     skin_ruby: { name: '파라오의 루비', icon: '🔴', type: 'ruby', price: 20000 },
+    skin_mummy: { name: '미라', icon: '🧟', type: 'mummy', price: 0, requirement: 'dungeon_clears', requirementCount: 10 },
     skin_pentagon: { name: '오각형 (고수용)', icon: '⬠', type: 'pentagon', price: 0, requirement: 1000 },
     skin_cosmic: { name: '코스믹 스타', icon: '🌟', type: 'cosmic', price: 1000000 }
 };
@@ -94,6 +95,9 @@ window.pharaohCrowns = parseInt(localStorage.getItem('infinite_stairs_crowns') |
 
 // Winter Kingdom Snow Crystal Collection (겨울왕국 눈결정 수집)
 window.snowCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystals') || 0);
+
+// Dungeon Clears (for Mummy Skin Unlock)
+window.dungeonClears = parseInt(localStorage.getItem('infinite_stairs_dungeon_clears') || 0);
 
 // Touchpad Size Setting (Mobile Controls)
 window.touchpadSize = parseInt(localStorage.getItem('touchpadSize') || 100);

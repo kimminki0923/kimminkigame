@@ -824,6 +824,33 @@ if (dungeonStartBtn) {
 // GLASS MODE (유리 모드)
 // ============================================================
 // ============================================================
+// NORMAL MODE RESET
+// ============================================================
+const normalModeBtn = document.getElementById('normal-mode-btn');
+if (normalModeBtn) {
+    normalModeBtn.addEventListener('click', () => {
+        if (window.resumeAudio) window.resumeAudio();
+
+        // Reset all modes
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = false;
+        window.gameState.isGlassMode = false;
+        window.gameState.isGlassHardMode = false;
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "Normal Mode";
+            statusEl.style.color = "white";
+        }
+    });
+}
+
+// ============================================================
 // GLASS MODE (유리 모드 & HARD)
 // ============================================================
 const glassStartBtn = document.getElementById('glass-start-btn');
@@ -942,33 +969,71 @@ window.mummyDistance = 0;  // Distance from mummy (negative = mummy catching up)
 window.sandstormTimer = 0; // Sandstorm visual effect timer
 window.sandstormActive = false;
 
-const MUMMY_START_DISTANCE = 50;  // Starting distance from mummy
-const MUMMY_SPEED = 0.06;         // How fast mummy catches up per frame
-const MUMMY_BONUS_PER_STEP = 1.8; // Distance gained when climbing
-const SANDSTORM_INTERVAL = 180;   // Frames between sandstorms (~3 seconds)
-const SANDSTORM_DURATION = 180;   // How long sandstorm lasts (~3 seconds)
-
+const MUMMY_SPEED = 0.08;         // Basic speed (steps per frame)
+const MUMMY_START_LAG = 10;       // Steps behind player
+const SANDSTORM_INTERVAL = 180;   // Frames between sandstorms
+const SANDSTORM_DURATION = 180;   // How long sandstorm lasts
 
 function initDungeonMode() {
-    window.mummyDistance = MUMMY_START_DISTANCE;
+    // Mummy starts INACTIVE. Spawns when player reaches step 10.
+    window.gameState.mummyIndex = null;
     window.sandstormTimer = 0;
     window.sandstormActive = false;
-    console.log('[Dungeon] Mummy chase started!');
+    console.log('[Dungeon] Mummy character chase pending (waiting for step 10)...');
 }
 
 function updateMummyChase() {
     if (!window.gameState.isDungeonMode || !window.gameState.running) return;
 
-    // Mummy gets closer over time
-    const speedMultiplier = 1 + (window.gameState.score * 0.005); // Gets faster
-    window.mummyDistance -= MUMMY_SPEED * speedMultiplier;
+    // SPAWN LOGIC:
+    if (window.gameState.mummyIndex === null) {
+        if (window.gameState.score >= 10) {
+            window.gameState.mummyIndex = 0; // Spawn at start
+            console.log('[Dungeon] Mummy SPAWNED at 0!');
 
-    // Check if mummy caught player
-    if (window.mummyDistance <= 0) {
-        console.log('[Dungeon] Mummy caught the player!');
+            // Alert user visually or audibly (optional)
+            if (statusEl) {
+                statusEl.innerText = "⚠️ 미라가 깨어났습니다!!";
+                statusEl.style.color = "red";
+                setTimeout(() => {
+                    if (window.gameState.running) {
+                        statusEl.innerText = "🏛️ 파라오 던전";
+                        statusEl.style.color = "#d4a860";
+                    }
+                }, 2000);
+            }
+        } else {
+            return; // Not spawned yet
+        }
+    }
+
+    // Mummy gets closer over time
+    // Mummy gets faster as you climb higher
+    const speedMultiplier = 1 + (window.gameState.score * 0.002);
+
+    // Move Mummy up the stairs
+    // If player is far ahead, mummy speeds up slightly to keep pressure
+    let currentSpeed = MUMMY_SPEED * speedMultiplier;
+
+    const distance = window.gameState.score - window.gameState.mummyIndex;
+
+    // Rubber banding: specific catch-up logic
+    if (distance > 20) currentSpeed *= 1.5; // Catch up fast if far behind
+    if (distance < 5) currentSpeed *= 0.8;  // Slow down slightly if too close (fairness)
+
+    window.gameState.mummyIndex += currentSpeed;
+
+    // Check if mummy caught player (index overlap)
+    // Player is at window.gameState.score (integer index)
+    if (window.gameState.mummyIndex >= window.gameState.score - 0.5) {
+        console.log('[Dungeon] Mummy caught the player! Index:', window.gameState.mummyIndex);
         dungeonGameOver(false, 'mummy');
         return;
     }
+
+    // Update global mummy distance for UI bar (optional, keeps bar working relative to 15 steps safe zone)
+    // Let's map 15 steps to "100%" safety for the bar.
+    window.mummyDistance = Math.max(0, (distance / 15) * 100);
 
     // Update sandstorm
     window.sandstormTimer++;
@@ -983,12 +1048,7 @@ function updateMummyChase() {
 
 function onDungeonStep() {
     if (!window.gameState.isDungeonMode) return;
-
-    // Gain distance from mummy when climbing
-    window.mummyDistance += MUMMY_BONUS_PER_STEP;
-
-    // Cap max distance
-    if (window.mummyDistance > 100) window.mummyDistance = 100;
+    // No longer need manual distance addition, mummy just chases index
 }
 
 function getMummyDangerLevel() {
@@ -1016,8 +1076,12 @@ function dungeonGameOver(isVictory, reason = '') {
         localStorage.setItem('infinite_stairs_coins', totalCoins);
         if (coinEl) coinEl.innerText = totalCoins;
 
-        alert(`🎉 파라오 던전 클리어!\n\n💰 ${DUNGEON_CLEAR_REWARD.toLocaleString()}G 획득!`);
-        console.log(`[Dungeon] Victory! Reward: ${DUNGEON_CLEAR_REWARD}G`);
+        // Increment Clears
+        window.dungeonClears = (window.dungeonClears || 0) + 1;
+        localStorage.setItem('infinite_stairs_dungeon_clears', window.dungeonClears);
+
+        alert(`🎉 파라오 던전 클리어!\n\n💰 ${DUNGEON_CLEAR_REWARD.toLocaleString()}G 획득!\n\n(현재 클리어 횟수: ${window.dungeonClears}회)`);
+        console.log(`[Dungeon] Victory! Reward: ${DUNGEON_CLEAR_REWARD}G. Total Clears: ${window.dungeonClears}`);
     } else {
         const message = reason === 'mummy'
             ? '💀 미라에게 잡혔습니다...\n\n더 빨리 올라가세요!'
@@ -1064,8 +1128,8 @@ window.addEventListener('keydown', (e) => {
         cheatBuffer += e.key.toLowerCase();
         if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
 
-        if (cheatBuffer.endsWith('kimminki') || cheatBuffer.endsWith('kimiminki')) {
-            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals!");
+        if (cheatBuffer.endsWith('rlaalsrl')) {
+            console.log("🛠️ Debug: Cheat code activated! Teleporting to 1000 + 1,000,000G + 15 Crowns + 15 Crystals + 10 Dungeon Clears!");
 
             // 1. Jump to 1000 steps
             const needed = 1000 - window.gameState.score;
@@ -1083,41 +1147,58 @@ window.addEventListener('keydown', (e) => {
                 if (hsEl) hsEl.innerText = aiHighScore;
             }
 
-            // 3. Grant 1,000,000 gold and save to localStorage
-            totalCoins += 1000000;
-            localStorage.setItem('infinite_stairs_coins', totalCoins);
-            if (coinEl) coinEl.innerText = totalCoins;
-            const shopGold = document.getElementById('shop-gold');
-            if (shopGold) shopGold.innerText = totalCoins;
+            // 3. Give Resources (Gold, Crowns, Crystals) AND Clears
+            window.totalCoins += 1000000;
+            window.pharaohCrowns += 15;
+            window.snowCrystals += 15;
+            window.dungeonClears = 10; // Unlock Mummy
 
-            // 4. Grant 15 Pharaoh Crowns and 15 Snow Crystals
-            window.pharaohCrowns = (window.pharaohCrowns || 0) + 15;
-            window.snowCrystals = (window.snowCrystals || 0) + 15;
+            localStorage.setItem('infinite_stairs_coins', window.totalCoins);
             localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
             localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
+            localStorage.setItem('infinite_stairs_dungeon_clears', window.dungeonClears);
 
-            // 5. UI feedback & Timer reset
-            window.gameState.timer = MAX_TIMER;
-            if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
-
-            // 6. Cloud Persistence (with crowns and crystals)
-            if (window.saveData && isDataLoaded) {
-                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
-            }
-
-
-            alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
-            cheatBuffer = "";
+            // Update UI
+            if (coinEl) coinEl.innerText = window.totalCoins;
+            updateShopUI(); // Reflect unlocks immediately
+            alert("🛠️ 치트 활성화!\n- 1000계단 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개\n- 던전 클리어 10회 (미라 해금!)");
         }
+
+        // 3. Grant 1,000,000 gold and save to localStorage
+        totalCoins += 1000000;
+        localStorage.setItem('infinite_stairs_coins', totalCoins);
+        if (coinEl) coinEl.innerText = totalCoins;
+        const shopGold = document.getElementById('shop-gold');
+        if (shopGold) shopGold.innerText = totalCoins;
+
+        // 4. Grant 15 Pharaoh Crowns and 15 Snow Crystals
+        window.pharaohCrowns = (window.pharaohCrowns || 0) + 15;
+        window.snowCrystals = (window.snowCrystals || 0) + 15;
+        localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
+        localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
+
+        // 5. UI feedback & Timer reset
+        window.gameState.timer = MAX_TIMER;
+        if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
+
+        // 6. Cloud Persistence (with crowns and crystals)
+        if (window.saveData && isDataLoaded) {
+            window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+        }
+
+
+        alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
+        cheatBuffer = "";
     }
+}
 
     // Use custom key bindings from settings
     const jumpKey = window.getKeyBinding ? window.getKeyBinding('jump') : 'KeyJ';
-    const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
+const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
 
-    if (e.code === jumpKey) handleInput(0);
-    if (e.code === turnKey) handleInput(1);
-    if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
+if (e.code === jumpKey) handleInput(0);
+if (e.code === turnKey) handleInput(1);
+if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
 });
 
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
