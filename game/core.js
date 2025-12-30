@@ -775,24 +775,40 @@ if (dungeonStartBtn) {
 // ============================================================
 // PROJECTILE SYSTEM
 // ============================================================
+
+// Hitbox sizes per character skin type
+const HITBOX_SIZES = {
+    circle: 18,      // 기본 원형
+    square: 22,      // 사각형 - 조금 더 큼
+    triangle: 15,    // 삼각형 - 작은 히트박스
+    diamond: 16,     // 다이아몬드 - 좁음
+    ruby: 17,        // 루비
+    pentagon: 20,    // 오각형
+    cosmic: 14       // 코스믹 스타 - 가장 날씬함
+};
+
+function getPlayerHitboxRadius() {
+    const skinType = window.SKIN_DATA?.[currentSkin]?.type || 'circle';
+    return HITBOX_SIZES[skinType] || 18;
+}
+
 function spawnProjectile() {
     if (!window.gameState.isDungeonMode || !window.gameState.running) return;
 
     const score = window.gameState.score;
-    // Spawn rate increases with score
-    const spawnChance = 0.02 + (score * 0.0002); // 2% base + 0.02% per stair
+    const spawnChance = 0.015 + (score * 0.00015);
 
     if (Math.random() < spawnChance) {
         const fromLeft = Math.random() < 0.5;
-        const speed = 5 + (score * 0.03); // Speed increases
+        const speed = 4 + (score * 0.025);
 
-        // Use screen coordinates - player is always at center
-        const playerScreenY = window.canvas.height / 2 - 30;
-        const yVariation = (Math.random() - 0.5) * 150; // Random Y offset
+        // Screen center Y - where player is visually
+        const screenCenterY = window.canvas.height / 2;
+        const yVariation = (Math.random() - 0.5) * 120;
 
         window.dungeonProjectiles.push({
-            x: fromLeft ? -50 : window.canvas.width + 50,
-            y: playerScreenY + yVariation, // Screen space Y
+            x: fromLeft ? -60 : window.canvas.width + 60,
+            y: screenCenterY + yVariation,
             vx: fromLeft ? speed : -speed,
             type: Math.random() < 0.5 ? 'spear' : 'arrow'
         });
@@ -802,29 +818,26 @@ function spawnProjectile() {
 function updateProjectiles() {
     if (!window.gameState.isDungeonMode) return;
 
-    // Player is always rendered at center of screen
     const playerScreenX = window.canvas.width / 2;
-    const playerScreenY = window.canvas.height / 2 - 30;
-    const hitRadius = 20; // Player hitbox radius
-    const projectileRadius = 25; // Projectile hitbox radius
+    const playerScreenY = window.canvas.height / 2;
+    const playerHitbox = getPlayerHitboxRadius();
+    const projectileHitbox = 20;
 
     for (let i = window.dungeonProjectiles.length - 1; i >= 0; i--) {
         const p = window.dungeonProjectiles[i];
         p.x += p.vx;
 
-        // Remove if off screen
         if (p.x < -100 || p.x > window.canvas.width + 100) {
             window.dungeonProjectiles.splice(i, 1);
             continue;
         }
 
-        // Collision check (circle collision in screen space)
         const dx = p.x - playerScreenX;
         const dy = p.y - playerScreenY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < hitRadius + projectileRadius) {
-            console.log('[Dungeon] Player hit by projectile!');
+        if (dist < playerHitbox + projectileHitbox) {
+            console.log(`[Dungeon] Hit! Skin hitbox: ${playerHitbox}px`);
             window.dungeonProjectiles = [];
             dungeonGameOver(false);
             return;
