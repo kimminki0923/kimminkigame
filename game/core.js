@@ -662,8 +662,9 @@ function gameLoop(timestamp) {
     // 유연함 조절 (높을수록 덜 미끄러움/빠릿함)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.3; // 0.03 -> 0.3 (훨씬 덜 미끄럽게)
+        const smoothness = 0.1; // 0.3 -> 0.1 (사용자 요청)
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+
 
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
