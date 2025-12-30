@@ -367,7 +367,7 @@ function performEnhancement(id) {
 
         // Sync and Update UI
         if (window.saveData) {
-            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
         }
         updateEnhanceUI();
         updateShopUI();
@@ -381,7 +381,7 @@ function equipStairSkin(id) {
     localStorage.setItem('currentStairSkin', id);
     localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -392,7 +392,7 @@ function equipPet(id) {
     localStorage.setItem('currentPet', id);
     localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -403,7 +403,7 @@ function equipMap(id) {
     localStorage.setItem('currentMap', id);
     localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
     if (window.saveData) {
-        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -513,7 +513,7 @@ function bindBuyEquipButtons() {
                 }
 
                 if (window.saveData) {
-                    window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
+                    window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
                 }
 
                 alert(`✅ ${id} 구매 완료!`);
@@ -582,7 +582,7 @@ function enhanceSkin(id) {
 
         // Sync and Update UI
         if (window.saveData) {
-            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
         }
         updateShopUI();
     }

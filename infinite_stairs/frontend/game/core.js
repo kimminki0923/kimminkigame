@@ -636,7 +636,7 @@ function gameOver() {
     }
 
     if (window.saveData && isDataLoaded) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
 
     statusEl.innerText = "Game Over!";
@@ -1194,6 +1194,11 @@ window.addEventListener('keydown', (e) => {
             // Update UI
             if (coinEl) coinEl.innerText = window.totalCoins;
             updateShopUI(); // Reflect unlocks immediately
+
+            if (window.saveData && isDataLoaded) {
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
+            }
+
             alert("🛠️ 치트 활성화!\n- 만계단(10,000) 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개\n- 던전 클리어 10회 (미라 해금!)");
         }
 
@@ -1216,7 +1221,8 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 
 // Data Bridge for Firebase
 // Data Bridge for Firebase
-window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap, crowns, crystals, skinLevels) {
+// Data Bridge for Firebase
+window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs) {
     console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}, Levels:`, skinLevels);
     aiHighScore = parseInt(score || 0);
     if (highScoreEl) highScoreEl.innerText = aiHighScore;
@@ -1232,9 +1238,11 @@ window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSki
     if (cMap) currentMap = cMap;
     if (skinLevels) window.skinLevels = skinLevels;
 
-    // Safety check for crowns/crystals
+    // Safety check for crowns/crystals/clears/heaven
     if (crowns !== undefined) window.pharaohCrowns = crowns;
     if (crystals !== undefined) window.snowCrystals = crystals;
+    if (dungeonClears !== undefined) window.dungeonClears = dungeonClears;
+    if (heavenTotalStairs !== undefined) window.heavenTotalStairs = heavenTotalStairs;
 
     isDataLoaded = true;
     updateShopUI();
@@ -1262,10 +1270,10 @@ if (window.initAuth) window.initAuth();
 
 // Save data when page closes/refreshes
 window.addEventListener('beforeunload', () => {
-    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
 });
 
 // Periodic save (every 30 seconds)
 setInterval(() => {
-    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+    window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
 }, 30000);

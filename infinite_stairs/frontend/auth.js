@@ -139,9 +139,11 @@ async function loadCloudData(uid) {
         let finalPet = localPet;
         let finalMaps = localMaps;
         let finalMap = localMap;
-        let finalCrowns = parseInt(localStorage.getItem('pharaohCrowns') || 0);
-        let finalCrystals = parseInt(localStorage.getItem('snowCrystals') || 0);
+        let finalCrowns = parseInt(localStorage.getItem('infinite_stairs_crowns') || 0);
+        let finalCrystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystals') || 0);
         let finalSkinLevels = localSkinLevels;
+        let finalDungeonClears = parseInt(localStorage.getItem('infinite_stairs_dungeon_clears') || 0);
+        let finalHeavenTotalStairs = parseInt(localStorage.getItem('infinite_stairs_heaven_total') || 0);
         let needSync = false;
 
         if (doc.exists) {
@@ -159,6 +161,8 @@ async function loadCloudData(uid) {
             if (cloudCoins > finalCoins) finalCoins = cloudCoins;
             if ((data.pharaohCrowns || 0) > finalCrowns) finalCrowns = data.pharaohCrowns || 0;
             if ((data.snowCrystals || 0) > finalCrystals) finalCrystals = data.snowCrystals || 0;
+            if ((data.dungeonClears || 0) > finalDungeonClears) finalDungeonClears = data.dungeonClears || 0;
+            if ((data.heavenTotalStairs || 0) > finalHeavenTotalStairs) finalHeavenTotalStairs = data.heavenTotalStairs || 0;
 
             // Merge Skins (Union)
             const skinSet = new Set([...finalSkins, ...cloudSkins]);
@@ -193,7 +197,7 @@ async function loadCloudData(uid) {
                 finalMap = data.currentMap;
             }
 
-            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length || finalStairSkins.length > cloudStairSkins.length || finalPets.length > cloudPets.length || finalCrowns > (data.pharaohCrowns || 0) || finalCrystals > (data.snowCrystals || 0)) {
+            if (localScore > cloudScore || localCoins > cloudCoins || finalSkins.length > cloudSkins.length || finalStairSkins.length > cloudStairSkins.length || finalPets.length > cloudPets.length || finalCrowns > (data.pharaohCrowns || 0) || finalCrystals > (data.snowCrystals || 0) || finalDungeonClears > (data.dungeonClears || 0) || finalHeavenTotalStairs > (data.heavenTotalStairs || 0)) {
                 needSync = true;
             }
         } else {
@@ -203,10 +207,10 @@ async function loadCloudData(uid) {
 
         if (needSync) {
             console.log("☁️ Syncing Local Progress to Cloud...");
-            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet, finalMaps, finalMap, finalCrowns, finalCrystals, finalSkinLevels);
+            saveCloudData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet, finalMaps, finalMap, finalCrowns, finalCrystals, finalSkinLevels, finalDungeonClears, finalHeavenTotalStairs);
         }
 
-        applyGameData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet, finalMaps, finalMap, finalCrowns, finalCrystals, finalSkinLevels);
+        applyGameData(finalScore, finalCoins, finalSkins, finalSkin, finalStairSkins, finalStairSkin, finalPets, finalPet, finalMaps, finalMap, finalCrowns, finalCrystals, finalSkinLevels, finalDungeonClears, finalHeavenTotalStairs);
 
     } catch (e) {
         console.error("Load Cloud Error:", e);
@@ -225,17 +229,19 @@ function loadLocalData() {
     const pet = localStorage.getItem('currentPet') || 'none';
     const maps = JSON.parse(localStorage.getItem('ownedMaps') || '["default"]');
     const map = localStorage.getItem('currentMap') || 'default';
-    const crowns = parseInt(localStorage.getItem('pharaohCrowns') || 0);
-    const crystals = parseInt(localStorage.getItem('snowCrystals') || 0);
+    const crowns = parseInt(localStorage.getItem('infinite_stairs_crowns') || 0);
+    const crystals = parseInt(localStorage.getItem('infinite_stairs_snowcrystals') || 0);
     const skinLevels = JSON.parse(localStorage.getItem('skinLevels') || '{}');
-    applyGameData(s, c, skins, skin, stairSkins, stairSkin, pets, pet, maps, map, crowns, crystals, skinLevels);
+    const dungeonClears = parseInt(localStorage.getItem('infinite_stairs_dungeon_clears') || 0);
+    const heavenTotalStairs = parseInt(localStorage.getItem('infinite_stairs_heaven_total') || 0);
+    applyGameData(s, c, skins, skin, stairSkins, stairSkin, pets, pet, maps, map, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs);
 }
 
 // --- Apply to Game (Bridge) ---
-function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels) {
+function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs) {
     const trySet = (attempts = 0) => {
         if (window.setGameData) {
-            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default', stairSkins || ['default'], currentStairSkin || 'default', pets || ['none'], currentPet || 'none', maps || ['default'], currentMap || 'default', crowns || 0, crystals || 0, skinLevels || {});
+            window.setGameData(score || 0, coins || 0, skins || ['default'], currentSkin || 'default', stairSkins || ['default'], currentStairSkin || 'default', pets || ['none'], currentPet || 'none', maps || ['default'], currentMap || 'default', crowns || 0, crystals || 0, skinLevels || {}, dungeonClears || 0, heavenTotalStairs || 0);
         } else if (attempts < 20) {
             setTimeout(() => trySet(attempts + 1), 200);
         }
@@ -244,7 +250,7 @@ function applyGameData(score, coins, skins, currentSkin, stairSkins, currentStai
 }
 
 // --- Save Data ---
-function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels) {
+function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs) {
     if (!db || !currentUser) return;
 
     db.collection('users').doc(currentUser.uid).set({
@@ -261,6 +267,8 @@ function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStai
         pharaohCrowns: crowns || 0,
         snowCrystals: crystals || 0,
         skinLevels: skinLevels || {},
+        dungeonClears: dungeonClears || 0,
+        heavenTotalStairs: heavenTotalStairs || 0,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).then(() => {
         console.log("☁️ Cloud Save Success");
@@ -270,7 +278,7 @@ function saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStai
 
 // Cloud Save Debounce
 let cloudSaveTimeout;
-window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels) {
+window.saveData = function (score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs) {
     localStorage.setItem('infinite_stairs_highScore', score);
     localStorage.setItem('infinite_stairs_coins', coins);
     if (skins) localStorage.setItem('ownedSkins', JSON.stringify(skins));
@@ -281,14 +289,16 @@ window.saveData = function (score, coins, skins, currentSkin, stairSkins, curren
     if (currentPet) localStorage.setItem('currentPet', currentPet);
     if (maps) localStorage.setItem('ownedMaps', JSON.stringify(maps));
     if (currentMap) localStorage.setItem('currentMap', currentMap);
-    if (crowns !== undefined) localStorage.setItem('pharaohCrowns', crowns);
-    if (crystals !== undefined) localStorage.setItem('snowCrystals', crystals);
+    if (crowns !== undefined) localStorage.setItem('infinite_stairs_crowns', crowns);
+    if (crystals !== undefined) localStorage.setItem('infinite_stairs_snowcrystals', crystals);
     if (skinLevels) localStorage.setItem('skinLevels', JSON.stringify(skinLevels));
+    if (dungeonClears !== undefined) localStorage.setItem('infinite_stairs_dungeon_clears', dungeonClears);
+    if (heavenTotalStairs !== undefined) localStorage.setItem('infinite_stairs_heaven_total', heavenTotalStairs);
 
     if (currentUser && isCloudEnabled) {
         clearTimeout(cloudSaveTimeout);
         cloudSaveTimeout = setTimeout(() => {
-            saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels);
+            saveCloudData(score, coins, skins, currentSkin, stairSkins, currentStairSkin, pets, currentPet, maps, currentMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs);
         }, 2000); // 2-second debounce
     }
 }
