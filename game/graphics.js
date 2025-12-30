@@ -2499,6 +2499,41 @@ function render() {
         const sx = camX + s.x * STAIR_W;
         const sy = camY - s.y * STAIR_H;
 
+        // ============================================================
+        // GLASS MODE: Only show turn stairs (direction change)
+        // ============================================================
+        if (window.gameState.isGlassMode) {
+            const prevStair = window.gameState.stairs[i - 1];
+            const isTurnStair = prevStair && prevStair.dir !== s.dir;
+            const isCurrentStair = (i === window.gameState.score);
+            const isNextStair = (i === window.gameState.score + 1);
+
+            // Only show: turn stairs, current stair, next stair
+            if (!isTurnStair && !isCurrentStair && !isNextStair) {
+                // Draw invisible/ghost stair (very faint)
+                ctx.globalAlpha = 0.05;
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
+                ctx.globalAlpha = 1;
+
+                // Still draw coins/items
+                if (s.hasCoin) {
+                    // Draw coin even on invisible stairs
+                    ctx.font = '24px Arial';
+                    ctx.textAlign = 'center';
+                    const coinEmoji = s.coinVal >= 10 ? '💰' : s.coinVal >= 5 ? '🌟' : '🪙';
+                    ctx.fillText(coinEmoji, sx, sy - 15);
+                }
+                return; // Skip full stair rendering
+            }
+
+            // Turn stair: draw with glow effect
+            if (isTurnStair) {
+                ctx.shadowColor = '#74b9ff';
+                ctx.shadowBlur = 15;
+            }
+        }
+
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
@@ -2506,9 +2541,15 @@ function render() {
         // Draw Stair Body
         drawStair(ctx, sx, sy, currentStairSkin, i);
 
+        // Reset shadow for glass mode
+        if (window.gameState.isGlassMode) {
+            ctx.shadowBlur = 0;
+        }
+
         // Highlight
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, 4);
+
 
         // Coin / Mineral / Crown
         if (s.hasCoin) {

@@ -38,8 +38,10 @@ window.gameState = {
     timer: 100,
     renderPlayer: { x: 0, y: 0 },
     isReverseMode: false, // Version 2
-    isDungeonMode: false  // Pharaoh Dungeon Mode
+    isDungeonMode: false, // Pharaoh Dungeon Mode
+    isGlassMode: false    // Glass Mode (only turn stairs visible)
 };
+
 
 // Dungeon Mode Projectiles
 window.dungeonProjectiles = [];

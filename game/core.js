@@ -597,16 +597,20 @@ function gameOver() {
     stopBtn.style.display = 'none';
     updateUnlockStatus(); // Check if newly achieved 1000 unlocks Reverse Mode
 
-    // If was in Reverse Mode, show Special Modes overlay for quick retry
-    if (isReverse) {
+    // If was in Reverse Mode or Glass Mode, show Special Modes overlay for quick retry
+    if (isReverse || window.gameState.isGlassMode) {
+        window.gameState.isGlassMode = false; // Reset glass mode
         const specialModesOverlay = document.getElementById('special-modes-overlay');
         const crownCountDisplay = document.getElementById('crown-count-display');
         if (specialModesOverlay) {
             specialModesOverlay.style.display = 'flex';
             if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
         }
+        // Update glass mode unlock status
+        if (typeof updateGlassModeUnlock === 'function') updateGlassModeUnlock();
     }
 }
+
 
 
 // Main Game Loop
@@ -801,8 +805,58 @@ if (dungeonStartBtn) {
 }
 
 // ============================================================
+// GLASS MODE (유리 모드)
+// ============================================================
+const glassStartBtn = document.getElementById('glass-start-btn');
+
+// Check if diamond skin equipped to unlock glass mode
+function updateGlassModeUnlock() {
+    if (glassStartBtn) {
+        const hasDiamond = window.currentSkin === 'skin_diamond';
+        if (hasDiamond) {
+            glassStartBtn.disabled = false;
+            glassStartBtn.style.opacity = '1';
+        } else {
+            glassStartBtn.disabled = true;
+            glassStartBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+// Call on load
+setTimeout(updateGlassModeUnlock, 500);
+
+if (glassStartBtn) {
+    glassStartBtn.addEventListener('click', () => {
+        // Check if diamond skin is equipped
+        if (window.currentSkin !== 'skin_diamond') {
+            alert('💎 다이아몬드 스킨을 장착해야 유리 모드를 플레이할 수 있습니다!');
+            return;
+        }
+
+        // Start Glass Mode
+        if (window.resumeAudio) window.resumeAudio();
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = false;
+        window.gameState.isGlassMode = true;
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "💎 유리 모드!";
+            statusEl.style.color = "#74b9ff";
+        }
+    });
+}
+
+// ============================================================
 // MUMMY CHASE & SANDSTORM SYSTEM (파라오 던전)
 // ============================================================
+
 
 // Dungeon state
 window.mummyDistance = 0;  // Distance from mummy (negative = mummy catching up)
