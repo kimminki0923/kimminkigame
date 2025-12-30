@@ -414,10 +414,21 @@ function bindBuyEquipButtons() {
                 // Buy flow
                 if (price === 0) {
                     // Check requirement
+                    // Character Requirement Checks
                     if (category === 'char') {
                         const item = window.SKIN_DATA[id];
-                        if (item && item.requirement && aiHighScore < item.requirement) {
-                            return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+
+                        // 1. Mummy Skin Check
+                        if (item && item.requirement === 'dungeon_clears') {
+                            if ((window.dungeonClears || 0) < item.requirementCount) {
+                                return alert(`🔒 파라오 던전 ${item.requirementCount}회 클리어 필요! (현재: ${window.dungeonClears})`);
+                            }
+                        }
+                        // 2. High Score Check
+                        else if (item && item.requirement && typeof item.requirement === 'number') {
+                            if (aiHighScore < item.requirement) {
+                                return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                            }
                         }
                     } else if (category === 'pet') {
                         const item = PET_DATA[id];
@@ -433,80 +444,69 @@ function bindBuyEquipButtons() {
                             }
                         }
                     }
-                    // Char requirement check (e.g. Mummy)
-                    else if (category === 'char') {
-                        const item = window.SKIN_DATA[id];
-                        if (item && item.requirement === 'dungeon_clears') {
-                            if ((window.dungeonClears || 0) < item.requirementCount) {
-                                return alert(`🔒 파라오 던전 ${item.requirementCount}회 클리어 필요! (현재: ${window.dungeonClears})`);
-                            }
-                        }
-                        // Existing high score check logic (handled below/above or integrated here)
-                        if (item && item.requirement && typeof item.requirement === 'number' && aiHighScore < item.requirement) {
-                            return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
-                        }
-                    }
-                    // Else free, proceed to buy (add to owned)
-                    // For price 0 items, we treat them as "buyable" for 0 gold after requirement check
                 }
 
-                if (window.totalCoins >= price) {
-                    window.totalCoins -= price;
-                    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
-
-                    // Update UI immediately
-                    const coinEls = document.querySelectorAll('.total-coins-display');
-                    coinEls.forEach(el => el.innerText = window.totalCoins);
-                    const shopGold = document.getElementById('shop-gold');
-                    if (shopGold) shopGold.innerText = window.totalCoins;
-
-                    if (category === 'char') {
-                        window.ownedSkins.push(id);
-                        localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
-                    } else if (category === 'stair') {
-                        window.ownedStairSkins.push(id);
-                        localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
-                    } else if (category === 'pet') {
-                        window.ownedPets.push(id);
-                        localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
-                    } else if (category === 'map') {
-                        console.log('[Shop] Buying map:', id);
-                        window.ownedMaps.push(id);
-                        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
-                    }
-
-                    if (window.saveData) {
-                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
-                    }
-
-                    alert(`✅ ${id} 구매 완료!`);
-
-                    // Force UI refresh
-                    updateShopUI();
-                    if (category === 'char') {
-                        if (typeof equipSkin === 'function') equipSkin(id);
-                    } else if (category === 'stair') {
-                        equipStairSkin(id);
-                    } else if (category === 'pet') {
-                        equipPet(id);
-                    } else if (category === 'map') {
-                        equipMap(id);
-                    }
-                } else {
-                    alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
-                }
+                // Else free, proceed to buy (add to owned)
+                // For price 0 items, we treat them as "buyable" for 0 gold after requirement check
             }
-        };
-    });
 
-    // Enhance Button Clicks
-    document.querySelectorAll('.enhance-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.id;
-            enhanceSkin(id);
-        };
-    });
+            if (window.totalCoins >= price) {
+                window.totalCoins -= price;
+                localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+
+                // Update UI immediately
+                const coinEls = document.querySelectorAll('.total-coins-display');
+                coinEls.forEach(el => el.innerText = window.totalCoins);
+                const shopGold = document.getElementById('shop-gold');
+                if (shopGold) shopGold.innerText = window.totalCoins;
+
+                if (category === 'char') {
+                    window.ownedSkins.push(id);
+                    localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
+                } else if (category === 'stair') {
+                    window.ownedStairSkins.push(id);
+                    localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
+                } else if (category === 'pet') {
+                    window.ownedPets.push(id);
+                    localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+                } else if (category === 'map') {
+                    console.log('[Shop] Buying map:', id);
+                    window.ownedMaps.push(id);
+                    localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
+                }
+
+                if (window.saveData) {
+                    window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
+                }
+
+                alert(`✅ ${id} 구매 완료!`);
+
+                // Force UI refresh
+                updateShopUI();
+                if (category === 'char') {
+                    if (typeof equipSkin === 'function') equipSkin(id);
+                } else if (category === 'stair') {
+                    equipStairSkin(id);
+                } else if (category === 'pet') {
+                    equipPet(id);
+                } else if (category === 'map') {
+                    equipMap(id);
+                }
+            } else {
+                alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
+            }
+        }
+    };
+});
+
+// Enhance Button Clicks
+document.querySelectorAll('.enhance-btn').forEach(btn => {
+    btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        enhanceSkin(id);
+    };
+});
 }
 
 function enhanceSkin(id) {

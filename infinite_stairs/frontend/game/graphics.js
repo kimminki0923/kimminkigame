@@ -1742,6 +1742,7 @@ function drawOasis(ctx, x, y, scale) {
     ctx.fill();
     ctx.restore();
 }
+window.drawMummy = drawMummy;
 
 // New helper: Camels moving slowly
 function drawCamels(ctx, camX, camY, w, h, altitude) {

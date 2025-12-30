@@ -800,6 +800,11 @@ if (dungeonStartBtn) {
         if (window.resumeAudio) window.resumeAudio();
         window.gameState.isReverseMode = false;
         window.gameState.isDungeonMode = true;
+        window.gameState.isGlassMode = false;      // Reset Glass Mode
+        window.gameState.isGlassHardMode = false;  // Reset Glass Hard Mode
+        window.gameState.isReverseMode = false;
+        window.mummyDistance = 0; // Legacy (remove if unused safely)
+        window.gameState.mummyIndex = null; // Wait for spawn
 
         // Initialize mummy chase
         if (typeof initDungeonMode === 'function') {
@@ -1164,41 +1169,16 @@ window.addEventListener('keydown', (e) => {
             alert("🛠️ 치트 활성화!\n- 1000계단 점프\n- 1,000,000 골드\n- 파라오 왕관 15개\n- 눈결정 15개\n- 던전 클리어 10회 (미라 해금!)");
         }
 
-        // 3. Grant 1,000,000 gold and save to localStorage
-        totalCoins += 1000000;
-        localStorage.setItem('infinite_stairs_coins', totalCoins);
-        if (coinEl) coinEl.innerText = totalCoins;
-        const shopGold = document.getElementById('shop-gold');
-        if (shopGold) shopGold.innerText = totalCoins;
 
-        // 4. Grant 15 Pharaoh Crowns and 15 Snow Crystals
-        window.pharaohCrowns = (window.pharaohCrowns || 0) + 15;
-        window.snowCrystals = (window.snowCrystals || 0) + 15;
-        localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns);
-        localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals);
-
-        // 5. UI feedback & Timer reset
-        window.gameState.timer = MAX_TIMER;
-        if (statusEl) statusEl.innerText = "✨ KIMMINKI POWER! ✨";
-
-        // 6. Cloud Persistence (with crowns and crystals)
-        if (window.saveData && isDataLoaded) {
-            window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
-        }
-
-
-        alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
-        cheatBuffer = "";
     }
-}
 
     // Use custom key bindings from settings
     const jumpKey = window.getKeyBinding ? window.getKeyBinding('jump') : 'KeyJ';
-const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
+    const turnKey = window.getKeyBinding ? window.getKeyBinding('turn') : 'KeyF';
 
-if (e.code === jumpKey) handleInput(0);
-if (e.code === turnKey) handleInput(1);
-if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
+    if (e.code === jumpKey) handleInput(0);
+    if (e.code === turnKey) handleInput(1);
+    if (e.code === 'Space' && !window.gameState.running && !window.isTraining) initGame();
 });
 
 btnTurn.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
