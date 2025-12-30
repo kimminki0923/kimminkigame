@@ -597,9 +597,9 @@ function gameOver() {
     stopBtn.style.display = 'none';
     updateUnlockStatus(); // Check if newly achieved 1000 unlocks Reverse Mode
 
-    // Reset special mode flags
-    if (isReverse) window.gameState.isReverseMode = false;
-    if (window.gameState.isGlassMode) window.gameState.isGlassMode = false;
+    // Do NOT reset special mode flags here. 
+    // User wants to stay in the mode they selected.
+
 }
 
 
@@ -966,8 +966,9 @@ function dungeonGameOver(isVictory, reason = '') {
     startBtn.style.display = 'inline-block';
     if (statusEl) statusEl.innerText = 'Ready';
 
-    // Reset dungeon mode flag
-    window.gameState.isDungeonMode = false;
+    // Do NOT reset dungeon mode flag here.
+    // window.gameState.isDungeonMode = false; 
+
 }
 
 
@@ -1036,8 +1037,9 @@ window.addEventListener('keydown', (e) => {
 
             // 6. Cloud Persistence (with crowns and crystals)
             if (window.saveData && isDataLoaded) {
-                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
+                window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
             }
+
 
             alert("🎁 이스터에그 발견!\n✅ 1000계단 점프\n✅ 1,000,000골드 획득\n✅ 파라오 왕관 15개 획득\n✅ 눈결정 15개 획득\n(모든 데이터가 저장되었습니다!)");
             cheatBuffer = "";

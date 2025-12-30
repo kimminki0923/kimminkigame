@@ -53,11 +53,14 @@ window.isTraining = false;
 window.isAutoPlaying = false;
 
 // Graphics Asset Arrays
-// Graphics Asset Arrays
 window.buildings = window.buildings || [];
 window.clouds = window.clouds || [];
 window.planets = window.planets || [];
 window.stars = window.stars || [];
+
+// Enhancements State
+window.skinLevels = window.skinLevels || {};
+
 window.particles = window.particles || [];
 window.minerals = window.minerals || []; // Underground objects
 window.snowParticles = window.snowParticles || []; // Winter map snow
