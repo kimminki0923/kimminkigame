@@ -305,10 +305,82 @@ function drawDungeonBackground(camX, camY, score, w, h) {
     ctx.fillStyle = torchGlow;
     ctx.fillRect(0, 0, w, h);
 
-    // Danger indicator based on score
+    // ============================================================
+    // MUMMY DISTANCE BAR (미라 거리 표시)
+    // ============================================================
+    const mummyDist = window.mummyDistance || 50;
+    const maxDist = 100;
+    const distRatio = Math.max(0, Math.min(1, mummyDist / maxDist));
+
+    // Bar background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(w * 0.1, h - 50, w * 0.8, 25);
+
+    // Distance fill (green to red based on danger)
+    const r = Math.floor(255 * (1 - distRatio));
+    const g = Math.floor(200 * distRatio);
+    ctx.fillStyle = `rgb(${r}, ${g}, 50)`;
+    ctx.fillRect(w * 0.1, h - 50, w * 0.8 * distRatio, 25);
+
+    // Bar border
+    ctx.strokeStyle = '#d4a860';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w * 0.1, h - 50, w * 0.8, 25);
+
+    // Mummy icon on left
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('🧟', w * 0.1 - 30, h - 32);
+
+    // Player icon on right
+    ctx.textAlign = 'right';
+    ctx.fillText('🏃', w * 0.9 + 30, h - 32);
+
+    // Distance text
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillStyle = distRatio < 0.3 ? '#ff4444' : '#fff';
+    ctx.fillText(`미라와의 거리: ${Math.floor(mummyDist)}`, w * 0.5, h - 33);
+
+    // ============================================================
+    // SANDSTORM EFFECT (모래폭풍)
+    // ============================================================
+    if (window.sandstormActive) {
+        // Sandy overlay
+        ctx.fillStyle = 'rgba(194, 154, 108, 0.6)';
+        ctx.fillRect(0, 0, w, h);
+
+        // Swirling sand particles
+        ctx.fillStyle = 'rgba(210, 180, 140, 0.8)';
+        for (let i = 0; i < 50; i++) {
+            const px = (time * 300 + i * 47) % (w + 100) - 50;
+            const py = Math.sin(time * 2 + i) * h / 3 + h / 2;
+            const size = 2 + Math.random() * 4;
+            ctx.beginPath();
+            ctx.arc(px, py, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Warning text
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#000';
+        ctx.fillText('🌪️ 모래폭풍! 🌪️', w / 2, h / 2 - 50);
+        ctx.shadowBlur = 0;
+    }
+
+    // ============================================================
+    // PROGRESS BAR (진행률)
+    // ============================================================
     const progress = score / 200;
-    if (progress > 0.5) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${(progress - 0.5) * 0.1})`;
+
+    // Danger indicator based on mummy distance
+    if (distRatio < 0.3) {
+        const pulseAlpha = 0.1 + Math.sin(time * 10) * 0.1;
+        ctx.fillStyle = `rgba(255, 0, 0, ${pulseAlpha})`;
         ctx.fillRect(0, 0, w, h);
     }
 
@@ -326,6 +398,7 @@ function drawDungeonBackground(camX, camY, score, w, h) {
     ctx.textAlign = 'center';
     ctx.fillText(`🏛️ ${score} / 200`, w * 0.5, 30);
 }
+
 
 function drawTorch(ctx, x, y, timeOffset) {
     // Torch base

@@ -333,6 +333,12 @@ function performAction(action) {
         updateSkinRotation();
         if (window.playerFlash !== undefined) window.playerFlash = Math.min(window.playerFlash + 0.3, 1.5);
 
+        // Dungeon mode: gain distance from mummy
+        if (window.gameState.isDungeonMode && typeof onDungeonStep === 'function') {
+            onDungeonStep();
+        }
+
+
         // PLAY SOUND (SFX)
         if (window.playStepSound) {
             const skinType = (typeof SKIN_DATA !== 'undefined' && SKIN_DATA[currentSkin]) ? SKIN_DATA[currentSkin].type : 'circle';
@@ -627,15 +633,15 @@ function gameLoop(timestamp) {
         timerBar.style.background = col;
 
         // ============================================================
-        // DUNGEON MODE: Projectile System
+        // DUNGEON MODE: Mummy Chase System
         // ============================================================
         if (window.gameState.isDungeonMode) {
-            spawnProjectile();
-            updateProjectiles();
+            updateMummyChase();
 
             // Check victory
             if (checkDungeonVictory()) return;
         }
+
     }
 
     if (isFalling) updateFall();
@@ -757,7 +763,12 @@ if (dungeonStartBtn) {
         if (window.resumeAudio) window.resumeAudio();
         window.gameState.isReverseMode = false;
         window.gameState.isDungeonMode = true;
-        window.dungeonProjectiles = [];
+
+        // Initialize mummy chase
+        if (typeof initDungeonMode === 'function') {
+            initDungeonMode();
+        }
+
 
         specialModesOverlay.style.display = 'none';
 
@@ -773,83 +784,80 @@ if (dungeonStartBtn) {
 }
 
 // ============================================================
-// PROJECTILE SYSTEM
+// MUMMY CHASE & SANDSTORM SYSTEM (파라오 던전)
 // ============================================================
 
-// Hitbox sizes per character skin type
-const HITBOX_SIZES = {
-    circle: 18,      // 기본 원형
-    square: 22,      // 사각형 - 조금 더 큼
-    triangle: 15,    // 삼각형 - 작은 히트박스
-    diamond: 16,     // 다이아몬드 - 좁음
-    ruby: 17,        // 루비
-    pentagon: 20,    // 오각형
-    cosmic: 14       // 코스믹 스타 - 가장 날씬함
-};
+// Dungeon state
+window.mummyDistance = 0;  // Distance from mummy (negative = mummy catching up)
+window.sandstormTimer = 0; // Sandstorm visual effect timer
+window.sandstormActive = false;
 
-function getPlayerHitboxRadius() {
-    const skinType = window.SKIN_DATA?.[currentSkin]?.type || 'circle';
-    return HITBOX_SIZES[skinType] || 18;
+const MUMMY_START_DISTANCE = 50;  // Starting distance from mummy
+const MUMMY_SPEED = 0.08;         // How fast mummy catches up per frame
+const MUMMY_BONUS_PER_STEP = 1.5; // Distance gained when climbing
+const SANDSTORM_INTERVAL = 300;   // Frames between sandstorms
+const SANDSTORM_DURATION = 120;   // How long sandstorm lasts
+
+function initDungeonMode() {
+    window.mummyDistance = MUMMY_START_DISTANCE;
+    window.sandstormTimer = 0;
+    window.sandstormActive = false;
+    console.log('[Dungeon] Mummy chase started!');
 }
 
-function spawnProjectile() {
+function updateMummyChase() {
     if (!window.gameState.isDungeonMode || !window.gameState.running) return;
 
-    const score = window.gameState.score;
-    const spawnChance = 0.015 + (score * 0.00015);
+    // Mummy gets closer over time
+    const speedMultiplier = 1 + (window.gameState.score * 0.005); // Gets faster
+    window.mummyDistance -= MUMMY_SPEED * speedMultiplier;
 
-    if (Math.random() < spawnChance) {
-        const fromLeft = Math.random() < 0.5;
-        const speed = 4 + (score * 0.025);
+    // Check if mummy caught player
+    if (window.mummyDistance <= 0) {
+        console.log('[Dungeon] Mummy caught the player!');
+        dungeonGameOver(false, 'mummy');
+        return;
+    }
 
-        // Screen center Y - where player is visually
-        const screenCenterY = window.canvas.height / 2;
-        const yVariation = (Math.random() - 0.5) * 120;
-
-        window.dungeonProjectiles.push({
-            x: fromLeft ? -60 : window.canvas.width + 60,
-            y: screenCenterY + yVariation,
-            vx: fromLeft ? speed : -speed,
-            type: Math.random() < 0.5 ? 'spear' : 'arrow'
-        });
+    // Update sandstorm
+    window.sandstormTimer++;
+    if (window.sandstormTimer >= SANDSTORM_INTERVAL) {
+        window.sandstormActive = true;
+        if (window.sandstormTimer >= SANDSTORM_INTERVAL + SANDSTORM_DURATION) {
+            window.sandstormTimer = 0;
+            window.sandstormActive = false;
+        }
     }
 }
 
-function updateProjectiles() {
+function onDungeonStep() {
     if (!window.gameState.isDungeonMode) return;
 
-    const playerScreenX = window.canvas.width / 2;
-    const playerScreenY = window.canvas.height / 2;
-    const playerHitbox = getPlayerHitboxRadius();
-    const projectileHitbox = 20;
+    // Gain distance from mummy when climbing
+    window.mummyDistance += MUMMY_BONUS_PER_STEP;
 
-    for (let i = window.dungeonProjectiles.length - 1; i >= 0; i--) {
-        const p = window.dungeonProjectiles[i];
-        p.x += p.vx;
-
-        if (p.x < -100 || p.x > window.canvas.width + 100) {
-            window.dungeonProjectiles.splice(i, 1);
-            continue;
-        }
-
-        const dx = p.x - playerScreenX;
-        const dy = p.y - playerScreenY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < playerHitbox + projectileHitbox) {
-            console.log(`[Dungeon] Hit! Skin hitbox: ${playerHitbox}px`);
-            window.dungeonProjectiles = [];
-            dungeonGameOver(false);
-            return;
-        }
-    }
+    // Cap max distance
+    if (window.mummyDistance > 100) window.mummyDistance = 100;
 }
 
+function getMummyDangerLevel() {
+    // Returns 0-1 indicating how close mummy is
+    return 1 - (window.mummyDistance / MUMMY_START_DISTANCE);
+}
 
-function dungeonGameOver(isVictory) {
+function checkDungeonVictory() {
+    if (window.gameState.isDungeonMode && window.gameState.score >= DUNGEON_CLEAR_GOAL) {
+        dungeonGameOver(true);
+        return true;
+    }
+    return false;
+}
+
+function dungeonGameOver(isVictory, reason = '') {
     window.gameState.running = false;
     window.gameState.gameOver = true;
     window.gameState.isDungeonMode = false;
+    window.sandstormActive = false;
 
     if (isVictory) {
         // Victory!
@@ -860,14 +868,18 @@ function dungeonGameOver(isVictory) {
         alert(`🎉 파라오 던전 클리어!\n\n💰 ${DUNGEON_CLEAR_REWARD.toLocaleString()}G 획득!`);
         console.log(`[Dungeon] Victory! Reward: ${DUNGEON_CLEAR_REWARD}G`);
     } else {
-        alert('💀 파라오의 저주에 맞았습니다...\n\n다시 도전하세요!');
-        console.log('[Dungeon] Failed - hit by projectile');
+        const message = reason === 'mummy'
+            ? '💀 미라에게 잡혔습니다...\n\n더 빨리 올라가세요!'
+            : '💀 파라오의 저주에 빠졌습니다...\n\n다시 도전하세요!';
+        alert(message);
+        console.log(`[Dungeon] Failed - ${reason || 'unknown'}`);
     }
 
     menuOverlay.style.display = 'block';
     startBtn.style.display = 'inline-block';
     if (statusEl) statusEl.innerText = 'Ready';
 }
+
 
 // Check dungeon victory condition
 function checkDungeonVictory() {
