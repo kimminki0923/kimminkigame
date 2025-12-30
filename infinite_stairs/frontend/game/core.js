@@ -597,19 +597,11 @@ function gameOver() {
     stopBtn.style.display = 'none';
     updateUnlockStatus(); // Check if newly achieved 1000 unlocks Reverse Mode
 
-    // If was in Reverse Mode or Glass Mode, show Special Modes overlay for quick retry
-    if (isReverse || window.gameState.isGlassMode) {
-        window.gameState.isGlassMode = false; // Reset glass mode
-        const specialModesOverlay = document.getElementById('special-modes-overlay');
-        const crownCountDisplay = document.getElementById('crown-count-display');
-        if (specialModesOverlay) {
-            specialModesOverlay.style.display = 'flex';
-            if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
-        }
-        // Update glass mode unlock status
-        if (typeof updateGlassModeUnlock === 'function') updateGlassModeUnlock();
-    }
+    // Reset special mode flags
+    if (isReverse) window.gameState.isReverseMode = false;
+    if (window.gameState.isGlassMode) window.gameState.isGlassMode = false;
 }
+
 
 
 
@@ -969,19 +961,15 @@ function dungeonGameOver(isVictory, reason = '') {
         console.log(`[Dungeon] Failed - ${reason || 'unknown'}`);
     }
 
-    // Return to Special Modes overlay instead of main menu
+    // Return to main menu (no special overlay popup)
     menuOverlay.style.display = 'block';
     startBtn.style.display = 'inline-block';
     if (statusEl) statusEl.innerText = 'Ready';
 
-    // Show Special Modes overlay for quick retry
-    const specialModesOverlay = document.getElementById('special-modes-overlay');
-    const crownCountDisplay = document.getElementById('crown-count-display');
-    if (specialModesOverlay) {
-        specialModesOverlay.style.display = 'flex';
-        if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
-    }
+    // Reset dungeon mode flag
+    window.gameState.isDungeonMode = false;
 }
+
 
 
 

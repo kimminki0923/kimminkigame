@@ -2501,13 +2501,15 @@ function render() {
 
         // ============================================================
         // GLASS MODE: Only show turn stairs (direction change)
+        // Show stair when YOU NEED TO PRESS F to turn (before stepping)
         // ============================================================
         if (window.gameState.isGlassMode) {
-            const prevStair = window.gameState.stairs[i - 1];
-            const isTurnStair = prevStair && prevStair.dir !== s.dir;
+            const nextStair = window.gameState.stairs[i + 1];
+            // Show this stair if the NEXT stair requires a turn (so player sees where to press F)
+            const needsTurnHere = nextStair && nextStair.dir !== s.dir;
 
-            // ONLY show turn stairs - all other stairs are invisible!
-            if (!isTurnStair) {
+            // ONLY show the stair where you need to press F
+            if (!needsTurnHere) {
                 // Completely invisible - no ghost stair even
                 // Still draw coins/items though
                 if (s.hasCoin) {
@@ -2523,6 +2525,7 @@ function render() {
             ctx.shadowColor = '#74b9ff';
             ctx.shadowBlur = 20;
         }
+
 
 
         // Shadow
