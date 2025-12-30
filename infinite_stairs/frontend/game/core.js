@@ -40,6 +40,17 @@ window.addEventListener('resize', resize);
 // Initialize Game Environment (without starting)
 function setupEnvironment(isReverse = false) {
     window.gameState.isReverseMode = isReverse;
+    // Reset specific sub-modes unless explicitly set later (we assume false by default)
+    // Note: Calling startGame() sets specific flags. setupEnvironment prepares the "Board".
+
+    // If we are NOT in special modes, clear them. 
+    // BUT setupEnvironment is often called inside toggle handlers which set flags *after* or *before*.
+    // Safe approach: Let the caller manage flags, but ensure defaults are clean for new game unless kept.
+    // Actually, safer to NOT clear flags here if they are set by the button click handlers just before.
+    // However, when switching between Normal/Reverse, we should probably clear "Dungeon" or "Glass".
+    // For now, let's keep existing logic and just add glassHardMode init to false if undefined.
+
+    window.gameState.score = 0;
     window.gameState.score = 0;
     window.gameState.coinCount = 0;
     window.gameState.running = false;
@@ -50,9 +61,19 @@ function setupEnvironment(isReverse = false) {
     particles.length = 0;
     isFalling = false;
 
-    // Handle Reverse Mode title/status
     if (window.gameState.isReverseMode) {
         statusEl.innerText = "REVERSE MODE";
+        statusEl.style.color = "#a29bfe";
+    } else if (window.gameState.isDungeonMode) {
+        // Ensure Dungeon Mode is initialized on retry/start
+        if (typeof initDungeonMode === 'function') initDungeonMode();
+        statusEl.innerText = "🏛️ 파라오 던전";
+        statusEl.style.color = "#d4a860";
+    } else if (window.gameState.isGlassMode) {
+        statusEl.innerText = "💎 유리 모드";
+        statusEl.style.color = "#74b9ff";
+    } else if (window.gameState.isGlassHardMode) {
+        statusEl.innerText = "🔮 유리 모드 (HARD)";
         statusEl.style.color = "#a29bfe";
     } else {
         statusEl.innerText = "Normal Mode";
@@ -659,11 +680,14 @@ function gameLoop(timestamp) {
 
     if (isFalling) updateFall();
 
-    // 버터처럼 부드러운 플레이어 이동
+    // 유연함 조절 (높을수록 덜 미끄러움/빠릿함)
     const target = window.gameState.stairs[window.gameState.score] || { x: 0, y: 0 };
     if (window.gameState.stairs.length > 0) {
-        const smoothness = 0.03;
+        const smoothness = 0.08; // 0.1 -> 0.08 (사용자 요청)
         window.gameState.renderPlayer.x += (target.x - window.gameState.renderPlayer.x) * smoothness;
+
+
+
         window.gameState.renderPlayer.y += (target.y - window.gameState.renderPlayer.y) * smoothness;
     }
 
@@ -799,7 +823,11 @@ if (dungeonStartBtn) {
 // ============================================================
 // GLASS MODE (유리 모드)
 // ============================================================
+// ============================================================
+// GLASS MODE (유리 모드 & HARD)
+// ============================================================
 const glassStartBtn = document.getElementById('glass-start-btn');
+const glassHardStartBtn = document.getElementById('glass-hard-start-btn');
 
 // Check if diamond skin equipped to unlock glass mode
 function updateGlassModeUnlock() {
@@ -808,9 +836,17 @@ function updateGlassModeUnlock() {
         if (hasDiamond) {
             glassStartBtn.disabled = false;
             glassStartBtn.style.opacity = '1';
+            if (glassHardStartBtn) {
+                glassHardStartBtn.disabled = false;
+                glassHardStartBtn.style.opacity = '1';
+            }
         } else {
             glassStartBtn.disabled = true;
             glassStartBtn.style.opacity = '0.5';
+            if (glassHardStartBtn) {
+                glassHardStartBtn.disabled = true;
+                glassHardStartBtn.style.opacity = '0.5';
+            }
         }
     }
 }
@@ -848,11 +884,12 @@ if (glassStartBtn) {
             return;
         }
 
-        // Start Glass Mode
+        // Start Glass Mode (Normal)
         if (window.resumeAudio) window.resumeAudio();
         window.gameState.isReverseMode = false;
         window.gameState.isDungeonMode = false;
         window.gameState.isGlassMode = true;
+        window.gameState.isGlassHardMode = false; // Disable Hard Mode
 
         specialModesOverlay.style.display = 'none';
 
@@ -861,8 +898,36 @@ if (glassStartBtn) {
         startGame();
 
         if (statusEl) {
-            statusEl.innerText = "💎 유리 모드!";
+            statusEl.innerText = "💎 유리 모드";
             statusEl.style.color = "#74b9ff";
+        }
+    });
+}
+
+if (glassHardStartBtn) {
+    glassHardStartBtn.addEventListener('click', () => {
+        // Check if diamond skin is equipped
+        if (window.currentSkin !== 'skin_diamond') {
+            alert('💎 다이아몬드 스킨을 장착해야 유리 모드를 플레이할 수 있습니다!');
+            return;
+        }
+
+        // Start Glass Mode (HARD)
+        if (window.resumeAudio) window.resumeAudio();
+        window.gameState.isReverseMode = false;
+        window.gameState.isDungeonMode = false;
+        window.gameState.isGlassMode = false; // Disable Normal Glass Mode
+        window.gameState.isGlassHardMode = true; // Enable Hard Mode
+
+        specialModesOverlay.style.display = 'none';
+
+        window.isTraining = false;
+        window.isAutoPlaying = false;
+        startGame();
+
+        if (statusEl) {
+            statusEl.innerText = "🔮 유리 모드 (HARD)";
+            statusEl.style.color = "#a29bfe";
         }
     });
 }

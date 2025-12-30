@@ -308,7 +308,10 @@ function drawDungeonBackground(camX, camY, score, w, h) {
     // ============================================================
     // MUMMY DISTANCE BAR (미라 거리 표시)
     // ============================================================
-    const mummyDist = window.mummyDistance || 50;
+    // Safety check for NaN
+    if (isNaN(window.mummyDistance)) window.mummyDistance = 50;
+
+    const mummyDist = window.mummyDistance;
     const maxDist = 100;
     const distRatio = Math.max(0, Math.min(1, mummyDist / maxDist));
 
@@ -2500,28 +2503,55 @@ function render() {
         const sy = camY - s.y * STAIR_H;
 
         // ============================================================
-        // GLASS MODE: Only show turn stairs (direction change)
-        // Show stair when YOU NEED TO PRESS F to turn (before stepping)
+        // GLASS MODE (HARD): Only show the NEXT step after a turn
         // ============================================================
-        if (window.gameState.isGlassMode) {
-            const nextStair = window.gameState.stairs[i + 1];
-            // Show this stair if the NEXT stair requires a turn (so player sees where to press F)
-            const needsTurnHere = nextStair && nextStair.dir !== s.dir;
+        if (window.gameState.isGlassHardMode) {
+            // "Show only the next step to go up at the turning point"
+            // This means if I am at step i, and i was reached by a turn (i-1 -> i changed dir), then i is visible.
+            // OR: If i is the step AFTER a turn.
 
-            // ONLY show the stair where you need to press F
-            if (!needsTurnHere) {
-                // Completely invisible - no ghost stair even
-                // Still draw coins/items though
+            // Logic: Is 's' (index i) the destination of a turn?
+            // This happens if stairs[i-1] exists and stairs[i-1].dir !== stairs[i].dir
+            const prev = window.gameState.stairs[i - 1];
+            const isPostTurn = prev && prev.dir !== s.dir;
+
+            // Also show the very first stair so player isn't lost at start
+            // User requested: "The stair I climbed must also be transparent" -> Remove `i === window.gameState.score`
+            const isVisible = isPostTurn || i === 0;
+
+            if (!isVisible) {
+                // Invisible, but show coins
                 if (s.hasCoin) {
                     ctx.font = '24px Arial';
                     ctx.textAlign = 'center';
                     const coinEmoji = s.coinVal >= 10 ? '💰' : s.coinVal >= 5 ? '🌟' : '🪙';
                     ctx.fillText(coinEmoji, sx, sy - 15);
                 }
-                return; // Skip stair rendering entirely
+                return;
             }
 
-            // Turn stair: draw with glow effect
+            // Glow for visibility
+            ctx.shadowColor = '#a29bfe';
+            ctx.shadowBlur = 20;
+        }
+
+        // ============================================================
+        // GLASS MODE (Normal): Show Pivot (Turn) Stairs
+        // ============================================================
+        if (window.gameState.isGlassMode) {
+            const nextStair = window.gameState.stairs[i + 1];
+            const needsTurnHere = nextStair && nextStair.dir !== s.dir;
+
+            if (!needsTurnHere) {
+                if (s.hasCoin) {
+                    ctx.font = '24px Arial';
+                    ctx.textAlign = 'center';
+                    const coinEmoji = s.coinVal >= 10 ? '💰' : s.coinVal >= 5 ? '🌟' : '🪙';
+                    ctx.fillText(coinEmoji, sx, sy - 15);
+                }
+                return;
+            }
+
             ctx.shadowColor = '#74b9ff';
             ctx.shadowBlur = 20;
         }
@@ -2533,10 +2563,16 @@ function render() {
         ctx.fillRect(sx - STAIR_W / 2 + 8, sy + 8, STAIR_W, STAIR_H);
 
         // Draw Stair Body
-        drawStair(ctx, sx, sy, currentStairSkin, i);
+        // Force Glass Skin only for HARD mode (user requested "all transparent stairs")
+        let skinToUse = currentStairSkin;
+        if (window.gameState.isGlassHardMode) {
+            skinToUse = 'stair_glass';
+        }
 
-        // Reset shadow for glass mode
-        if (window.gameState.isGlassMode) {
+        drawStair(ctx, sx, sy, skinToUse, i);
+
+        // Reset shadow
+        if (window.gameState.isGlassMode || window.gameState.isGlassHardMode) {
             ctx.shadowBlur = 0;
         }
 
