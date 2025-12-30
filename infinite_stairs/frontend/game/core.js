@@ -823,8 +823,30 @@ function updateGlassModeUnlock() {
     }
 }
 
+// Make it globally accessible
+window.updateGlassModeUnlock = updateGlassModeUnlock;
+
 // Call on load
 setTimeout(updateGlassModeUnlock, 500);
+
+// Also call when special modes overlay becomes visible
+const specialModesOverlayObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const overlay = document.getElementById('special-modes-overlay');
+            if (overlay && overlay.style.display === 'flex') {
+                updateGlassModeUnlock();
+                console.log('[GlassMode] Checked unlock status on overlay open');
+            }
+        }
+    });
+});
+
+const specialModesOverlayEl = document.getElementById('special-modes-overlay');
+if (specialModesOverlayEl) {
+    specialModesOverlayObserver.observe(specialModesOverlayEl, { attributes: true });
+}
+
 
 if (glassStartBtn) {
     glassStartBtn.addEventListener('click', () => {
