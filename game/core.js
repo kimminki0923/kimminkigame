@@ -793,10 +793,11 @@ window.sandstormTimer = 0; // Sandstorm visual effect timer
 window.sandstormActive = false;
 
 const MUMMY_START_DISTANCE = 50;  // Starting distance from mummy
-const MUMMY_SPEED = 0.08;         // How fast mummy catches up per frame
-const MUMMY_BONUS_PER_STEP = 1.5; // Distance gained when climbing
-const SANDSTORM_INTERVAL = 300;   // Frames between sandstorms
-const SANDSTORM_DURATION = 120;   // How long sandstorm lasts
+const MUMMY_SPEED = 0.06;         // How fast mummy catches up per frame
+const MUMMY_BONUS_PER_STEP = 1.8; // Distance gained when climbing
+const SANDSTORM_INTERVAL = 180;   // Frames between sandstorms (~3 seconds)
+const SANDSTORM_DURATION = 180;   // How long sandstorm lasts (~3 seconds)
+
 
 function initDungeonMode() {
     window.mummyDistance = MUMMY_START_DISTANCE;

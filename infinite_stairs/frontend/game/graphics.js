@@ -344,29 +344,96 @@ function drawDungeonBackground(camX, camY, score, w, h) {
     ctx.fillText(`미라와의 거리: ${Math.floor(mummyDist)}`, w * 0.5, h - 33);
 
     // ============================================================
+    // MUMMY SPRITE (미라 그래픽)
+    // ============================================================
+    // Mummy position based on distance (closer = bigger and higher on screen)
+    const mummyScale = 2.0 - (distRatio * 1.2); // 0.8 to 2.0
+    const mummyY = h - 150 + (distRatio * 80); // Closer = higher on screen
+    const mummyX = 80;
+
+    ctx.save();
+    ctx.translate(mummyX, mummyY);
+    ctx.scale(mummyScale, mummyScale);
+
+    // Mummy glow when close
+    if (distRatio < 0.4) {
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0000';
+    }
+
+    // Mummy body (wrapped in bandages)
+    ctx.fillStyle = '#d4c4a8';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 20, 35, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mummy head
+    ctx.fillStyle = '#c4b498';
+    ctx.beginPath();
+    ctx.arc(0, -45, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bandage wrapping effect
+    ctx.strokeStyle = '#a09070';
+    ctx.lineWidth = 2;
+    for (let i = -30; i < 30; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(-20, i);
+        ctx.lineTo(20, i + 4);
+        ctx.stroke();
+    }
+
+    // Glowing red eyes
+    const eyeGlow = Math.sin(time * 8) * 0.3 + 0.7;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#ff0000';
+    ctx.fillStyle = `rgba(255, 0, 0, ${eyeGlow})`;
+    ctx.beginPath();
+    ctx.arc(-6, -47, 4, 0, Math.PI * 2);
+    ctx.arc(6, -47, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Arms reaching out
+    ctx.fillStyle = '#d4c4a8';
+    ctx.save();
+    ctx.translate(20, -15);
+    ctx.rotate(Math.sin(time * 5) * 0.3 + 0.6);
+    ctx.fillRect(0, -4, 30, 8);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(-20, -15);
+    ctx.rotate(-Math.sin(time * 5 + 1) * 0.3 - 0.6);
+    ctx.fillRect(-30, -4, 30, 8);
+    ctx.restore();
+
+    ctx.restore();
+
+    // ============================================================
     // SANDSTORM EFFECT (모래폭풍)
     // ============================================================
     if (window.sandstormActive) {
-        // Sandy overlay
-        ctx.fillStyle = 'rgba(194, 154, 108, 0.6)';
+        // Sandy overlay - more visible
+        ctx.fillStyle = 'rgba(180, 140, 90, 0.75)';
         ctx.fillRect(0, 0, w, h);
 
-        // Swirling sand particles
-        ctx.fillStyle = 'rgba(210, 180, 140, 0.8)';
-        for (let i = 0; i < 50; i++) {
-            const px = (time * 300 + i * 47) % (w + 100) - 50;
-            const py = Math.sin(time * 2 + i) * h / 3 + h / 2;
-            const size = 2 + Math.random() * 4;
+        // Swirling sand particles - more and bigger
+        ctx.fillStyle = 'rgba(160, 120, 70, 0.9)';
+        for (let i = 0; i < 100; i++) {
+            const px = (time * 400 + i * 37) % (w + 100) - 50;
+            const py = Math.sin(time * 3 + i * 0.5) * h / 2.5 + h / 2;
+            const size = 4 + Math.random() * 8;
             ctx.beginPath();
             ctx.arc(px, py, size, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Warning text
-        ctx.font = 'bold 24px Arial';
+        // Warning text - bigger
+        ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 15;
         ctx.shadowColor = '#000';
         ctx.fillText('🌪️ 모래폭풍! 🌪️', w / 2, h / 2 - 50);
         ctx.shadowBlur = 0;
@@ -379,7 +446,7 @@ function drawDungeonBackground(camX, camY, score, w, h) {
 
     // Danger indicator based on mummy distance
     if (distRatio < 0.3) {
-        const pulseAlpha = 0.1 + Math.sin(time * 10) * 0.1;
+        const pulseAlpha = 0.15 + Math.sin(time * 10) * 0.1;
         ctx.fillStyle = `rgba(255, 0, 0, ${pulseAlpha})`;
         ctx.fillRect(0, 0, w, h);
     }
@@ -398,6 +465,7 @@ function drawDungeonBackground(camX, camY, score, w, h) {
     ctx.textAlign = 'center';
     ctx.fillText(`🏛️ ${score} / 200`, w * 0.5, 30);
 }
+
 
 
 function drawTorch(ctx, x, y, timeOffset) {
