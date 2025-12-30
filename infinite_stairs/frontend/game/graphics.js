@@ -2505,34 +2505,25 @@ function render() {
         if (window.gameState.isGlassMode) {
             const prevStair = window.gameState.stairs[i - 1];
             const isTurnStair = prevStair && prevStair.dir !== s.dir;
-            const isCurrentStair = (i === window.gameState.score);
-            const isNextStair = (i === window.gameState.score + 1);
 
-            // Only show: turn stairs, current stair, next stair
-            if (!isTurnStair && !isCurrentStair && !isNextStair) {
-                // Draw invisible/ghost stair (very faint)
-                ctx.globalAlpha = 0.05;
-                ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                ctx.fillRect(sx - STAIR_W / 2, sy, STAIR_W, STAIR_H);
-                ctx.globalAlpha = 1;
-
-                // Still draw coins/items
+            // ONLY show turn stairs - all other stairs are invisible!
+            if (!isTurnStair) {
+                // Completely invisible - no ghost stair even
+                // Still draw coins/items though
                 if (s.hasCoin) {
-                    // Draw coin even on invisible stairs
                     ctx.font = '24px Arial';
                     ctx.textAlign = 'center';
                     const coinEmoji = s.coinVal >= 10 ? '💰' : s.coinVal >= 5 ? '🌟' : '🪙';
                     ctx.fillText(coinEmoji, sx, sy - 15);
                 }
-                return; // Skip full stair rendering
+                return; // Skip stair rendering entirely
             }
 
             // Turn stair: draw with glow effect
-            if (isTurnStair) {
-                ctx.shadowColor = '#74b9ff';
-                ctx.shadowBlur = 15;
-            }
+            ctx.shadowColor = '#74b9ff';
+            ctx.shadowBlur = 20;
         }
+
 
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
