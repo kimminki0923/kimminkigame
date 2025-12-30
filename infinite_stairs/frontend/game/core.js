@@ -596,7 +596,18 @@ function gameOver() {
     startBtn.style.display = 'inline-block';
     stopBtn.style.display = 'none';
     updateUnlockStatus(); // Check if newly achieved 1000 unlocks Reverse Mode
+
+    // If was in Reverse Mode, show Special Modes overlay for quick retry
+    if (isReverse) {
+        const specialModesOverlay = document.getElementById('special-modes-overlay');
+        const crownCountDisplay = document.getElementById('crown-count-display');
+        if (specialModesOverlay) {
+            specialModesOverlay.style.display = 'flex';
+            if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
+        }
+    }
 }
+
 
 // Main Game Loop
 function gameLoop(timestamp) {
@@ -638,11 +649,17 @@ function gameLoop(timestamp) {
         if (window.gameState.isDungeonMode) {
             updateMummyChase();
 
+            // Sandstorm effect: timer decays 2x faster!
+            if (window.sandstormActive) {
+                window.gameState.timer -= currentDecay; // Extra decay during sandstorm
+            }
+
             // Check victory
             if (checkDungeonVictory()) return;
         }
 
     }
+
 
     if (isFalling) updateFall();
 
@@ -876,10 +893,20 @@ function dungeonGameOver(isVictory, reason = '') {
         console.log(`[Dungeon] Failed - ${reason || 'unknown'}`);
     }
 
+    // Return to Special Modes overlay instead of main menu
     menuOverlay.style.display = 'block';
     startBtn.style.display = 'inline-block';
     if (statusEl) statusEl.innerText = 'Ready';
+
+    // Show Special Modes overlay for quick retry
+    const specialModesOverlay = document.getElementById('special-modes-overlay');
+    const crownCountDisplay = document.getElementById('crown-count-display');
+    if (specialModesOverlay) {
+        specialModesOverlay.style.display = 'flex';
+        if (crownCountDisplay) crownCountDisplay.innerText = window.pharaohCrowns || 0;
+    }
 }
+
 
 
 // Check dungeon victory condition
