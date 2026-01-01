@@ -12,6 +12,16 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.166.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.166.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.0/examples/jsm/"
+            }
+        }
+    </script>
     <link rel="icon" type="image/png" href="assets/favicon.png">
     <!-- Firebase SDKs (Compat version for simplicity) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -109,12 +119,18 @@
 </head>
 
 <body>
-    <nav id="nav-bar">
-        <button onclick="showPage('page-stairs')" class="nav-btn active" id="nav-stairs">Infinite Stairs</button>
-        <button onclick="showPage('page-zigzag')" class="nav-btn" id="nav-zigzag">ZigZag</button>
-        <button onclick="showPage('page-liar')" class="nav-btn" id="nav-liar">Liar Game</button>
-        <button onclick="showPage('page-mafia')" class="nav-btn" id="nav-mafia">Mafia Game</button>
-    </nav>
+
+    <!-- Navigation Bar -->
+    <div id="nav-bar">
+        <button id="nav-stairs" class="nav-btn active" onclick="showPage('page-stairs')">Infinite Stairs</button>
+        <button id="nav-mafia" class="nav-btn" onclick="showPage('page-mafia')">Mafia Game</button>
+        <button id="nav-liar" class="nav-btn" onclick="showPage('page-liar')">Liar Game</button>
+        <button id="nav-zigzag" class="nav-btn" onclick="showPage('page-zigzag')">ZigZag</button>
+        <button id="nav-flight" class="nav-btn"
+            onclick="showPage('page-flight'); import('./game/flight/flight.js?v=2.05').then(m=>{ m.startFlightSimulator(); m.focusFlight(); });">
+            ✈️ Flight Sim
+        </button>
+    </div>
 
     <div id="page-stairs" class="page active">
         <div id="game-container">
@@ -174,29 +190,23 @@
                             style="background:#3498db; color:white; border:none; padding:12px 30px; font-size:16px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #2980b9; transition:transform 0.1s;">⚙️
                             설정</button>
                     </div>
-
                     <div style="margin-top:20px;">
                         <button id="train-btn" class="ai-btn" style="background:#e67e22;">🧠 AI 학습하기</button>
                         <button id="auto-play-btn" class="ai-btn" style="background:#27ae60;" disabled>▶️ 학습된 AI
                             실행</button>
                         <button id="reset-ai-btn" class="ai-btn" style="background:#7f8c8d;">🗑️ AI 리셋</button>
                     </div>
-
-                    <!-- Special Modes Button -->
                     <div style="margin-top:15px;">
                         <button id="special-modes-btn" class="ai-btn"
-                            style="background: linear-gradient(135deg, #e74c3c, #c0392b); border: 2px solid #fff;">
-                            🎲 특별 모드
-                        </button>
+                            style="background: linear-gradient(135deg, #e74c3c, #c0392b); border: 2px solid #fff;">🎲 특별
+                            모드</button>
                     </div>
-
-                    <!-- Clean UI: No File Buttons -->
-
                     <div style="color:#eee; margin-top:10px; font-size:14px;">
                         <span id="learning-status">Ready to Learn</span><br>
                         Episode: <span id="episode-count">0</span> | High Score: <span id="high-score">0</span>
                     </div>
                 </div>
+                <!-- Special Modes Overlay -->
 
                 <!-- Special Modes Overlay -->
                 <div id="special-modes-overlay"
@@ -1040,44 +1050,65 @@
 
 
 
-    <!-- UI Overlays -->
-    <div id="turn-overlay"
-        style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
-        <span id="overlay-msg"></span>
-    </div>
+    <!-- Flight Simulator Page -->
+    <div id="page-flight" class="page">
+        <div id="flight-game-container" style="width:100%; height:100%; position:relative;">
+            <canvas id="flightCanvas" style="width:100%; height:100%; display:block;"></canvas>
 
-    <div id="scoreboard"
-        style="display:none; position:fixed; bottom:60px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
-        <button class="ad-close-btn" onclick="this.parentElement.style.display='none'"
-            style="top:-15px; right:-15px; width:25px; height:25px; font-size:14px;">×</button>
-        <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small id="score-limit"
-                style="color:#aaa; font-size:12px;"></small></h4>
-        <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
-    </div>
+            <button id="flight-exit-btn" onclick="location.reload()"
+                style="position:absolute; top:70px; right:20px; z-index:1000; padding:10px 20px; background:#e74c3c; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+                나가기 (Main Menu)
+            </button>
+
+            <div id="flight-controls-info"
+                style="position:absolute; bottom:20px; left:20px; background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; color:white; font-family:'Outfit', sans-serif;">
+                <h3 style="margin:0 0 10px 0;">🎮 Flight Controls</h3>
+                <p style="margin:5px 0;"><b>W</b> : Forward Thrust (앞으로 가기)</p>
+                <p style="margin:5px 0;"><b>Page Up</b> : Pitch Up (이륙/상승)</p>
+                <p style="margin:5px 0;"><b>Page Down</b> : Pitch Down (하강)</p>
+                <p style="margin:5px 0;"><b>A / D</b> : Roll (좌우 기울기)</p>
+                <div id="flight-debug"
+                    style="margin-top:10px; border-top:1px solid #777; padding-top:5px; font-size:12px; color:#ffff00;">
+                    Waiting for input...
+                </div>
+            </div>
+            <div id="turn-overlay"
+                style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:20px 40px; border-radius:30px; z-index:9000; font-size:24px; font-weight:bold; border: 2px solid #f1c40f; text-align:center; pointer-events:none;">
+                <span id="overlay-msg"></span>
+            </div>
+
+            <div id="scoreboard"
+                style="display:none; position:fixed; bottom:60px; right:20px; background:rgba(0,0,0,0.7); padding:15px; border-radius:15px; z-index:8000; color:white; min-width:150px; border:1px solid rgba(255,255,255,0.2);">
+                <button class="ad-close-btn" onclick="this.parentElement.style.display='none'"
+                    style="top:-15px; right:-15px; width:25px; height:25px; font-size:14px;">×</button>
+                <h4 style="margin:0 0 10px 0; border-bottom:1px solid #555; padding-bottom:5px;">🏆 점수판 <small
+                        id="score-limit" style="color:#aaa; font-size:12px;"></small></h4>
+                <ul id="score-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+            </div>
 
 
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">
-        (ONNX Model Check: AI buttons available)
-    </div>
+            <div style="margin-top: 10px; font-size: 12px; color: #888;">
+                (ONNX Model Check: AI buttons available)
+            </div>
 
 
 
-    <script src="auth.js?v=2.02"></script>
-    <script src="common.js?v=2.02"></script>
-    <!-- Game Logic Scripts with Cache-Busters -->
-    <script src="game/config.js?v=2.02"></script>
-    <script src="game/graphics.js?v=2.02"></script>
-    <script src="game/player.js?v=2.02"></script>
-    <script src="game/ai.js?v=2.02"></script>
-    <script src="game/shop.js?v=2.02"></script>
-    <script src="game/settings.js?v=2.02"></script>
-    <script src="game/audio.js?v=2.02"></script>
-    <!-- Core Game Controller -->
-    <script src="game/core.js?v=2.02"></script>
+            <script src="auth.js?v=2.02"></script>
+            <script src="common.js?v=2.02"></script>
+            <!-- Game Logic Scripts with Cache-Busters -->
+            <script src="game/config.js?v=2.02"></script>
+            <script src="game/graphics.js?v=2.02"></script>
+            <script src="game/player.js?v=2.02"></script>
+            <script src="game/ai.js?v=2.02"></script>
+            <script src="game/shop.js?v=2.02"></script>
+            <script src="game/settings.js?v=2.02"></script>
+            <script src="game/audio.js?v=2.02"></script>
+            <!-- Core Game Controller -->
+            <script src="game/core.js?v=2.02"></script>
 
-    <script src="zigzag_game.js?v=1.60"></script>
-    <script src="liar_game.js"></script>
-    <script src="mafia_game.js"></script>
+            <script src="zigzag_game.js?v=1.60"></script>
+            <script src="liar_game.js"></script>
+            <script src="mafia_game.js"></script>
 </body>
 
 </html>
