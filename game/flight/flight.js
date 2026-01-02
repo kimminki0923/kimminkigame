@@ -10,6 +10,7 @@ let airplaneMesh;
 let flames = [];
 let missiles = [];
 let explosions = [];
+let clouds = [];
 
 // ... (other globals)
 
@@ -337,6 +338,55 @@ function createEnvironment() {
     scene.add(starsSystem);
 
     airplaneContainer = new THREE.Group();
+
+    // Create Clouds
+    createClouds();
+}
+
+function createClouds() {
+    clouds = [];
+    const cloudCount = 40;
+    const cloudGeo = new THREE.BoxGeometry(1, 1, 1);
+    const cloudMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        flatShading: true,
+        transparent: true,
+        opacity: 0.8
+    });
+
+    for (let i = 0; i < cloudCount; i++) {
+        const cloudGroup = new THREE.Group();
+
+        // Random cluster
+        const blocks = Math.floor(Math.random() * 3) + 3;
+        for (let j = 0; j < blocks; j++) {
+            const mesh = new THREE.Mesh(cloudGeo, cloudMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 150
+            );
+            mesh.scale.set(
+                Math.random() * 100 + 100,
+                Math.random() * 50 + 50,
+                Math.random() * 100 + 100
+            );
+            mesh.castShadow = true;
+            cloudGroup.add(mesh);
+        }
+
+        // Position in sky
+        cloudGroup.position.set(
+            (Math.random() - 0.5) * 10000,
+            2000 + Math.random() * 5000,
+            (Math.random() - 0.5) * 20000
+        );
+
+        cloudGroup.userData.velocity = (Math.random() * 20 + 10); // Drift speed
+
+        scene.add(cloudGroup);
+        clouds.push(cloudGroup);
+    }
 }
 
 function createTower(x, y, z, isKing, parent, isRed = false) {
@@ -613,6 +663,12 @@ function animate(time) {
     // FLAME FX
     const fScale = keys.shift ? 1 : 0;
     flames.forEach(f => f.scale.lerp(new THREE.Vector3(fScale, fScale, fScale * 2), dt * 10));
+
+    // Cloud Animation
+    clouds.forEach(c => {
+        c.position.z += c.userData.velocity * dt;
+        if (c.position.z > 12000) c.position.z = -12000;
+    });
 
     // --- PHYSICS SUB-STEPPING (Prevent tunneling) ---
     const steps = 4;
