@@ -9,6 +9,52 @@ let airplaneContainer;
 let airplaneMesh;
 let flames = [];
 let missiles = [];
+let explosions = [];
+
+// ... (other globals)
+
+// Explosion FX
+function createExplosion(position) {
+    const particleCount = 20;
+    const geo = new THREE.BufferGeometry();
+    const pos = [];
+    const vel = [];
+
+    for (let i = 0; i < particleCount; i++) {
+        pos.push(0, 0, 0);
+        vel.push((Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50);
+    }
+
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xffaa00, size: 4, transparent: true });
+    const mesh = new THREE.Points(geo, mat);
+    mesh.position.copy(position);
+    scene.add(mesh);
+
+    explosions.push({ mesh: mesh, velocities: vel, life: 0.5 });
+}
+
+function fireMissile() {
+    const geo = new THREE.CylinderGeometry(0.2, 0.2, 12, 6);
+    geo.rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0044 }); // Neon Red
+    const m = new THREE.Mesh(geo, mat);
+
+    const pos = airplaneContainer.position.clone();
+    pos.y -= 1.0;
+    m.position.copy(pos);
+    m.quaternion.copy(airplaneContainer.quaternion);
+    scene.add(m);
+
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(m.quaternion);
+
+    // Speed inheritance: Base 1000 + Plane Speed * 200 (approx unit/sec)
+    // Actually currentSpeed is factor. moveDist = currentSpeed * 200 * dt.
+    // So plane velocity is currentSpeed * 200.
+    const missileSpeed = 1000 + (currentSpeed * 200);
+
+    missiles.push({ mesh: m, dir: fwd, life: 2.0, speed: missileSpeed });
+}
 let starsSystem; // Particle system for speed
 let isStarted = false;
 let lastTime = 0;
@@ -190,6 +236,39 @@ function createEnvironment() {
     ground.name = "arena_floor";
     arenaGroup.add(ground);
 
+    // Wall Border Visuals (Grey ring around floor)
+    const borderGeo = new THREE.PlaneGeometry(arenaWidth + 200, arenaLength + 200);
+    const borderMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 1.0 }); // Concrete grey
+    const border = new THREE.Mesh(borderGeo, borderMat);
+    border.rotation.x = -Math.PI / 2;
+    border.position.y = 0.1; // Slightly above zero but below grass (z-fighting fix if grass is 0)
+    // Actually grass is at 0. Let's put border at 0.05 and make it larger than ground
+    // Ground is arenaWidth x arenaLength. Border should be slightly larger.
+    // Let's make 4 strips instead to avoid z-fighting center.
+
+    const borderWidth = 100;
+    const borderMat2 = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 1.0 });
+    // Top
+    const bTop = new THREE.Mesh(new THREE.PlaneGeometry(arenaWidth + borderWidth * 2, borderWidth), borderMat2);
+    bTop.rotation.x = -Math.PI / 2;
+    bTop.position.set(0, 1, -arenaLength / 2 - borderWidth / 2);
+    arenaGroup.add(bTop);
+    // Bottom
+    const bBot = new THREE.Mesh(new THREE.PlaneGeometry(arenaWidth + borderWidth * 2, borderWidth), borderMat2);
+    bBot.rotation.x = -Math.PI / 2;
+    bBot.position.set(0, 1, arenaLength / 2 + borderWidth / 2);
+    arenaGroup.add(bBot);
+    // Left
+    const bLeft = new THREE.Mesh(new THREE.PlaneGeometry(borderWidth, arenaLength), borderMat2);
+    bLeft.rotation.x = -Math.PI / 2;
+    bLeft.position.set(-arenaWidth / 2 - borderWidth / 2, 1, 0);
+    arenaGroup.add(bLeft);
+    // Right
+    const bRight = new THREE.Mesh(new THREE.PlaneGeometry(borderWidth, arenaLength), borderMat2);
+    bRight.rotation.x = -Math.PI / 2;
+    bRight.position.set(arenaWidth / 2 + borderWidth / 2, 1, 0);
+    arenaGroup.add(bRight);
+
     // Boundary Walls (30000 height - complete box cage)\n    const wallHeight = 30000;\n    const wallThickness = 100;\n    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });\n\n    // Front/Back Walls\n    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);\n    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);\n    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);\n    wallBack.receiveShadow = true;\n    wallBack.castShadow = true;\n    wallBack.userData.type = \"WALL\";\n    wallBack.userData.width = arenaWidth + wallThickness * 2;\n    wallBack.userData.height = wallHeight;\n    wallBack.userData.depth = wallThickness;\n    arenaGroup.add(wallBack);\n    allObjects.push(wallBack);\n\n    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);\n    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);\n    wallFront.receiveShadow = true;\n    wallFront.castShadow = true;\n    wallFront.userData.type = \"WALL\";\n    wallFront.userData.width = arenaWidth + wallThickness * 2;\n    wallFront.userData.height = wallHeight;\n    wallFront.userData.depth = wallThickness;\n    arenaGroup.add(wallFront);\n    allObjects.push(wallFront);\n\n    // Side Walls\n    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);\n    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);\n    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);\n    wallLeft.receiveShadow = true;\n    wallLeft.castShadow = true;\n    wallLeft.userData.type = \"WALL\";\n    wallLeft.userData.width = wallThickness;\n    wallLeft.userData.height = wallHeight;\n    wallLeft.userData.depth = arenaLength;\n    arenaGroup.add(wallLeft);\n    allObjects.push(wallLeft);\n\n    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);\n    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);\n    wallRight.receiveShadow = true;\n    wallRight.castShadow = true;\n    wallRight.userData.type = \"WALL\";\n    wallRight.userData.width = wallThickness;\n    wallRight.userData.height = wallHeight;\n    wallRight.userData.depth = arenaLength;\n    arenaGroup.add(wallRight);\n    allObjects.push(wallRight);\n\n    // CEILING (Top of the box)\n    const ceilingGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);\n    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, side: THREE.DoubleSide }); // Sky blue\n    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);\n    ceiling.rotation.x = Math.PI / 2;\n    ceiling.position.y = wallHeight;\n    ceiling.userData.type = \"CEILING\";\n    ceiling.userData.height = wallHeight;\n    arenaGroup.add(ceiling);\n    allObjects.push(ceiling);\n\n    // 2. THE RIVER (10x scale)
     const riverWidth = 800;
     const riverGeo = new THREE.PlaneGeometry(arenaWidth - 200, riverWidth);
@@ -293,8 +372,10 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
 
     towerGroup.userData.type = "BUILDING";
     towerGroup.userData.height = height + 450;
-    towerGroup.userData.width = baseSize * 2;
-    towerGroup.userData.depth = baseSize * 2;
+    // Set collision radius larger than visual size (1.5x)
+    towerGroup.userData.width = baseSize * 3;
+    towerGroup.userData.depth = baseSize * 3;
+    towerGroup.userData.radius = baseSize * 1.5; // Explicit radius for cylinder collisions
     allObjects.push(towerGroup);
 }
 
@@ -471,21 +552,6 @@ function setupInputs() {
     });
 }
 
-function fireMissile() {
-    const geo = new THREE.CylinderGeometry(0.2, 0.2, 12, 6);
-    geo.rotateX(-Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff0044 }); // Neon Red
-    const m = new THREE.Mesh(geo, mat);
-
-    const pos = airplaneContainer.position.clone();
-    pos.y -= 1.0;
-    m.position.copy(pos);
-    m.quaternion.copy(airplaneContainer.quaternion);
-    scene.add(m);
-
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(m.quaternion);
-    missiles.push({ mesh: m, dir: fwd, life: 2.0 });
-}
 
 function animate(time) {
     requestAnimationFrame(animate);
@@ -496,10 +562,52 @@ function animate(time) {
     // MISSILE
     if (keys['q'] && !lastQ) { fireMissile(); lastQ = true; }
     if (!keys['q']) lastQ = false;
+
+    // Missile Update
     for (let i = missiles.length - 1; i >= 0; i--) {
         missiles[i].life -= dt;
-        missiles[i].mesh.position.add(missiles[i].dir.clone().multiplyScalar(1000 * dt));
-        if (missiles[i].life <= 0) { scene.remove(missiles[i].mesh); missiles.splice(i, 1); }
+        const speed = missiles[i].speed || 1000;
+        missiles[i].mesh.position.add(missiles[i].dir.clone().multiplyScalar(speed * dt));
+
+        let hit = false;
+        // Check missile collision
+        for (let obj of allObjects) {
+            if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") continue;
+
+            let radius = (obj.userData.width || 200) / 2;
+            if (obj.userData.type === "WALL") radius = 500;
+            else if (obj.userData.type === "BUILDING") radius = (obj.userData.width || 800) / 2;
+
+            if (missiles[i].mesh.position.distanceTo(obj.position) < radius) {
+                hit = true;
+                break;
+            }
+        }
+
+        if (hit || missiles[i].life <= 0) {
+            if (hit) createExplosion(missiles[i].mesh.position);
+            scene.remove(missiles[i].mesh);
+            missiles.splice(i, 1);
+        }
+    }
+
+    // Explosion Update
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        explosions[i].life -= dt;
+        const positions = explosions[i].mesh.geometry.attributes.position.array;
+        const vels = explosions[i].velocities;
+        for (let j = 0; j < vels.length / 3; j++) {
+            positions[j * 3] += vels[j * 3] * dt * 20;
+            positions[j * 3 + 1] += vels[j * 3 + 1] * dt * 20;
+            positions[j * 3 + 2] += vels[j * 3 + 2] * dt * 20;
+        }
+        explosions[i].mesh.geometry.attributes.position.needsUpdate = true;
+        explosions[i].mesh.material.opacity = Math.max(0, explosions[i].life * 2);
+
+        if (explosions[i].life <= 0) {
+            scene.remove(explosions[i].mesh);
+            explosions.splice(i, 1);
+        }
     }
 
     // FLAME FX
@@ -517,7 +625,12 @@ function animate(time) {
         if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accel; }
         if (keys['s']) currentSpeed -= DECEL;
         if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
-        if (currentSpeed < 0) currentSpeed = 0; if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
+
+        // Prevent reversing unless crash bounce
+        if (!scene.userData.crashCooldown) {
+            if (currentSpeed < 0) currentSpeed = 0;
+        }
+        if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
 
         let turnForce = subDt * 4.0;
         if (keys['arrowup']) pitchVel += turnForce;
@@ -615,10 +728,14 @@ function animate(time) {
 
         if (crash) {
             if (!scene.userData.crashCooldown) {
-                scene.userData.crashCooldown = 0.5;
-                console.log("CRASH");
-                currentSpeed = 0.1;
-                airplaneContainer.translateZ(50); // Bounce back
+                scene.userData.crashCooldown = 0.5; // 0.5 second cooldown
+                console.log("CRASH - BOUNCE");
+
+                // BOUNCE LOGIC (Reverse speed)
+                currentSpeed = -currentSpeed * 0.5;
+                if (Math.abs(currentSpeed) < 2.0) currentSpeed = -2.0; // Minimum bounce force
+
+                airplaneContainer.translateZ(30); // Immediate push to clear collider
             }
         }
     }
