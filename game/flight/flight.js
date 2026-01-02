@@ -507,6 +507,9 @@ function animate(time) {
     const moveDist = currentSpeed * 200 * dt;
     airplaneContainer.translateZ(-moveDist);
 
+    // Get plane position for sun and collision
+    const planePos = airplaneContainer.position;
+
     // FIXED SUN (Follows slightly to provide constant shadows)
     scene.userData.sun.position.set(planePos.x + 200, planePos.y + 500, planePos.z + 200);
     scene.userData.sun.target.position.copy(planePos);
