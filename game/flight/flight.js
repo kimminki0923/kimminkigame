@@ -103,11 +103,11 @@ function createSimpleAirplane(name) {
 
 // Flight Parameters
 let currentSpeed = 0;
-const BASE_MAX_SPEED = 2.0;
-const BOOST_MAX_SPEED = 3.5;
-const ACCEL = 0.02;
-const BOOST_ACCEL = 0.05;
-const DECEL = 0.01;
+const BASE_MAX_SPEED = 3.0;   // 300 km/h display
+const BOOST_MAX_SPEED = 6.0;  // 600 km/h display
+const ACCEL = 0.03;
+const BOOST_ACCEL = 0.08;
+const DECEL = 0.015;
 
 // Physics
 const GRAVITY = 15.0;
@@ -205,23 +205,32 @@ function createEnvironment() {
     river.position.y = 0.5;
     arenaGroup.add(river);
 
-    // 3. BRIDGES (10x scale)
+    // 3. BRIDGES (10x scale) - with collision
     const bridgeWidth = 1000;
     const bridgeLength = 1200;
-    const bridgeGeo = new THREE.BoxGeometry(bridgeWidth, 50, bridgeLength);
+    const bridgeHeight = 50;
+    const bridgeGeo = new THREE.BoxGeometry(bridgeWidth, bridgeHeight, bridgeLength);
     const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
 
     const bridgeL = new THREE.Mesh(bridgeGeo, bridgeMat);
-    bridgeL.position.set(-arenaWidth / 4, 25, 0);
+    bridgeL.position.set(-arenaWidth / 4, bridgeHeight / 2, 0);
     bridgeL.castShadow = true;
     bridgeL.receiveShadow = true;
+    bridgeL.userData.type = "BRIDGE";
+    bridgeL.userData.width = bridgeWidth;
+    bridgeL.userData.height = bridgeHeight;
+    bridgeL.userData.depth = bridgeLength;
     arenaGroup.add(bridgeL);
     allObjects.push(bridgeL);
 
     const bridgeR = new THREE.Mesh(bridgeGeo, bridgeMat);
-    bridgeR.position.set(arenaWidth / 4, 25, 0);
+    bridgeR.position.set(arenaWidth / 4, bridgeHeight / 2, 0);
     bridgeR.castShadow = true;
     bridgeR.receiveShadow = true;
+    bridgeR.userData.type = "BRIDGE";
+    bridgeR.userData.width = bridgeWidth;
+    bridgeR.userData.height = bridgeHeight;
+    bridgeR.userData.depth = bridgeLength;
     arenaGroup.add(bridgeR);
     allObjects.push(bridgeR);
 
@@ -650,6 +659,28 @@ function animate(time) {
             continue;
         }
 
+        // BRIDGE Collision Logic (solid box on ground)
+        if (obj.userData.type === "BRIDGE") {
+            const bW = obj.userData.width || 1000;
+            const bD = obj.userData.depth || 1200;
+            const bH = obj.userData.height || 50;
+            const halfW = bW / 2;
+            const halfD = bD / 2;
+
+            for (let wp of worldPoints) {
+                const dx = wp.x - obj.position.x;
+                const dz = wp.z - obj.position.z;
+                if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
+                    if (wp.y < bH) {
+                        crash = true;
+                        break;
+                    }
+                }
+            }
+            if (crash) break;
+            continue;
+        }
+
         // Generic Block Logic (fallback)
         let r = (obj.scale.x + obj.scale.z) * 0.45;
         const yMin = obj.position.y;
@@ -681,33 +712,45 @@ function animate(time) {
         scene.userData.crashCooldown -= dt;
     }
 
-    if (airplaneContainer.position.y < 3.0) { airplaneContainer.position.y = 3.0; if (pitchVel < 0) pitchVel = 0; }
+    if (airplaneContainer.position.y < 5.0) {
+        airplaneContainer.position.y = 5.0;
+        if (pitchVel < 0) pitchVel = 0;
+        if (currentSpeed > 1.0) {
+            // Crash into ground at high speed
+            crash = true;
+        }
+    }
 
-    // Camera - COMPLETELY STABLE (Fixed offset, no zoom based on speed)
+    // Camera - DYNAMIC based on speed
     const baseCamHeight = 10;
     const baseCamDist = 30;
 
-    const camOffset = new THREE.Vector3(0, baseCamHeight, baseCamDist);
+    // Speed-based camera zoom out (more distance at higher speed)
+    const speedFactor = currentSpeed / BASE_MAX_SPEED;
+    const dynamicHeight = baseCamHeight + speedFactor * 8;  // +8 at max normal speed
+    const dynamicDist = baseCamDist + speedFactor * 25;     // +25 at max normal speed
+
+    const camOffset = new THREE.Vector3(0, dynamicHeight, dynamicDist);
     camOffset.applyQuaternion(airplaneContainer.quaternion);
     const camPos = planePos.clone().add(camOffset);
 
-    // Minimal shake only during boost
-    if (keys.shift && currentSpeed > 0.5) {
-        const shake = 0.2;
+    // Shake during boost
+    if (keys.shift && currentSpeed > 2.0) {
+        const shake = 0.5;
         camPos.x += (Math.random() - 0.5) * shake;
         camPos.y += (Math.random() - 0.5) * shake * 0.3;
         camPos.z += (Math.random() - 0.5) * shake;
     }
 
     // Smooth lerp - nearly instant camera follow
-    camera.position.lerp(camPos, 1.0);
+    camera.position.lerp(camPos, 0.8);
 
     // CAMERA ROLL SYNC - Screen tilts with airplane!
     // Get airplane's local up vector and apply to camera
     const planeUp = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
     camera.up.lerp(planeUp, 0.5); // Faster roll transition
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-    camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(50))); // Look ahead
+    camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(80))); // Look ahead further
 
     // Update speed display
     updateSpeedHUD();
