@@ -90,8 +90,8 @@ function initGraphics(container, canvas) {
     const sky = new THREE.Mesh(skyGeo, skyMat);
     scene.add(sky);
 
-    // Add Fog matching horizon
-    scene.fog = new THREE.FogExp2(0xffffff, 0.00025);
+    // Add Fog - reduced density for better arena visibility
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.0008);
 
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 15000);
 
@@ -276,7 +276,7 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
 
 function createHeroAirplane() {
     airplaneContainer = new THREE.Group();
-    airplaneContainer.position.set(0, 10, 0);
+    airplaneContainer.position.set(0, 100, 400); // Higher start, near red side
     scene.add(airplaneContainer);
     airplaneMesh = new THREE.Group();
     airplaneContainer.add(airplaneMesh);
