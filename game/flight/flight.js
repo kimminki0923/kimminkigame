@@ -55,43 +55,10 @@ function initGraphics(container, canvas) {
     renderer.toneMappingExposure = 1.5;
 
     scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb); // Sky blue background
 
-    // BEAUTIFUL SKY GRADIENT
-    // We create a large sphere with gradient shader
-    const skyGeo = new THREE.SphereGeometry(6000, 32, 16);
-    const skyMat = new THREE.ShaderMaterial({
-        uniforms: {
-            topColor: { value: new THREE.Color(0x4488ff) },
-            bottomColor: { value: new THREE.Color(0xffeedd) },
-            offset: { value: 33 },
-            exponent: { value: 0.5 }
-        },
-        vertexShader: `
-            varying vec3 vWorldPosition;
-            void main() {
-                vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-                vWorldPosition = worldPosition.xyz;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-            }
-        `,
-        fragmentShader: `
-            uniform vec3 topColor;
-            uniform vec3 bottomColor;
-            uniform float offset;
-            uniform float exponent;
-            varying vec3 vWorldPosition;
-            void main() {
-                float h = normalize( vWorldPosition + offset ).y;
-                gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
-            }
-        `,
-        side: THREE.BackSide
-    });
-    const sky = new THREE.Mesh(skyGeo, skyMat);
-    scene.add(sky);
-
-    // Fog disabled for arena visibility\n    // scene.fog = new THREE.FogExp2(0x87ceeb, 0.0008);\n
-    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 15000);
+    // Camera with extended far plane for 30000 height arena
+    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 50000);
 
     const sun = new THREE.DirectionalLight(0xffffff, 3.0);
     sun.position.set(100, 500, 100);
@@ -136,60 +103,7 @@ function createEnvironment() {
     ground.name = "arena_floor";
     arenaGroup.add(ground);
 
-    // Boundary Walls (Very tall - virtually infinite)
-    const wallHeight = 10000;
-    const wallThickness = 50;
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });
-
-    // Front/Back Walls
-    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);
-    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);
-    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);
-    wallBack.receiveShadow = true;
-    wallBack.castShadow = true;
-    wallBack.userData.type = "WALL";
-    wallBack.userData.width = arenaWidth + wallThickness * 2;
-    wallBack.userData.height = wallHeight;
-    wallBack.userData.depth = wallThickness;
-    arenaGroup.add(wallBack);
-    allObjects.push(wallBack);
-
-    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);
-    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);
-    wallFront.receiveShadow = true;
-    wallFront.castShadow = true;
-    wallFront.userData.type = "WALL";
-    wallFront.userData.width = arenaWidth + wallThickness * 2;
-    wallFront.userData.height = wallHeight;
-    wallFront.userData.depth = wallThickness;
-    arenaGroup.add(wallFront);
-    allObjects.push(wallFront);
-
-    // Side Walls
-    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);
-    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);
-    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);
-    wallLeft.receiveShadow = true;
-    wallLeft.castShadow = true;
-    wallLeft.userData.type = "WALL";
-    wallLeft.userData.width = wallThickness;
-    wallLeft.userData.height = wallHeight;
-    wallLeft.userData.depth = arenaLength;
-    arenaGroup.add(wallLeft);
-    allObjects.push(wallLeft);
-
-    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);
-    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);
-    wallRight.receiveShadow = true;
-    wallRight.castShadow = true;
-    wallRight.userData.type = "WALL";
-    wallRight.userData.width = wallThickness;
-    wallRight.userData.height = wallHeight;
-    wallRight.userData.depth = arenaLength;
-    arenaGroup.add(wallRight);
-    allObjects.push(wallRight);
-
-    // 2. THE RIVER (10x scale)
+    // Boundary Walls (30000 height - complete box cage)\n    const wallHeight = 30000;\n    const wallThickness = 100;\n    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });\n\n    // Front/Back Walls\n    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);\n    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);\n    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);\n    wallBack.receiveShadow = true;\n    wallBack.castShadow = true;\n    wallBack.userData.type = \"WALL\";\n    wallBack.userData.width = arenaWidth + wallThickness * 2;\n    wallBack.userData.height = wallHeight;\n    wallBack.userData.depth = wallThickness;\n    arenaGroup.add(wallBack);\n    allObjects.push(wallBack);\n\n    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);\n    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);\n    wallFront.receiveShadow = true;\n    wallFront.castShadow = true;\n    wallFront.userData.type = \"WALL\";\n    wallFront.userData.width = arenaWidth + wallThickness * 2;\n    wallFront.userData.height = wallHeight;\n    wallFront.userData.depth = wallThickness;\n    arenaGroup.add(wallFront);\n    allObjects.push(wallFront);\n\n    // Side Walls\n    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);\n    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);\n    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);\n    wallLeft.receiveShadow = true;\n    wallLeft.castShadow = true;\n    wallLeft.userData.type = \"WALL\";\n    wallLeft.userData.width = wallThickness;\n    wallLeft.userData.height = wallHeight;\n    wallLeft.userData.depth = arenaLength;\n    arenaGroup.add(wallLeft);\n    allObjects.push(wallLeft);\n\n    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);\n    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);\n    wallRight.receiveShadow = true;\n    wallRight.castShadow = true;\n    wallRight.userData.type = \"WALL\";\n    wallRight.userData.width = wallThickness;\n    wallRight.userData.height = wallHeight;\n    wallRight.userData.depth = arenaLength;\n    arenaGroup.add(wallRight);\n    allObjects.push(wallRight);\n\n    // CEILING (Top of the box)\n    const ceilingGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);\n    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, side: THREE.DoubleSide }); // Sky blue\n    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);\n    ceiling.rotation.x = Math.PI / 2;\n    ceiling.position.y = wallHeight;\n    ceiling.userData.type = \"CEILING\";\n    ceiling.userData.height = wallHeight;\n    arenaGroup.add(ceiling);\n    allObjects.push(ceiling);\n\n    // 2. THE RIVER (10x scale)
     const riverWidth = 800;
     const riverGeo = new THREE.PlaneGeometry(arenaWidth - 200, riverWidth);
     const riverMat = new THREE.MeshStandardMaterial({
@@ -553,8 +467,11 @@ function animate(time) {
 
     let crash = false;
     for (let obj of allObjects) {
-        if (Math.abs(obj.position.x - planePos.x) > 500) continue;
-        if (Math.abs(obj.position.z - planePos.z) > 500) continue;
+        // Skip distance filter for walls and ceiling - always check these!
+        if (obj.userData.type !== "WALL" && obj.userData.type !== "CEILING") {
+            if (Math.abs(obj.position.x - planePos.x) > 500) continue;
+            if (Math.abs(obj.position.z - planePos.z) > 500) continue;
+        }
 
         if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") {
             // Precise Ring Logic
@@ -627,6 +544,19 @@ function animate(time) {
                         crash = true;
                         break;
                     }
+                }
+            }
+            if (crash) break;
+            continue;
+        }
+
+        // CEILING Collision Logic (top of box)
+        if (obj.userData.type === "CEILING") {
+            const ceilingY = obj.userData.height || 30000;
+            for (let wp of worldPoints) {
+                if (wp.y >= ceilingY) {
+                    crash = true;
+                    break;
                 }
             }
             if (crash) break;
