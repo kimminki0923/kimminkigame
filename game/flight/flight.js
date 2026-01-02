@@ -117,9 +117,9 @@ function initGraphics(container, canvas) {
 }
 
 function createEnvironment() {
-    // 1. ARENA BASICS
-    const arenaWidth = 600;
-    const arenaLength = 1200;
+    // 1. ARENA BASICS - 10x SCALE
+    const arenaWidth = 6000;
+    const arenaLength = 12000;
     const arenaGroup = new THREE.Group();
     scene.add(arenaGroup);
 
@@ -136,45 +136,62 @@ function createEnvironment() {
     ground.name = "arena_floor";
     arenaGroup.add(ground);
 
-    // Boundary Walls (The "Box")
-    const wallHeight = 150;
+    // Boundary Walls (Very tall - virtually infinite)
+    const wallHeight = 10000;
+    const wallThickness = 50;
     const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });
 
     // Front/Back Walls
-    const fbWallGeo = new THREE.BoxGeometry(arenaWidth, wallHeight, 10);
+    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);
     const wallBack = new THREE.Mesh(fbWallGeo, wallMat);
-    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2);
+    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);
     wallBack.receiveShadow = true;
     wallBack.castShadow = true;
+    wallBack.userData.type = "WALL";
+    wallBack.userData.width = arenaWidth + wallThickness * 2;
+    wallBack.userData.height = wallHeight;
+    wallBack.userData.depth = wallThickness;
     arenaGroup.add(wallBack);
     allObjects.push(wallBack);
 
     const wallFront = new THREE.Mesh(fbWallGeo, wallMat);
-    wallFront.position.set(0, wallHeight / 2, arenaLength / 2);
+    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);
     wallFront.receiveShadow = true;
     wallFront.castShadow = true;
+    wallFront.userData.type = "WALL";
+    wallFront.userData.width = arenaWidth + wallThickness * 2;
+    wallFront.userData.height = wallHeight;
+    wallFront.userData.depth = wallThickness;
     arenaGroup.add(wallFront);
     allObjects.push(wallFront);
 
     // Side Walls
-    const sideWallGeo = new THREE.BoxGeometry(10, wallHeight, arenaLength);
+    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);
     const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);
-    wallLeft.position.set(-arenaWidth / 2, wallHeight / 2, 0);
+    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);
     wallLeft.receiveShadow = true;
     wallLeft.castShadow = true;
+    wallLeft.userData.type = "WALL";
+    wallLeft.userData.width = wallThickness;
+    wallLeft.userData.height = wallHeight;
+    wallLeft.userData.depth = arenaLength;
     arenaGroup.add(wallLeft);
     allObjects.push(wallLeft);
 
     const wallRight = new THREE.Mesh(sideWallGeo, wallMat);
-    wallRight.position.set(arenaWidth / 2, wallHeight / 2, 0);
+    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);
     wallRight.receiveShadow = true;
     wallRight.castShadow = true;
+    wallRight.userData.type = "WALL";
+    wallRight.userData.width = wallThickness;
+    wallRight.userData.height = wallHeight;
+    wallRight.userData.depth = arenaLength;
     arenaGroup.add(wallRight);
     allObjects.push(wallRight);
 
-    // 2. THE RIVER
-    const riverWidth = 80;
-    const riverGeo = new THREE.PlaneGeometry(arenaWidth - 20, riverWidth);
+    // 2. THE RIVER (10x scale)
+    const riverWidth = 800;
+    const riverGeo = new THREE.PlaneGeometry(arenaWidth - 200, riverWidth);
     const riverMat = new THREE.MeshStandardMaterial({
         color: 0x3498db,
         emissive: 0x1a5276,
@@ -187,46 +204,46 @@ function createEnvironment() {
     river.position.y = 0.5;
     arenaGroup.add(river);
 
-    // 3. BRIDGES
-    const bridgeWidth = 100;
-    const bridgeLength = 120;
-    const bridgeGeo = new THREE.BoxGeometry(bridgeWidth, 5, bridgeLength);
+    // 3. BRIDGES (10x scale)
+    const bridgeWidth = 1000;
+    const bridgeLength = 1200;
+    const bridgeGeo = new THREE.BoxGeometry(bridgeWidth, 50, bridgeLength);
     const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
 
     const bridgeL = new THREE.Mesh(bridgeGeo, bridgeMat);
-    bridgeL.position.set(-arenaWidth / 4, 2.5, 0);
+    bridgeL.position.set(-arenaWidth / 4, 25, 0);
     bridgeL.castShadow = true;
     bridgeL.receiveShadow = true;
     arenaGroup.add(bridgeL);
     allObjects.push(bridgeL);
 
     const bridgeR = new THREE.Mesh(bridgeGeo, bridgeMat);
-    bridgeR.position.set(arenaWidth / 4, 2.5, 0);
+    bridgeR.position.set(arenaWidth / 4, 25, 0);
     bridgeR.castShadow = true;
     bridgeR.receiveShadow = true;
     arenaGroup.add(bridgeR);
     allObjects.push(bridgeR);
 
-    // 4. TOWERS
+    // 4. TOWERS (10x scale)
     // Blue Side (North)
-    createTower(0, 0, -500, true, arenaGroup); // Blue King
-    createTower(-150, 0, -350, false, arenaGroup); // Blue Princess L
-    createTower(150, 0, -350, false, arenaGroup); // Blue Princess R
+    createTower(0, 0, -5000, true, arenaGroup); // Blue King
+    createTower(-1500, 0, -3500, false, arenaGroup); // Blue Princess L
+    createTower(1500, 0, -3500, false, arenaGroup); // Blue Princess R
 
     // Red Side (South)
-    createTower(0, 0, 500, true, arenaGroup, true); // Red King
-    createTower(-150, 0, 350, false, arenaGroup, true); // Red Princess L
-    createTower(150, 0, 350, false, arenaGroup, true); // Red Princess R
+    createTower(0, 0, 5000, true, arenaGroup, true); // Red King
+    createTower(-1500, 0, 3500, false, arenaGroup, true); // Red Princess L
+    createTower(1500, 0, 3500, false, arenaGroup, true); // Red Princess R
 
-    // 5. SPEED PARTICLES
+    // 5. SPEED PARTICLES (larger spread)
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 1000;
+    const starCount = 2000;
     const posArray = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 2000;
+        posArray[i] = (Math.random() - 0.5) * 20000;
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.4 });
+    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, transparent: true, opacity: 0.4 });
     starsSystem = new THREE.Points(starsGeo, starsMat);
     scene.add(starsSystem);
 
@@ -239,10 +256,11 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
     towerGroup.position.set(x, y, z);
     parent.add(towerGroup);
 
-    const baseSize = isKing ? 60 : 40;
-    const height = isKing ? 100 : 70;
+    // 10x scale for towers
+    const baseSize = isKing ? 600 : 400;
+    const height = isKing ? 1000 : 700;
 
-    const bodyGeo = new THREE.CylinderGeometry(baseSize * 0.8, baseSize, height, 8);
+    const bodyGeo = new THREE.CylinderGeometry(baseSize * 0.8, baseSize, height, 16);
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdcdde1 });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = height / 2;
@@ -250,21 +268,21 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
     body.receiveShadow = true;
     towerGroup.add(body);
 
-    const topGeo = new THREE.CylinderGeometry(baseSize * 0.9, baseSize * 0.8, 15, 8);
+    const topGeo = new THREE.CylinderGeometry(baseSize * 0.9, baseSize * 0.8, 150, 16);
     const topMat = new THREE.MeshStandardMaterial({ color: color });
     const top = new THREE.Mesh(topGeo, topMat);
-    top.position.y = height + 7.5;
+    top.position.y = height + 75;
     top.castShadow = true;
     towerGroup.add(top);
 
     // Spire
-    const spireGeo = new THREE.ConeGeometry(5, 30, 8);
+    const spireGeo = new THREE.ConeGeometry(50, 300, 8);
     const spire = new THREE.Mesh(spireGeo, topMat);
-    spire.position.y = height + 30;
+    spire.position.y = height + 300;
     towerGroup.add(spire);
 
     towerGroup.userData.type = "BUILDING";
-    towerGroup.userData.height = height + 45;
+    towerGroup.userData.height = height + 450;
     towerGroup.userData.width = baseSize * 2;
     towerGroup.userData.depth = baseSize * 2;
     allObjects.push(towerGroup);
@@ -274,7 +292,7 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
 
 function createHeroAirplane() {
     airplaneContainer = new THREE.Group();
-    airplaneContainer.position.set(0, 100, 400); // Higher start, near red side
+    airplaneContainer.position.set(0, 500, 4000); // Higher start, near red side, scaled
     scene.add(airplaneContainer);
     airplaneMesh = new THREE.Group();
     airplaneContainer.add(airplaneMesh);
@@ -582,6 +600,30 @@ function animate(time) {
                 if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
                     // Check height
                     if (wp.y > 0 && wp.y < bH) {
+                        crash = true;
+                        break;
+                    }
+                }
+            }
+            if (crash) break;
+            continue;
+        }
+
+        // WALL Collision Logic (same as building but always blocks)
+        if (obj.userData.type === "WALL") {
+            const wW = obj.userData.width || 50;
+            const wD = obj.userData.depth || 50;
+            const wH = obj.userData.height || 10000;
+            const halfW = wW / 2;
+            const halfD = wD / 2;
+
+            for (let wp of worldPoints) {
+                const dx = wp.x - obj.position.x;
+                const dz = wp.z - obj.position.z;
+                // Check if inside wall footprint
+                if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
+                    // Check height (walls are very tall)
+                    if (wp.y > 0 && wp.y < wH) {
                         crash = true;
                         break;
                     }
