@@ -239,12 +239,62 @@ function listenForOtherPlayers() {
     });
 }
 
-// Event Listeners
-document.getElementById('flight-create-btn')?.addEventListener('click', createFlightRoom);
-document.getElementById('flight-join-btn')?.addEventListener('click', () => joinFlightRoom());
-document.getElementById('flight-solo-btn')?.addEventListener('click', startSoloFlight);
-document.getElementById('flight-start-btn')?.addEventListener('click', hostStartFlightGame);
-document.getElementById('flight-leave-btn')?.addEventListener('click', leaveFlightRoom);
+// Event Listeners - Wait for DOM to be ready
+function initFlightMultiplayer() {
+    console.log("[Flight MP] Initializing multiplayer...");
+
+    const createBtn = document.getElementById('flight-create-btn');
+    const joinBtn = document.getElementById('flight-join-btn');
+    const soloBtn = document.getElementById('flight-solo-btn');
+    const startBtn = document.getElementById('flight-start-btn');
+    const leaveBtn = document.getElementById('flight-leave-btn');
+
+    if (createBtn) {
+        createBtn.addEventListener('click', () => {
+            console.log("[Flight MP] Create room clicked");
+            createFlightRoom();
+        });
+    } else {
+        console.warn("[Flight MP] flight-create-btn not found!");
+    }
+
+    if (joinBtn) {
+        joinBtn.addEventListener('click', () => {
+            console.log("[Flight MP] Join room clicked");
+            joinFlightRoom();
+        });
+    }
+
+    if (soloBtn) {
+        soloBtn.addEventListener('click', () => {
+            console.log("[Flight MP] Solo mode clicked");
+            startSoloFlight();
+        });
+    }
+
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            console.log("[Flight MP] Start game clicked");
+            hostStartFlightGame();
+        });
+    }
+
+    if (leaveBtn) {
+        leaveBtn.addEventListener('click', () => {
+            console.log("[Flight MP] Leave room clicked");
+            leaveFlightRoom();
+        });
+    }
+
+    console.log("[Flight MP] Initialization complete");
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFlightMultiplayer);
+} else {
+    initFlightMultiplayer();
+}
 
 // Export for use from flight.js
 window.flightMultiplayer = {
