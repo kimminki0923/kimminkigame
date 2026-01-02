@@ -126,8 +126,7 @@
         <button id="nav-mafia" class="nav-btn" onclick="showPage('page-mafia')">Mafia Game</button>
         <button id="nav-liar" class="nav-btn" onclick="showPage('page-liar')">Liar Game</button>
         <button id="nav-zigzag" class="nav-btn" onclick="showPage('page-zigzag')">ZigZag</button>
-        <button id="nav-flight" class="nav-btn"
-            onclick="showPage('page-flight'); import('./game/flight/flight.js?v=3.2').then(m=>{ m.startFlightSimulator(); m.focusFlight(); });">
+        <button id="nav-flight" class="nav-btn" onclick="showPage('page-flight');">
             ✈️ Flight Sim
         </button>
     </div>
@@ -1052,7 +1051,57 @@
 
     <!-- Flight Simulator Page -->
     <div id="page-flight" class="page">
-        <div id="flight-game-container" style="width:100%; height:100%; position:relative;">
+        <!-- Flight Lobby (Multiplayer) -->
+        <div id="flight-lobby"
+            style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+            <div style="text-align:center; max-width:400px; padding:40px;">
+                <h1 style="color:#f1f5f9; font-size:48px; margin-bottom:10px;">✈️ Flight Sim</h1>
+                <p style="color:#94a3b8; margin-bottom:30px;">친구들과 함께 비행하세요!</p>
+
+                <input type="text" id="flight-room-id" class="room-input" placeholder="방 코드 (입력 또는 자동생성)"
+                    style="width:100%; padding:15px; font-size:18px; margin-bottom:20px; border-radius:12px; border:2px solid rgba(255,255,255,0.1); background:rgba(30,41,59,0.8); color:#f1f5f9; text-align:center;">
+
+                <div style="display:flex; gap:12px; justify-content:center; margin-bottom:30px;">
+                    <button id="flight-create-btn" class="primary-btn" style="flex:1; padding:15px;">방 만들기</button>
+                    <button id="flight-join-btn" class="secondary-btn" style="flex:1; padding:15px;">참가하기</button>
+                </div>
+
+                <button id="flight-solo-btn"
+                    style="width:100%; padding:12px; background:rgba(100,100,100,0.3); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); border-radius:12px; cursor:pointer; font-size:14px;">
+                    🎮 혼자 플레이 (Solo Mode)
+                </button>
+            </div>
+        </div>
+
+        <!-- Flight Waiting Room -->
+        <div id="flight-waiting"
+            style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+            <div style="text-align:center; max-width:500px; padding:40px;">
+                <h2 style="color:#94a3b8; margin-bottom:10px;">플레이어 대기 중...</h2>
+                <h1 id="flight-display-room-id"
+                    style="color:#f1f5f9; font-size:48px; letter-spacing:4px; margin:0 0 20px 0;"></h1>
+
+                <div id="flight-player-list"
+                    style="background:rgba(30,41,59,0.5); padding:20px; border-radius:16px; margin-bottom:20px; min-height:100px;">
+                    <ul id="flight-players-ul"
+                        style="list-style:none; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+                    </ul>
+                </div>
+
+                <p id="flight-player-count" style="color:#64748b; margin-bottom:20px;">0/6 플레이어</p>
+
+                <button id="flight-start-btn" class="primary-btn"
+                    style="display:none; width:100%; padding:15px; font-size:18px; margin-bottom:10px;">
+                    🚀 게임 시작
+                </button>
+                <button id="flight-leave-btn" class="secondary-btn" style="width:100%; padding:12px;">
+                    ← 나가기
+                </button>
+            </div>
+        </div>
+
+        <!-- Flight Game Container -->
+        <div id="flight-game-container" style="display:none; width:100%; height:100%; position:relative;">
             <canvas id="flightCanvas" style="width:100%; height:100%; display:block;"></canvas>
 
             <button id="flight-exit-btn" onclick="location.reload()"
@@ -1109,6 +1158,7 @@
             <script src="zigzag_game.js?v=1.60"></script>
             <script src="liar_game.js"></script>
             <script src="mafia_game.js"></script>
+            <script src="game/flight/flight_multiplayer.js?v=1.0"></script>
 </body>
 
 </html>

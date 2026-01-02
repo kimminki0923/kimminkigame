@@ -14,6 +14,93 @@ let isStarted = false;
 let lastTime = 0;
 let allObjects = [];
 
+// Multiplayer - Other Players
+window.otherPlayersInScene = {};
+
+// Export player position for multiplayer sync
+window.getPlayerPosition = function () {
+    if (!airplaneContainer) return null;
+    return {
+        x: airplaneContainer.position.x,
+        y: airplaneContainer.position.y,
+        z: airplaneContainer.position.z,
+        rx: airplaneContainer.rotation.x,
+        ry: airplaneContainer.rotation.y,
+        rz: airplaneContainer.rotation.z
+    };
+};
+
+// Update other player's airplane
+window.updateOtherPlayer = function (uid, data) {
+    if (!scene) return;
+
+    if (!window.otherPlayersInScene[uid]) {
+        // Create new airplane for this player
+        const otherPlane = createSimpleAirplane(data.name);
+        otherPlane.userData.uid = uid;
+        scene.add(otherPlane);
+        window.otherPlayersInScene[uid] = otherPlane;
+    }
+
+    const plane = window.otherPlayersInScene[uid];
+    // Smooth interpolation
+    plane.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.3);
+    plane.rotation.x += (data.rx - plane.rotation.x) * 0.3;
+    plane.rotation.y += (data.ry - plane.rotation.y) * 0.3;
+    plane.rotation.z += (data.rz - plane.rotation.z) * 0.3;
+};
+
+// Remove other player's airplane
+window.removeOtherPlayer = function (uid) {
+    if (window.otherPlayersInScene[uid]) {
+        scene.remove(window.otherPlayersInScene[uid]);
+        delete window.otherPlayersInScene[uid];
+    }
+};
+
+// Create simplified airplane for other players
+function createSimpleAirplane(name) {
+    const group = new THREE.Group();
+
+    // Body
+    const bodyGeo = new THREE.CylinderGeometry(1, 1.5, 10, 8);
+    bodyGeo.rotateX(Math.PI / 2);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff6600, metalness: 0.5, roughness: 0.4 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    group.add(body);
+
+    // Wings
+    const wingGeo = new THREE.BoxGeometry(15, 0.3, 3);
+    const wingMat = new THREE.MeshStandardMaterial({ color: 0xffaa00 });
+    const wings = new THREE.Mesh(wingGeo, wingMat);
+    group.add(wings);
+
+    // Tail
+    const tailGeo = new THREE.BoxGeometry(5, 0.3, 2);
+    const tail = new THREE.Mesh(tailGeo, wingMat);
+    tail.position.z = 4;
+    group.add(tail);
+
+    // Name label (using sprite)
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(name || '???', 128, 40);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.y = 5;
+    sprite.scale.set(10, 2.5, 1);
+    group.add(sprite);
+
+    return group;
+}
+
 // Flight Parameters
 let currentSpeed = 0;
 const BASE_MAX_SPEED = 2.0;
@@ -612,13 +699,13 @@ function animate(time) {
         camPos.z += (Math.random() - 0.5) * shake;
     }
 
-    // Smooth lerp
-    camera.position.lerp(camPos, 0.08);
+    // Smooth lerp - nearly instant camera follow
+    camera.position.lerp(camPos, 1.0);
 
     // CAMERA ROLL SYNC - Screen tilts with airplane!
     // Get airplane's local up vector and apply to camera
     const planeUp = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
-    camera.up.lerp(planeUp, 0.1); // Smooth roll transition
+    camera.up.lerp(planeUp, 0.5); // Faster roll transition
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
     camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(50))); // Look ahead
 
