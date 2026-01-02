@@ -780,3 +780,21 @@ function updateSpeedHUD() {
         }
     }
 }
+
+export function focusFlight() {
+    window.focus();
+    // Clear any stuck keys
+    Object.keys(keys).forEach(k => keys[k] = false);
+}
+
+// Window resize handling
+window.addEventListener('resize', () => {
+    if (camera && renderer) {
+        const container = document.getElementById('flight-game-container');
+        if (container) {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+    }
+});

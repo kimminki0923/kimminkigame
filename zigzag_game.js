@@ -79,8 +79,13 @@
     function init() {
         canvas = document.getElementById('zigzagCanvas');
         if (!canvas) {
-            console.error('ZigZag: 캔버스를 찾을 수 없습니다.');
-            return;
+            if (!canvas) {
+                // canvas might not be ready if loaded in head, but that's fine, showPage will handle resume/init if needed?
+                // Actually, let's just retry a bit later if not found, or trust DOMContentLoaded.
+                // But since this script is likely loaded at the end...
+                // console.warn('ZigZag: Canvas not found instantly. Waiting for showPage/resume?');
+                return;
+            }
         }
 
         ctx = canvas.getContext('2d');
@@ -254,14 +259,26 @@
         path = path.filter(tile => tile.alpha > 0);
     }
 
-    // ========== 게임 루프 ==========
-    function gameLoop() {
+    // ========== 게임 루프 (60FPS 고정) ==========
+    let lastTime = 0;
+    const FPS = 60;
+    const INTERVAL = 1000 / FPS;
+
+    function gameLoop(timestamp) {
         if (gameState !== 'playing') return;
 
-        update();
-        render();
-
         animationId = requestAnimationFrame(gameLoop);
+
+        if (!lastTime) lastTime = timestamp;
+        const deltaTime = timestamp - lastTime;
+
+        if (deltaTime >= INTERVAL) {
+            // 시간 보정 (너무 많이 쌓였을 경우 등)
+            lastTime = timestamp - (deltaTime % INTERVAL);
+
+            update();
+            render();
+        }
     }
 
     // ========== 업데이트 로직 ==========
@@ -322,9 +339,11 @@
             const dx = Math.abs(character.x - tileCenter.x);
             const dy = Math.abs(character.y - tileCenter.y);
 
-            // 마름모 형태 근사 (대각선 거리)
-            const halfWidth = CONFIG.TILE_WIDTH / 2;
-            const halfHeight = CONFIG.TILE_HEIGHT / 4;
+            // 마름모 형태 근사 (대각선 거리) - 판정을 조금 더 후하게 (0.8 -> 0.6)
+            // TILE_WIDTH=50, halfWidth=25. 
+            // 캐릭터가 모서리에 살짝 걸쳐도 안 죽게 함.
+            const halfWidth = CONFIG.TILE_WIDTH / 2 + 5; // +5 tolerance
+            const halfHeight = CONFIG.TILE_HEIGHT / 2 + 5; // Height calculation was /4 which is too small for visual overlap
 
             if (dx < halfWidth && dy < halfHeight) {
                 onAnyTile = true;

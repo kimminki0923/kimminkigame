@@ -114,8 +114,8 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
         }
     }
 
-    // Apply rotation for non-circle skins (except Floating ones)
-    if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby' && skin.type !== 'cosmic') {
+    // Apply rotation for non-circle skins (except Floating ones and Mummy)
+    if (skin.type !== 'circle' && skin.type !== 'diamond' && skin.type !== 'ruby' && skin.type !== 'cosmic' && skin.type !== 'mummy') {
         ctx.rotate(currentSkinRotation);
     }
 
@@ -510,6 +510,26 @@ function drawPlayerWithSkin(ctx, px, py, dir) {
                 ctx.beginPath();
                 ctx.arc(sx, sy, sparkleSize, 0, Math.PI * 2);
                 ctx.fill();
+            }
+            break;
+
+        case 'mummy':
+            // Mummy Skin (Reusing the Pharaoh Dungeon Mummy graphic)
+            if (typeof drawMummy === 'function') {
+                // drawMummy(ctx, x, y, dir, time)
+                // We are already at (px, py) and scaled by lvl.
+                // drawMummy does its own translation to (x,y) and scale.
+                // We effectively want to render at (0,0) relative to current context.
+
+                // Note: drawMummy applies a scale of 1.3 internally.
+                // And it handles direction flip.
+                // We pass 'dir' from arguments.
+
+                drawMummy(ctx, 0, 0, dir, time);
+            } else {
+                // Fallback if drawMummy not found (e.g. graphics.js issue)
+                ctx.fillStyle = '#dcdde1';
+                ctx.fillRect(-10, -30, 20, 30);
             }
             break;
 

@@ -6,7 +6,8 @@ const STAIR_SKIN_DATA = {
     default: { name: '기본 계단', icon: '🏢' },
     stair_glass: { name: '유리 계단', icon: '🧊', price: 3000, type: 'glass' },
     stair_pharaoh: { name: '파라오의 황금 계단', icon: '👑', price: 3000, type: 'pharaoh' },
-    stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' }
+    stair_ice: { name: '눈부신 얼음 계단', icon: '❄️', price: 3000, type: 'ice' },
+    stair_heaven: { name: '천국의 계단', icon: '✨', price: 300000, type: 'heaven' }
 };
 window.STAIR_SKIN_DATA = STAIR_SKIN_DATA;
 
@@ -18,7 +19,8 @@ const PET_DATA = {
     pet_pig: { name: '황금돼지', icon: '🐷', price: 10000, type: 'ground' },
     pet_sphinx: { name: '스핑크스', icon: '🦁', price: 0, type: 'ground', requirement: 'crowns', requirementCount: 15, desc: '파라오의 왕관 15개 수집 시 해금!' },
     pet_polarbear: { name: '북극곰', icon: '🐻‍❄️', price: 0, type: 'ground', requirement: 'snowcrystals', requirementCount: 15, desc: '❄️ 눈결정 15개 수집 시 해금! | 골드 x5 | 타이머 1.5배 느려짐' },
-    pet_penguin: { name: '펭귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' }
+    pet_penguin: { name: '펭귄', icon: '🐧', price: 10000, type: 'ground', desc: '🛡️ 체력 감소 1.5배 느려짐' },
+    pet_unicorn: { name: '유니콘', icon: '🦄', price: 500000, type: 'air', desc: '⚡ 골드 x3 | 🕊️ 천국의 축복' }
 };
 window.PET_DATA = PET_DATA;
 
@@ -26,7 +28,8 @@ window.PET_DATA = PET_DATA;
 const MAP_DATA = {
     default: { name: '기본 하늘', icon: '🌅' },
     map_desert: { name: '사막 피라미드', icon: '🏜️', price: 5000, desc: '피라미드, 스핑크스, 파라오와 함께!', previewImg: 'assets/desert_map_preview.png' },
-    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' }
+    map_winter: { name: '겨울 왕국', icon: '❄️', price: 5000, desc: '눈 내리는 북극과 아름다운 오로라!', previewImg: 'assets/winter_map_preview.png' },
+    map_heaven: { name: '천국', icon: '☁️', price: 1000000, desc: '구름 위의 낙원, 천사들의 세계!' }
 };
 window.MAP_DATA = MAP_DATA;
 
@@ -61,6 +64,27 @@ function createShopItemElement(id, data, category) {
         const canUnlock = crystals >= needed;
         requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#00d2d3'}; font-size: 12px; margin-bottom: 5px;">❄️ ${crystals}/${needed}</div>`;
     }
+    // Mummy Skin Requirement
+    else if (data.requirement === 'dungeon_clears') {
+        const clears = window.dungeonClears || 0;
+        const needed = data.requirementCount || 10;
+        const canUnlock = clears >= needed;
+        requirementDisplay = `<div style="color: ${canUnlock ? '#2ecc71' : '#e74c3c'}; font-size: 11px; margin-bottom: 5px;">🏛️ 던전 클리어 ${clears}/${needed}</div>`;
+    }
+    // Pharaoh Skin Requirement (Heaven Resurrection)
+    else if (data.requirement === 'heaven_resurrection') {
+        const hasMummy = window.ownedSkins?.includes('skin_mummy');
+        const hasHeavenSet = window.currentMap === 'map_heaven' &&
+            window.currentPet === 'pet_unicorn' &&
+            window.currentStairSkin === 'stair_heaven';
+        const heavenTotalStairs = window.heavenTotalStairs || 0;
+        const canUnlock = hasMummy && hasHeavenSet && heavenTotalStairs >= 10000;
+        requirementDisplay = `
+            <div style="color: ${hasMummy ? '#2ecc71' : '#e74c3c'}; font-size: 10px;">🧟 미라 스킨 ${hasMummy ? '✓' : '✗'}</div>
+            <div style="color: ${hasHeavenSet ? '#2ecc71' : '#e056fd'}; font-size: 10px;">☁️ 천국 세트 ${hasHeavenSet ? '✓' : '✗'}</div>
+            <div style="color: ${heavenTotalStairs >= 10000 ? '#2ecc71' : '#f1c40f'}; font-size: 10px;">📊 누적 계단: ${heavenTotalStairs.toLocaleString()}/10,000</div>
+        `;
+    }
 
     // 특수 효과 표시
     let effectDisplay = '';
@@ -72,6 +96,8 @@ function createShopItemElement(id, data, category) {
         effectDisplay = '<div style="color: #f39c12; font-size: 11px; margin-top: 5px;">⚡ 골드 x2</div>';
     } else if (id === 'pet_penguin') {
         effectDisplay = '<div style="color: #74b9ff; font-size: 11px; margin-top: 5px;">🛡️ 체력 감소 1.5배 느려짐</div>';
+    } else if (id === 'pet_unicorn') {
+        effectDisplay = '<div style="color: #e056fd; font-size: 11px; margin-top: 5px;">⚡ 골드 x3 | 🕊️ 천국의 축복</div>';
     }
 
 
@@ -341,7 +367,7 @@ function performEnhancement(id) {
 
         // Sync and Update UI
         if (window.saveData) {
-            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
         }
         updateEnhanceUI();
         updateShopUI();
@@ -355,7 +381,7 @@ function equipStairSkin(id) {
     localStorage.setItem('currentStairSkin', id);
     localStorage.setItem('ownedStairSkins', JSON.stringify(ownedStairSkins));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -366,7 +392,7 @@ function equipPet(id) {
     localStorage.setItem('currentPet', id);
     localStorage.setItem('ownedPets', JSON.stringify(ownedPets));
     if (window.saveData) {
-        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(aiHighScore, totalCoins, ownedSkins, currentSkin, ownedStairSkins, currentStairSkin, ownedPets, currentPet, ownedMaps, currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -377,7 +403,7 @@ function equipMap(id) {
     localStorage.setItem('currentMap', id);
     localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
     if (window.saveData) {
-        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
+        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
     }
     updateShopUI();
 }
@@ -407,10 +433,39 @@ function bindBuyEquipButtons() {
                 // Buy flow
                 if (price === 0) {
                     // Check requirement
+                    // Character Requirement Checks
                     if (category === 'char') {
                         const item = window.SKIN_DATA[id];
-                        if (item && item.requirement && aiHighScore < item.requirement) {
-                            return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+
+                        // 1. Mummy Skin Check
+                        if (item && item.requirement === 'dungeon_clears') {
+                            if ((window.dungeonClears || 0) < item.requirementCount) {
+                                return alert(`🔒 파라오 던전 ${item.requirementCount}회 클리어 필요! (현재: ${window.dungeonClears})`);
+                            }
+                        }
+                        // 2. High Score Check
+                        else if (item && item.requirement && typeof item.requirement === 'number') {
+                            if (aiHighScore < item.requirement) {
+                                return alert(`🔒 기록이 부족합니다! (${item.requirement}계단 필요)`);
+                            }
+                        }
+                        // 3. Pharaoh Heaven Resurrection Check
+                        else if (item && item.requirement === 'heaven_resurrection') {
+                            const hasMummy = window.ownedSkins?.includes('skin_mummy');
+                            const hasHeavenSet = window.currentMap === 'map_heaven' &&
+                                window.currentPet === 'pet_unicorn' &&
+                                window.currentStairSkin === 'stair_heaven';
+                            const heavenTotalStairs = window.heavenTotalStairs || 0;
+
+                            if (!hasMummy) {
+                                return alert('🔒 미라 스킨이 필요합니다!');
+                            }
+                            if (!hasHeavenSet) {
+                                return alert('🔒 천국 세트(맵, 펫, 계단)를 모두 장착해주세요!');
+                            }
+                            if (heavenTotalStairs < 10000) {
+                                return alert(`🔒 천국 맵에서 누적 만계단(10,000) 도달 필요!\n현재 누적: ${heavenTotalStairs.toLocaleString()}계단`);
+                            }
                         }
                     } else if (category === 'pet') {
                         const item = PET_DATA[id];
@@ -426,55 +481,56 @@ function bindBuyEquipButtons() {
                             }
                         }
                     }
-                    // Else free, proceed to buy (add to owned)
-                    // For price 0 items, we treat them as "buyable" for 0 gold after requirement check
                 }
 
-                if (window.totalCoins >= price) {
-                    window.totalCoins -= price;
-                    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+                // Else free, proceed to buy (add to owned)
+                // For price 0 items, we treat them as "buyable" for 0 gold after requirement check
+            }
 
-                    // Update UI immediately
-                    const coinEls = document.querySelectorAll('.total-coins-display');
-                    coinEls.forEach(el => el.innerText = window.totalCoins);
-                    const shopGold = document.getElementById('shop-gold');
-                    if (shopGold) shopGold.innerText = window.totalCoins;
+            if (window.totalCoins >= price) {
+                window.totalCoins -= price;
+                localStorage.setItem('infinite_stairs_coins', window.totalCoins);
 
-                    if (category === 'char') {
-                        window.ownedSkins.push(id);
-                        localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
-                    } else if (category === 'stair') {
-                        window.ownedStairSkins.push(id);
-                        localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
-                    } else if (category === 'pet') {
-                        window.ownedPets.push(id);
-                        localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
-                    } else if (category === 'map') {
-                        console.log('[Shop] Buying map:', id);
-                        window.ownedMaps.push(id);
-                        localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
-                    }
+                // Update UI immediately
+                const coinEls = document.querySelectorAll('.total-coins-display');
+                coinEls.forEach(el => el.innerText = window.totalCoins);
+                const shopGold = document.getElementById('shop-gold');
+                if (shopGold) shopGold.innerText = window.totalCoins;
 
-                    if (window.saveData) {
-                        window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals);
-                    }
-
-                    alert(`✅ ${id} 구매 완료!`);
-
-                    // Force UI refresh
-                    updateShopUI();
-                    if (category === 'char') {
-                        if (typeof equipSkin === 'function') equipSkin(id);
-                    } else if (category === 'stair') {
-                        equipStairSkin(id);
-                    } else if (category === 'pet') {
-                        equipPet(id);
-                    } else if (category === 'map') {
-                        equipMap(id);
-                    }
-                } else {
-                    alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
+                if (category === 'char') {
+                    window.ownedSkins.push(id);
+                    localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
+                } else if (category === 'stair') {
+                    window.ownedStairSkins.push(id);
+                    localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
+                } else if (category === 'pet') {
+                    window.ownedPets.push(id);
+                    localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+                } else if (category === 'map') {
+                    console.log('[Shop] Buying map:', id);
+                    window.ownedMaps.push(id);
+                    localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
                 }
+
+                if (window.saveData) {
+                    window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
+                }
+
+                alert(`✅ ${id} 구매 완료!`);
+
+                // Force UI refresh
+                updateShopUI();
+                if (category === 'char') {
+                    if (typeof equipSkin === 'function') equipSkin(id);
+                } else if (category === 'stair') {
+                    equipStairSkin(id);
+                } else if (category === 'pet') {
+                    equipPet(id);
+                } else if (category === 'map') {
+                    equipMap(id);
+                }
+            } else {
+                alert(`❌ 골드가 부족합니다! (${totalCoins}G / ${price}G)`);
             }
         };
     });
@@ -526,7 +582,7 @@ function enhanceSkin(id) {
 
         // Sync and Update UI
         if (window.saveData) {
-            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels);
+            window.saveData(window.aiHighScore, window.totalCoins, window.ownedSkins, window.currentSkin, window.ownedStairSkins, window.currentStairSkin, window.ownedPets, window.currentPet, window.ownedMaps, window.currentMap, window.pharaohCrowns, window.snowCrystals, window.skinLevels, window.dungeonClears, window.heavenTotalStairs);
         }
         updateShopUI();
     }

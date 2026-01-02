@@ -29,14 +29,19 @@ window.showPage = function (pageId) {
 
     // ZigZag game page handling
     if (pageId === 'page-zigzag') {
-        // Resume/init ZigZag game when switching to its page
-        if (window.zigzagGame && typeof window.zigzagGame.resume === 'function') {
-            window.zigzagGame.resume();
-        }
+        if (window.zigzagGame && typeof window.zigzagGame.resume === 'function') window.zigzagGame.resume();
     } else {
-        // Pause ZigZag game when leaving its page
-        if (window.zigzagGame && typeof window.zigzagGame.pause === 'function') {
-            window.zigzagGame.pause();
-        }
+        if (window.zigzagGame && typeof window.zigzagGame.pause === 'function') window.zigzagGame.pause();
+    }
+
+    // Flight Simulator handling
+    if (pageId === 'page-flight') {
+        // Flight game starts automatically or via button, but we can manage focus here
+        const flightCanvas = document.getElementById('flightCanvas');
+        if (flightCanvas) flightCanvas.focus();
+    } else {
+        // Pause or stop flight game if needed? 
+        // Currently flight.js doesn't export a pause function but we can implement one or just let it run/stop.
+        // For now, reload on exit logic in HTML handles the "Stop", but hiding it is enough.
     }
 }

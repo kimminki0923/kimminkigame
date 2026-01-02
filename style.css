@@ -113,6 +113,18 @@ body {
     display: flex;
 }
 
+/* Flight Simulator Styling */
+#page-flight {
+    background: #87CEEB;
+    /* Fallback */
+    padding: 0;
+    overflow: hidden;
+}
+
+#flight-game-container {
+    background: #000;
+}
+
 #liar-game-container {
     max-width: 550px;
     width: 100%;
