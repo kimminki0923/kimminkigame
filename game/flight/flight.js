@@ -119,209 +119,160 @@ function initGraphics(container, canvas) {
 }
 
 function createEnvironment() {
-    // 1. NYC Street Grid Floor
-    const gridSize = 20000;
-    const gridDivs = 100;
-    const gridHelper = new THREE.GridHelper(gridSize, gridDivs, 0x333333, 0x222222);
-    gridHelper.position.y = 0.1;
-    gridHelper.name = "grid";
-    scene.add(gridHelper);
+    // 1. ARENA BASICS
+    const arenaWidth = 600;
+    const arenaLength = 1200;
+    const arenaGroup = new THREE.Group();
+    scene.add(arenaGroup);
 
-    // Dark asphalt floor
-    const floorGeo = new THREE.PlaneGeometry(20000, 20000);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.name = "floor";
-    floor.receiveShadow = true;
-    scene.add(floor);
+    // Ground - Lush Green Grass
+    const groundGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);
+    const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x2d5a27,
+        roughness: 0.8,
+        flatShading: true
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    ground.name = "arena_floor";
+    arenaGroup.add(ground);
 
-    // 2. SPEED PARTICLES
+    // Boundary Walls (The "Box")
+    const wallHeight = 150;
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });
+
+    // Front/Back Walls
+    const fbWallGeo = new THREE.BoxGeometry(arenaWidth, wallHeight, 10);
+    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);
+    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2);
+    wallBack.receiveShadow = true;
+    wallBack.castShadow = true;
+    arenaGroup.add(wallBack);
+    allObjects.push(wallBack);
+
+    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);
+    wallFront.position.set(0, wallHeight / 2, arenaLength / 2);
+    wallFront.receiveShadow = true;
+    wallFront.castShadow = true;
+    arenaGroup.add(wallFront);
+    allObjects.push(wallFront);
+
+    // Side Walls
+    const sideWallGeo = new THREE.BoxGeometry(10, wallHeight, arenaLength);
+    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);
+    wallLeft.position.set(-arenaWidth / 2, wallHeight / 2, 0);
+    wallLeft.receiveShadow = true;
+    wallLeft.castShadow = true;
+    arenaGroup.add(wallLeft);
+    allObjects.push(wallLeft);
+
+    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);
+    wallRight.position.set(arenaWidth / 2, wallHeight / 2, 0);
+    wallRight.receiveShadow = true;
+    wallRight.castShadow = true;
+    arenaGroup.add(wallRight);
+    allObjects.push(wallRight);
+
+    // 2. THE RIVER
+    const riverWidth = 80;
+    const riverGeo = new THREE.PlaneGeometry(arenaWidth - 20, riverWidth);
+    const riverMat = new THREE.MeshStandardMaterial({
+        color: 0x3498db,
+        emissive: 0x1a5276,
+        emissiveIntensity: 0.5,
+        roughness: 0.3,
+        metalness: 0.5
+    });
+    const river = new THREE.Mesh(riverGeo, riverMat);
+    river.rotation.x = -Math.PI / 2;
+    river.position.y = 0.5;
+    arenaGroup.add(river);
+
+    // 3. BRIDGES
+    const bridgeWidth = 100;
+    const bridgeLength = 120;
+    const bridgeGeo = new THREE.BoxGeometry(bridgeWidth, 5, bridgeLength);
+    const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
+
+    const bridgeL = new THREE.Mesh(bridgeGeo, bridgeMat);
+    bridgeL.position.set(-arenaWidth / 4, 2.5, 0);
+    bridgeL.castShadow = true;
+    bridgeL.receiveShadow = true;
+    arenaGroup.add(bridgeL);
+    allObjects.push(bridgeL);
+
+    const bridgeR = new THREE.Mesh(bridgeGeo, bridgeMat);
+    bridgeR.position.set(arenaWidth / 4, 2.5, 0);
+    bridgeR.castShadow = true;
+    bridgeR.receiveShadow = true;
+    arenaGroup.add(bridgeR);
+    allObjects.push(bridgeR);
+
+    // 4. TOWERS
+    // Blue Side (North)
+    createTower(0, 0, -500, true, arenaGroup); // Blue King
+    createTower(-150, 0, -350, false, arenaGroup); // Blue Princess L
+    createTower(150, 0, -350, false, arenaGroup); // Blue Princess R
+
+    // Red Side (South)
+    createTower(0, 0, 500, true, arenaGroup, true); // Red King
+    createTower(-150, 0, 350, false, arenaGroup, true); // Red Princess L
+    createTower(150, 0, 350, false, arenaGroup, true); // Red Princess R
+
+    // 5. SPEED PARTICLES
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 1500;
+    const starCount = 1000;
     const posArray = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 4000;
+        posArray[i] = (Math.random() - 0.5) * 2000;
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
     const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.4 });
     starsSystem = new THREE.Points(starsGeo, starsMat);
     scene.add(starsSystem);
 
-    // 3. NYC BUILDINGS - Modern Skyscrapers
-    const buildingColors = [
-        0x2a2a3a, // Dark blue-gray
-        0x3a3a4a, // Medium gray
-        0x4a4a5a, // Light gray
-        0x252535, // Dark purple-gray
-        0x1f1f2f, // Very dark
-        0x353545, // Steel gray
-    ];
-
-    const windowColor = 0xffee88; // Warm window lights
-
-    const poolSize = 1500;
-    const spread = 8000;
-    const blockSize = 150; // City block size
-    const streetWidth = 40;
-
-    for (let i = 0; i < poolSize; i++) {
-        // Building dimensions - NYC style tall and narrow
-        const width = 30 + Math.random() * 60;
-        const depth = 30 + Math.random() * 60;
-        const height = 80 + Math.random() * 400; // Tall skyscrapers!
-
-        // Main building body
-        const buildingGeo = new THREE.BoxGeometry(width, height, depth);
-        buildingGeo.translate(0, height / 2, 0); // Pivot at bottom
-
-        const colorIndex = Math.floor(Math.random() * buildingColors.length);
-        const buildingMat = new THREE.MeshStandardMaterial({
-            color: buildingColors[colorIndex],
-            roughness: 0.7,
-            metalness: 0.3
-        });
-
-        const building = new THREE.Mesh(buildingGeo, buildingMat);
-
-        // Position on city grid
-        const gridX = Math.floor((Math.random() - 0.5) * spread / blockSize) * blockSize;
-        const gridZ = Math.floor((Math.random() - 0.5) * spread / blockSize) * blockSize;
-
-        // Avoid runway area
-        if (Math.abs(gridX) < 400 && gridZ > -2000 && gridZ < 2000) {
-            building.position.set(gridX + (gridX > 0 ? 400 : -400), 0, gridZ);
-        } else {
-            building.position.set(gridX, 0, gridZ);
-        }
-
-        building.userData.type = "BUILDING";
-        building.userData.height = height;
-        building.userData.width = width;
-        building.userData.depth = depth;
-        building.castShadow = true;
-        building.receiveShadow = true;
-        scene.add(building);
-        allObjects.push(building);
-
-        // Add glowing windows (emissive strips on building faces)
-        if (Math.random() > 0.3) {
-            const windowRows = Math.floor(height / 15);
-            const windowMat = new THREE.MeshBasicMaterial({ color: windowColor });
-
-            for (let row = 0; row < Math.min(windowRows, 20); row++) {
-                if (Math.random() > 0.4) { // Random lit windows
-                    const wGeo = new THREE.PlaneGeometry(width * 0.8, 3);
-                    const wMesh = new THREE.Mesh(wGeo, windowMat);
-                    wMesh.position.set(0, 10 + row * 15, depth / 2 + 0.1);
-                    building.add(wMesh);
-
-                    // Back side windows
-                    const wMesh2 = wMesh.clone();
-                    wMesh2.position.z = -depth / 2 - 0.1;
-                    wMesh2.rotation.y = Math.PI;
-                    building.add(wMesh2);
-                }
-            }
-        }
-
-        // Some buildings get antenna/spire
-        if (height > 300 && Math.random() > 0.5) {
-            const spireGeo = new THREE.CylinderGeometry(1, 3, 40, 8);
-            const spireMat = new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.8 });
-            const spire = new THREE.Mesh(spireGeo, spireMat);
-            spire.position.y = height + 20;
-            building.add(spire);
-        }
-    }
-
-    // 4. Add some landmark-style buildings (Empire State-like)
-    for (let i = 0; i < 5; i++) {
-        const landmark = createLandmarkBuilding();
-        const angle = (i / 5) * Math.PI * 2;
-        const dist = 2000 + Math.random() * 1500;
-        landmark.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
-        scene.add(landmark);
-        allObjects.push(landmark);
-    }
-
     airplaneContainer = new THREE.Group();
 }
 
-// Create iconic NYC-style landmark building
-function createLandmarkBuilding() {
-    const group = new THREE.Group();
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x8a7a6a, roughness: 0.6, metalness: 0.2 });
+function createTower(x, y, z, isKing, parent, isRed = false) {
+    const color = isRed ? 0xe74c3c : 0x3498db;
+    const towerGroup = new THREE.Group();
+    towerGroup.position.set(x, y, z);
+    parent.add(towerGroup);
 
-    // Base section
-    const base = new THREE.Mesh(new THREE.BoxGeometry(80, 200, 80), baseMat);
-    base.position.y = 100;
-    group.add(base);
+    const baseSize = isKing ? 60 : 40;
+    const height = isKing ? 100 : 70;
 
-    // Middle section (narrower)
-    const mid = new THREE.Mesh(new THREE.BoxGeometry(60, 200, 60), baseMat);
-    mid.position.y = 300;
-    group.add(mid);
+    const bodyGeo = new THREE.CylinderGeometry(baseSize * 0.8, baseSize, height, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdcdde1 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = height / 2;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    towerGroup.add(body);
 
-    // Top section (even narrower)
-    const top = new THREE.Mesh(new THREE.BoxGeometry(40, 150, 40), baseMat);
-    top.position.y = 475;
-    group.add(top);
+    const topGeo = new THREE.CylinderGeometry(baseSize * 0.9, baseSize * 0.8, 15, 8);
+    const topMat = new THREE.MeshStandardMaterial({ color: color });
+    const top = new THREE.Mesh(topGeo, topMat);
+    top.position.y = height + 7.5;
+    top.castShadow = true;
+    towerGroup.add(top);
 
     // Spire
-    const spire = new THREE.Mesh(
-        new THREE.ConeGeometry(5, 80, 8),
-        new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9 })
-    );
-    spire.position.y = 590;
-    group.add(spire);
+    const spireGeo = new THREE.ConeGeometry(5, 30, 8);
+    const spire = new THREE.Mesh(spireGeo, topMat);
+    spire.position.y = height + 30;
+    towerGroup.add(spire);
 
-    // Window lights
-    const windowMat = new THREE.MeshBasicMaterial({ color: 0xffee88 });
-    for (let y = 20; y < 500; y += 20) {
-        if (Math.random() > 0.3) {
-            const size = y < 200 ? 70 : (y < 400 ? 50 : 30);
-            const wGeo = new THREE.PlaneGeometry(size, 4);
-            const w = new THREE.Mesh(wGeo, windowMat);
-            w.position.set(0, y, (y < 200 ? 40.1 : (y < 400 ? 30.1 : 20.1)));
-            group.add(w);
-        }
-    }
-
-    group.userData.type = "BUILDING";
-    group.userData.height = 600;
-    group.userData.width = 80;
-    group.userData.depth = 80;
-
-    return group;
+    towerGroup.userData.type = "BUILDING";
+    towerGroup.userData.height = height + 45;
+    towerGroup.userData.width = baseSize * 2;
+    towerGroup.userData.depth = baseSize * 2;
+    allObjects.push(towerGroup);
 }
 
-function initObject(mesh, spread) {
-    const dist = Math.random() * spread;
-    const angle = Math.random() * Math.PI * 2;
-    let x = Math.cos(angle) * dist;
-    let z = Math.sin(angle) * dist;
-
-    if (Math.abs(x) < 300 && z > -2000 && z < 2000) x += 800;
-
-    mesh.position.set(x, 0, z);
-    mesh.rotation.set(0, 0, 0); // Static
-
-    const s = 1.0;
-
-    if (mesh.userData.type === "RING" || mesh.userData.type === "SQUARE") {
-        const scale = 30 + Math.random() * 50;
-        mesh.scale.set(scale, scale, scale);
-        mesh.position.y = 50 + Math.random() * 400;
-        // Random Yaw Only
-        mesh.rotation.y = Math.random() * Math.PI;
-    } else {
-        // Blocks
-        const scaleW = 40 + Math.random() * 60;
-        const scaleH = 50 + Math.random() * 200;
-        mesh.scale.set(scaleW, scaleH, scaleW);
-    }
-}
+// Note: Landmark building logic removed for CR Arena
 
 function createHeroAirplane() {
     airplaneContainer = new THREE.Group();
@@ -558,27 +509,13 @@ function animate(time) {
     const moveDist = currentSpeed * 200 * dt;
     airplaneContainer.translateZ(-moveDist);
 
-    // INFINITE SCROLL
-    const planePos = airplaneContainer.position;
-    const floor = scene.getObjectByName("floor");
-    floor.position.x = planePos.x; floor.position.z = planePos.z;
-    const grid = scene.getObjectByName("grid");
-    // Grid Snap for illusion of ground movement
-    const gridSize = 100; // sub-grid
-    grid.position.x = Math.round(planePos.x / gridSize) * gridSize;
-    grid.position.z = Math.round(planePos.z / gridSize) * gridSize;
-
+    // FIXED SUN (Follows slightly to provide constant shadows)
     scene.userData.sun.position.set(planePos.x + 200, planePos.y + 500, planePos.z + 200);
     scene.userData.sun.target.position.copy(planePos);
     scene.userData.sun.target.updateMatrixWorld();
 
     // Star System Move
     starsSystem.position.copy(planePos);
-
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-    allObjects.forEach(obj => {
-        if (obj.position.distanceToSquared(planePos) > 6000 * 6000) respawnObject(obj, planePos, fwd);
-    });
 
     // COLLISION FIX - More test points for robust detection
     const points = [
@@ -717,31 +654,7 @@ function animate(time) {
     renderer.render(scene, camera);
 }
 
-function respawnObject(obj, center, fwd) {
-    const angle = (Math.random() - 0.5) * Math.PI * 1.5;
-    const dist = 4000 + Math.random() * 2000;
-    const dir = fwd.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle).normalize();
-    obj.position.copy(center).add(dir.multiplyScalar(dist));
-
-    // Building respawn - randomize height and ensure on ground
-    if (obj.userData.type === "BUILDING") {
-        obj.position.y = 0; // Buildings always on ground!
-        const newHeight = 80 + Math.random() * 400;
-        obj.userData.height = newHeight;
-        // Update geometry if it's a simple mesh
-        if (obj.geometry) {
-            const w = obj.userData.width || 50;
-            const d = obj.userData.depth || 50;
-            obj.geometry.dispose();
-            obj.geometry = new THREE.BoxGeometry(w, newHeight, d);
-            obj.geometry.translate(0, newHeight / 2, 0);
-        }
-    }
-
-    if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") {
-        obj.rotation.set(0, (Math.random() * Math.PI), 0);
-    }
-}
+// Note: respawnObject removed as arena is fixed
 
 // === SPEED HUD ===
 let speedHUD = null;
