@@ -90,9 +90,7 @@ function initGraphics(container, canvas) {
     const sky = new THREE.Mesh(skyGeo, skyMat);
     scene.add(sky);
 
-    // Add Fog - reduced density for better arena visibility
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.0008);
-
+    // Fog disabled for arena visibility\n    // scene.fog = new THREE.FogExp2(0x87ceeb, 0.0008);\n
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 15000);
 
     const sun = new THREE.DirectionalLight(0xffffff, 3.0);
