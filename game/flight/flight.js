@@ -647,6 +647,7 @@ function animate(time) {
     // Get airplane's local up vector and apply to camera
     const planeUp = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
     camera.up.lerp(planeUp, 0.1); // Smooth roll transition
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
     camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(50))); // Look ahead
 
     // Update speed display
