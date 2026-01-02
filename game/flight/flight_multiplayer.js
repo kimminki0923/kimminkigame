@@ -137,7 +137,7 @@ function startFlightGame() {
     document.getElementById('flight-game-container').style.display = 'block';
 
     // Import and start the flight simulator
-    import('./flight.js?v=3.3').then(m => {
+    import('./flight.js?v=3.4').then(m => {
         m.startFlightSimulator();
         m.focusFlight();
 
@@ -155,7 +155,7 @@ function startSoloFlight() {
     document.getElementById('flight-waiting').style.display = 'none';
     document.getElementById('flight-game-container').style.display = 'block';
 
-    import('./flight.js?v=3.3').then(m => {
+    import('./flight.js?v=3.4').then(m => {
         m.startFlightSimulator();
         m.focusFlight();
     });

@@ -506,164 +506,97 @@ function animate(time) {
     const fScale = keys.shift ? 1 : 0;
     flames.forEach(f => f.scale.lerp(new THREE.Vector3(fScale, fScale, fScale * 2), dt * 10));
 
-    // MOVEMENT
-    const targetMax = keys.shift ? BOOST_MAX_SPEED : BASE_MAX_SPEED;
-    const accel = keys.shift ? BOOST_ACCEL : ACCEL;
-    if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accel; }
-    if (keys['s']) currentSpeed -= DECEL;
-    if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
-    if (currentSpeed < 0) currentSpeed = 0; if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
+    // --- PHYSICS SUB-STEPPING (Prevent tunneling) ---
+    const steps = 4;
+    const subDt = dt / steps;
 
-    let turnForce = dt * 4.0;
-    if (keys['arrowup']) pitchVel += turnForce;
-    if (keys['arrowdown']) pitchVel -= turnForce;
-    const isLeft = keys['a'] || keys['arrowleft'];
-    const isRight = keys['d'] || keys['arrowright'];
-    if (isLeft) { rollVel += turnForce * 2.0; yawVel += turnForce * 0.8; }
-    if (isRight) { rollVel -= turnForce * 2.0; yawVel -= turnForce * 0.8; }
+    for (let s = 0; s < steps; s++) {
+        // MOVEMENT
+        const targetMax = keys.shift ? BOOST_MAX_SPEED : BASE_MAX_SPEED;
+        const accel = keys.shift ? BOOST_ACCEL : ACCEL;
+        if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accel; }
+        if (keys['s']) currentSpeed -= DECEL;
+        if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
+        if (currentSpeed < 0) currentSpeed = 0; if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
 
-    pitchVel *= ROT_DAMPING; rollVel *= ROT_DAMPING; yawVel *= ROT_DAMPING;
-    airplaneContainer.rotateX(pitchVel * dt);
-    airplaneContainer.rotateZ(rollVel * dt);
-    airplaneContainer.rotateY(yawVel * dt);
+        let turnForce = subDt * 4.0;
+        if (keys['arrowup']) pitchVel += turnForce;
+        if (keys['arrowdown']) pitchVel -= turnForce;
+        const isLeft = keys['a'] || keys['arrowleft'];
+        const isRight = keys['d'] || keys['arrowright'];
+        if (isLeft) { rollVel += turnForce * 2.0; yawVel += turnForce * 0.8; }
+        if (isRight) { rollVel -= turnForce * 2.0; yawVel -= turnForce * 0.8; }
 
-    // GRAVITY
-    const lift = Math.max(0, currentSpeed) * 8.0 * dt;
-    airplaneContainer.position.y -= GRAVITY * dt;
-    airplaneContainer.position.y += lift * Math.cos(airplaneContainer.rotation.z);
+        // Damping adjusted for sub-steps
+        pitchVel *= Math.pow(ROT_DAMPING, 1 / steps);
+        rollVel *= Math.pow(ROT_DAMPING, 1 / steps);
+        yawVel *= Math.pow(ROT_DAMPING, 1 / steps);
 
-    const moveDist = currentSpeed * 200 * dt;
-    airplaneContainer.translateZ(-moveDist);
+        airplaneContainer.rotateX(pitchVel * subDt);
+        airplaneContainer.rotateZ(rollVel * subDt);
+        airplaneContainer.rotateY(yawVel * subDt);
 
-    // Get plane position for sun and collision
-    const planePos = airplaneContainer.position;
+        // GRAVITY
+        const lift = Math.max(0, currentSpeed) * 8.0 * subDt;
+        airplaneContainer.position.y -= GRAVITY * subDt;
+        airplaneContainer.position.y += lift * Math.cos(airplaneContainer.rotation.z);
 
-    // FIXED SUN (Follows slightly to provide constant shadows)
-    scene.userData.sun.position.set(planePos.x + 200, planePos.y + 500, planePos.z + 200);
-    scene.userData.sun.target.position.copy(planePos);
-    scene.userData.sun.target.updateMatrixWorld();
+        const moveDist = currentSpeed * 200 * subDt;
+        airplaneContainer.translateZ(-moveDist);
 
-    // Star System Move
-    starsSystem.position.copy(planePos);
+        // --- HARD BOUNDARY CLAMP (Arena Box) ---
+        // Arena is 6000x12000. X: [-3000, 3000], Z: [-6000, 6000]
+        const PADDING = 100;
+        let clamped = false;
 
-    // COLLISION FIX - More test points for robust detection
-    const points = [
-        new THREE.Vector3(0, 0, -8),   // Nose tip
-        new THREE.Vector3(0, 0, -4),   // Nose mid
-        new THREE.Vector3(0, 0, 0),    // Center
-        new THREE.Vector3(0, 0, 5),    // Tail
-        new THREE.Vector3(7, 0, 0),    // Left wing tip
-        new THREE.Vector3(-7, 0, 0),   // Right wing tip
-        new THREE.Vector3(3.5, 0, 0),  // Left wing mid
-        new THREE.Vector3(-3.5, 0, 0), // Right wing mid
-        new THREE.Vector3(0, 1, 0),    // Top center
-        new THREE.Vector3(0, -1, 0),   // Bottom center
-    ];
-    const worldPoints = points.map(p => p.clone().applyMatrix4(airplaneContainer.matrixWorld));
+        if (airplaneContainer.position.x < -3000 + PADDING) { airplaneContainer.position.x = -3000 + PADDING; clamped = true; }
+        if (airplaneContainer.position.x > 3000 - PADDING) { airplaneContainer.position.x = 3000 - PADDING; clamped = true; }
+        if (airplaneContainer.position.z < -6000 + PADDING) { airplaneContainer.position.z = -6000 + PADDING; clamped = true; }
+        if (airplaneContainer.position.z > 6000 - PADDING) { airplaneContainer.position.z = 6000 - PADDING; clamped = true; }
+        if (airplaneContainer.position.y > 30000 - PADDING) { airplaneContainer.position.y = 30000 - PADDING; clamped = true; }
 
-    let crash = false;
-    for (let obj of allObjects) {
-        // Skip distance filter for walls and ceiling - always check these!
-        if (obj.userData.type !== "WALL" && obj.userData.type !== "CEILING") {
-            if (Math.abs(obj.position.x - planePos.x) > 500) continue;
-            if (Math.abs(obj.position.z - planePos.z) > 500) continue;
+        if (clamped && currentSpeed > 1) {
+            currentSpeed = 0.5; // Slow down on wall hit
+            airplaneContainer.translateZ(10); // Bounce slightly
         }
 
-        if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") {
-            // Precise Ring Logic
-            // Transform world points to Ring Local Space
-            // Ring is XY plane, Radius=userData.radius, Tube=userData.tube
-            const invQuat = obj.quaternion.clone().invert();
-            const objScale = obj.scale.x;
-            const radius = obj.userData.radius;
-            const tube = obj.userData.tube;
+        // Get plane position for collision
+        const planePos = airplaneContainer.position;
 
-            for (let wp of worldPoints) {
-                const lp = wp.clone().sub(obj.position).applyQuaternion(invQuat).divideScalar(objScale);
-                // Dist from Center
-                const dXY = Math.sqrt(lp.x * lp.x + lp.y * lp.y);
-                const dZ = Math.abs(lp.z);
+        // COLLISION DETECTION
+        const points = [
+            new THREE.Vector3(0, 0, -8),   // Nose tip
+            new THREE.Vector3(0, 0, 0),    // Center
+            new THREE.Vector3(7, 0, 0),    // Left wing tip
+            new THREE.Vector3(-7, 0, 0),   // Right wing tip
+            new THREE.Vector3(0, 1, 0)     // Top center
+        ];
+        const worldPoints = points.map(p => p.clone().applyMatrix4(airplaneContainer.matrixWorld));
 
-                // Hole is radius - tube
-                // Hit Rim is radius - tube < dXY < radius + tube
-                // And dZ < tube
+        let crash = false;
+        for (let obj of allObjects) {
+            if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") continue;
 
-                const holeSafe = radius - tube;
-                // If outside hole AND dZ is small -> Hit
-                if (dXY > holeSafe && dZ < tube) {
-                    crash = true;
-                }
-            }
-            if (crash) break;
-            continue;
-        }
+            // Fast Building Check (Cylinder/Box approx)
+            if (obj.userData.type === "BUILDING") {
+                // Radius check first
+                const radius = Math.max(obj.userData.width, obj.userData.depth) / 2;
+                if (planePos.y > obj.userData.height) continue;
 
-        // BUILDING Collision Logic
-        if (obj.userData.type === "BUILDING") {
-            const bW = obj.userData.width || 50;
-            const bD = obj.userData.depth || 50;
-            const bH = obj.userData.height || 200;
-            const halfW = bW / 2;
-            const halfD = bD / 2;
-
-            for (let wp of worldPoints) {
-                const dx = wp.x - obj.position.x;
-                const dz = wp.z - obj.position.z;
-                // Check if inside building footprint
-                if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
-                    // Check height
-                    if (wp.y > 0 && wp.y < bH) {
-                        crash = true;
-                        break;
-                    }
-                }
-            }
-            if (crash) break;
-            continue;
-        }
-
-        // WALL Collision Logic (same as building but always blocks)
-        if (obj.userData.type === "WALL") {
-            const wW = obj.userData.width || 50;
-            const wD = obj.userData.depth || 50;
-            const wH = obj.userData.height || 10000;
-            const halfW = wW / 2;
-            const halfD = wD / 2;
-
-            for (let wp of worldPoints) {
-                const dx = wp.x - obj.position.x;
-                const dz = wp.z - obj.position.z;
-                // Check if inside wall footprint
-                if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
-                    // Check height (walls are very tall)
-                    if (wp.y > 0 && wp.y < wH) {
-                        crash = true;
-                        break;
-                    }
-                }
-            }
-            if (crash) break;
-            continue;
-        }
-
-        // CEILING Collision Logic (top of box)
-        if (obj.userData.type === "CEILING") {
-            const ceilingY = obj.userData.height || 30000;
-            for (let wp of worldPoints) {
-                if (wp.y >= ceilingY) {
+                const dist = Math.sqrt(Math.pow(planePos.x - obj.position.x, 2) + Math.pow(planePos.z - obj.position.z, 2));
+                if (dist < radius + 10) {
                     crash = true;
                     break;
                 }
+                continue;
             }
-            if (crash) break;
-            continue;
-        }
 
-        // BRIDGE Collision Logic (solid box on ground)
-        if (obj.userData.type === "BRIDGE") {
-            const bW = obj.userData.width || 1000;
-            const bD = obj.userData.depth || 1200;
-            const bH = obj.userData.height || 50;
+            // Box Collision (Bridge, Wall, etc)
+            let bW = obj.userData.width || 100;
+            let bD = obj.userData.depth || 100;
+            let bH = obj.userData.height || 100;
+            if (obj.userData.type === "WALL") { bW += 50; bD += 50; }
+
             const halfW = bW / 2;
             const halfD = bD / 2;
 
@@ -678,47 +611,32 @@ function animate(time) {
                 }
             }
             if (crash) break;
-            continue;
         }
 
-        // Generic Block Logic (fallback)
-        let r = (obj.scale.x + obj.scale.z) * 0.45;
-        const yMin = obj.position.y;
-        const yTop = obj.position.y + obj.scale.y;
-
-        for (let wp of worldPoints) {
-            const dx = wp.x - obj.position.x;
-            const dz = wp.z - obj.position.z;
-            const d = Math.sqrt(dx * dx + dz * dz);
-            if (d < r) {
-                if (wp.y > yMin && wp.y < yTop) {
-                    crash = true;
-                    break;
-                }
+        if (crash) {
+            if (!scene.userData.crashCooldown) {
+                scene.userData.crashCooldown = 0.5;
+                console.log("CRASH");
+                currentSpeed = 0.1;
+                airplaneContainer.translateZ(50); // Bounce back
             }
         }
-        if (crash) break;
     }
 
-    if (crash && currentSpeed > 0.1 && !scene.userData.crashCooldown) {
-        currentSpeed = 0.1; // Stop instead of reversing to prevent oscillation
-        airplaneContainer.translateZ(50); // Push back
-        scene.userData.crashCooldown = 0.5; // 0.5 second cooldown
-        console.log("CRASH");
-    }
+    // Update Sun & Stars outside loop
+    const planePos = airplaneContainer.position;
+    scene.userData.sun.position.set(planePos.x + 200, planePos.y + 500, planePos.z + 200);
+    scene.userData.sun.target.position.copy(planePos);
+    scene.userData.sun.target.updateMatrixWorld();
+    starsSystem.position.copy(planePos);
 
-    // Crash cooldown timer
-    if (scene.userData.crashCooldown && scene.userData.crashCooldown > 0) {
-        scene.userData.crashCooldown -= dt;
-    }
+    // Timer updates
+    if (scene.userData.crashCooldown > 0) scene.userData.crashCooldown -= dt;
 
     if (airplaneContainer.position.y < 5.0) {
         airplaneContainer.position.y = 5.0;
         if (pitchVel < 0) pitchVel = 0;
-        if (currentSpeed > 1.0) {
-            // Crash into ground at high speed
-            crash = true;
-        }
+        if (currentSpeed > 1.0) currentSpeed = 0.5; // Drag on ground
     }
 
     // Camera - DYNAMIC based on speed
