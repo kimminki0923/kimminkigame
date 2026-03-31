@@ -1223,30 +1223,49 @@ btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); handleInput(0
 // Data Bridge for Firebase
 // Data Bridge for Firebase
 window.setGameData = function (score, coins, skins, cSkin, stairSkins, cStairSkin, pets, cPet, maps, cMap, crowns, crystals, skinLevels, dungeonClears, heavenTotalStairs) {
-    console.log(`☁️ Firebase Data Applied: Score ${score}, Coins ${coins}, Levels:`, skinLevels);
-    aiHighScore = parseInt(score || 0);
-    if (highScoreEl) highScoreEl.innerText = aiHighScore;
-    totalCoins = parseInt(coins || 0);
-    if (coinEl) coinEl.innerText = totalCoins;
-    if (skins) ownedSkins = skins;
-    if (cSkin) currentSkin = cSkin;
-    if (stairSkins) ownedStairSkins = stairSkins;
-    if (cStairSkin) currentStairSkin = cStairSkin;
-    if (pets) ownedPets = pets;
-    if (cPet) currentPet = cPet;
-    if (maps) ownedMaps = maps;
-    if (cMap) currentMap = cMap;
+    console.log(`☁️ Firebase Data Applied`);
+    
+    window.aiHighScore = parseInt(score || 0);
+    if (typeof highScoreEl !== 'undefined' && highScoreEl) highScoreEl.innerText = window.aiHighScore;
+    
+    window.totalCoins = parseInt(coins || 0);
+    if (typeof coinEl !== 'undefined' && coinEl) coinEl.innerText = window.totalCoins;
+    
+    if (skins) window.ownedSkins = skins;
+    if (cSkin) window.currentSkin = cSkin;
+    if (stairSkins) window.ownedStairSkins = stairSkins;
+    if (cStairSkin) window.currentStairSkin = cStairSkin;
+    if (pets) window.ownedPets = pets;
+    if (cPet) window.currentPet = cPet;
+    if (maps) window.ownedMaps = maps;
+    if (cMap) window.currentMap = cMap;
     if (skinLevels) window.skinLevels = skinLevels;
 
-    // Safety check for crowns/crystals/clears/heaven
     if (crowns !== undefined) window.pharaohCrowns = crowns;
     if (crystals !== undefined) window.snowCrystals = crystals;
     if (dungeonClears !== undefined) window.dungeonClears = dungeonClears;
     if (heavenTotalStairs !== undefined) window.heavenTotalStairs = heavenTotalStairs;
 
-    isDataLoaded = true;
-    updateShopUI();
-    updateUnlockStatus();
+    // 즉시 로컬 스토리지에 동기화하여 데이터 유실 밯지 (Force Local Storage Sync)
+    localStorage.setItem('infinite_stairs_highScore', window.aiHighScore);
+    localStorage.setItem('infinite_stairs_coins', window.totalCoins);
+    localStorage.setItem('ownedSkins', JSON.stringify(window.ownedSkins));
+    localStorage.setItem('currentSkin', window.currentSkin);
+    localStorage.setItem('ownedStairSkins', JSON.stringify(window.ownedStairSkins));
+    localStorage.setItem('currentStairSkin', window.currentStairSkin);
+    localStorage.setItem('ownedPets', JSON.stringify(window.ownedPets));
+    localStorage.setItem('currentPet', window.currentPet);
+    localStorage.setItem('ownedMaps', JSON.stringify(window.ownedMaps));
+    localStorage.setItem('currentMap', window.currentMap);
+    localStorage.setItem('skinLevels', JSON.stringify(window.skinLevels));
+    localStorage.setItem('infinite_stairs_crowns', window.pharaohCrowns || 0);
+    localStorage.setItem('infinite_stairs_snowcrystals', window.snowCrystals || 0);
+    localStorage.setItem('infinite_stairs_dungeon_clears', window.dungeonClears || 0);
+    localStorage.setItem('infinite_stairs_heaven_total', window.heavenTotalStairs || 0);
+
+    window.isDataLoaded = true;
+    if (typeof updateShopUI === 'function') updateShopUI();
+    if (typeof updateUnlockStatus === 'function') updateUnlockStatus();
 }
 
 // Initialize

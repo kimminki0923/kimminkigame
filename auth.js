@@ -315,38 +315,6 @@ function updateUI_LoggedIn(user) {
     if (name) name.innerText = user.displayName;
     if (img) img.src = user.photoURL;
 
-    // --- Temporary Boost for Tester '김민기' ---
-    if (user.displayName && user.displayName.includes('김민기')) {
-        const currentHS = parseInt(localStorage.getItem('infinite_stairs_highScore') || 0);
-        if (currentHS < 1000) {
-            console.log("🛠️ Admin: Boosting highScore to 1000 for unlock test...");
-            localStorage.setItem('infinite_stairs_highScore', '1000');
-            if (window.saveData) {
-                // This will sync to both localStorage and Firebase
-                window.saveData(
-                    1000,
-                    parseInt(localStorage.getItem('infinite_stairs_coins') || 0),
-                    JSON.parse(localStorage.getItem('ownedSkins') || '["default"]'),
-                    localStorage.getItem('currentSkin') || 'default',
-                    JSON.parse(localStorage.getItem('ownedStairSkins') || '["default"]'),
-                    localStorage.getItem('currentStairSkin') || 'default',
-                    JSON.parse(localStorage.getItem('ownedPets') || '["none"]'),
-                    localStorage.getItem('currentPet') || 'none',
-                    JSON.parse(localStorage.getItem('ownedMaps') || '["default"]'),
-                    localStorage.getItem('currentMap') || 'default',
-                    parseInt(localStorage.getItem('pharaohCrowns') || 0),
-                    parseInt(localStorage.getItem('snowCrystals') || 0),
-                    JSON.parse(localStorage.getItem('skinLevels') || '{}')
-                );
-
-            }
-            // Update local display if initialized
-            const hsEl = document.getElementById('high-score');
-            if (hsEl) hsEl.innerText = '1000';
-            if (typeof updateUnlockStatus === 'function') updateUnlockStatus();
-        }
-    }
-
     document.getElementById('liar-auth-request')?.setAttribute('style', 'display:none !important');
     document.getElementById('liar-game-controls')?.setAttribute('style', 'display:block !important');
     loadLeaderboard();
