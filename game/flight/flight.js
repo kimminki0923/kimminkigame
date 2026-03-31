@@ -590,6 +590,9 @@ function createHeroAirplane() {
     airplaneMesh.add(lineR);
 }
 
+let mouseX = 0;
+let mouseY = 0;
+
 function setupInputs() {
     window.addEventListener('keydown', (e) => {
         keys[e.key.toLowerCase()] = true;
@@ -600,6 +603,21 @@ function setupInputs() {
         keys[e.key.toLowerCase()] = false;
         if (e.key === "Shift") keys.shift = false;
     });
+
+    const container = document.getElementById("flight-game-container");
+    if (container) {
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            // Normalize coordinates from -1 to 1 based on center of container
+            mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseY = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            mouseX = 0;
+            mouseY = 0;
+        });
+    }
 }
 
 
@@ -689,12 +707,19 @@ function animate(time) {
         if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
 
         let turnForce = subDt * 4.0;
-        if (keys['arrowup']) pitchVel += turnForce;
-        if (keys['arrowdown']) pitchVel -= turnForce;
+        
+        // --- MOUSE AIM (Pitch & Yaw) ---
+        // mouseY: -1 (Top) to 1 (Bottom). Pitching Up means negative pitchVel.
+        pitchVel += mouseY * turnForce * 1.5; 
+        
+        // mouseX: -1 (Left) to 1 (Right). Yawing Right means negative yawVel.
+        yawVel -= mouseX * turnForce * 1.5;
+
+        // --- KEYBOARD AIM (Roll only) ---
         const isLeft = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
-        if (isLeft) { rollVel += turnForce * 2.0; yawVel += turnForce * 0.8; }
-        if (isRight) { rollVel -= turnForce * 2.0; yawVel -= turnForce * 0.8; }
+        if (isLeft) { rollVel += turnForce * 2.5; }
+        if (isRight) { rollVel -= turnForce * 2.5; }
 
         // Damping adjusted for sub-steps
         pitchVel *= Math.pow(ROT_DAMPING, 1 / steps);
