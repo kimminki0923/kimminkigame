@@ -652,8 +652,9 @@ function setupInputs() {
     const container = document.getElementById('flight-game-container');
     if (!container) return;
 
-    // Track raw pixel position for UI cursor element
-    let rawPX = 0, rawPY = 0;
+    // Track raw pixel position for UI cursor element - default to center!
+    let rawPX = container.clientWidth / 2;
+    let rawPY = container.clientHeight / 2;
 
     container.addEventListener('mousemove', (e) => {
         const rect = container.getBoundingClientRect();
@@ -667,9 +668,15 @@ function setupInputs() {
             // Free-look: move camera without changing aim target
             flOrbitYaw   = -nx * Math.PI * 0.7; // up to ~126 deg side
             flOrbitPitch =  ny * Math.PI * 0.4; // up to ~72 deg up/down
+            
+            // Lock target immediately when free look starts if null
+            if (!window._lockedTargetWS && window._lastTargetWS) {
+                window._lockedTargetWS = window._lastTargetWS.clone();
+            }
         } else {
             aimX = nx;
             aimY = ny;
+            window._lockedTargetWS = null; // Release lock
         }
 
         if (window.aimCursorEl) {
@@ -767,68 +774,57 @@ function animate(time) {
         if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
 
         // ===================================================
-        // WAR THUNDER MOUSE AIM – CLEAN IMPLEMENTATION
+        // WAR THUNDER MOUSE AIM – UNPROJECT METHOD
         // ===================================================
-        // The container's local -Z axis is the direction the plane flies.
-        // We build a target point in world space using WORLD axes (not camera
-        // axes), so the aim never gets confused by camera roll.
-        // aimX: -1=left, +1=right  (cursor left→bank left, nose left)
-        // aimY: -1=top, +1=bottom  (cursor up→nose up, cursor down→nose down)
-
         const TURN_RATE = 2.8;   // overall responsiveness
-        const BANK_FACTOR = 0.9; // how far (0-1) the plane banks when turning
+        
+        let targetWS;
+        if (isFreeLook && window._lockedTargetWS) {
+            targetWS = window._lockedTargetWS.clone();
+        } else {
+            // 1. Get exact 3D target point based on screen cursor and current camera
+            const cursorNDC = new THREE.Vector3(aimX, -aimY, 0.5);
+            cursorNDC.unproject(camera);
+            
+            // Ray from camera through cursor
+            const aimDir = cursorNDC.sub(camera.position).normalize();
+            
+            // Target is far out along that ray
+            const REACH = 2000;
+            targetWS = camera.position.clone().addScaledVector(aimDir, REACH);
+            window._lastTargetWS = targetWS.clone();
+        }
 
-        // 1. Forward direction of the plane in world space
-        const planeFwd = new THREE.Vector3(0, 0, -1)
-            .applyQuaternion(airplaneContainer.quaternion);
-
-        // 2. "Screen right" and "Screen up" in the plane's frame
-        //    Use world-up so axes don't flip with roll:
-        const worldUp  = new THREE.Vector3(0, 1, 0);
-        const screenRight = new THREE.Vector3()
-            .crossVectors(planeFwd, worldUp).normalize();
-        if (screenRight.lengthSq() < 0.001)
-            screenRight.set(1, 0, 0); // safety when pitching straight up/down
-        const screenUp = new THREE.Vector3()
-            .crossVectors(screenRight, planeFwd).normalize(); // points up on screen
-
-        // 3. World-space target point the instructor should steer toward
-        const REACH = 2000;
-        const targetWS = airplaneContainer.position.clone()
-            .addScaledVector(planeFwd,   REACH)          // out in front
-            .addScaledVector(screenRight, aimX * REACH)  // cursor left/right
-            .addScaledVector(screenUp,   -aimY * REACH); // cursor up/down (inverted Y)
-
-        // 4. Convert target to plane local space
+        // 2. Convert target to plane's local space
         const toTargetLocal = targetWS.clone()
             .sub(airplaneContainer.position)
             .applyQuaternion(airplaneContainer.quaternion.clone().invert());
 
-        // 5. Angular errors (radians)  – local -Z is forward
+        // 3. Angular errors (radians)  – local -Z is forward
         const pitchErr =  Math.atan2(toTargetLocal.y,  -toTargetLocal.z); // +ve = nose must go up
         const yawErr   =  Math.atan2(toTargetLocal.x,  -toTargetLocal.z); // +ve = nose must go right
 
-        // 6. Drive pitch and yaw toward zero error
+        // 4. Drive pitch and yaw toward zero error
         pitchVel += pitchErr * TURN_RATE * subDt;
         yawVel   -= yawErr   * TURN_RATE * subDt * 0.4; // yaw is weaker; roll does most lateral work
 
-        // 7. Auto-bank: lean into the turn like a real aircraft
-        //    planeRight.y tells us how much the plane's right wing
-        //    points up (+) or down (-).  We want it to match -aimX.
+        // 5. Auto-bank: lean into the turn like a real aircraft
         const planeRight = new THREE.Vector3(1, 0, 0)
             .applyQuaternion(airplaneContainer.quaternion);
         const currentBank = -planeRight.y;             // +1 = banked right
-        const targetBank  = aimX * BANK_FACTOR;        // +1 = bank right
-        const bankError   = targetBank - currentBank;
-        rollVel += bankError * TURN_RATE * subDt * 1.4;
+        
+        // Target bank strongly proportional to yaw error. Bank right if target is to the right.
+        const targetBank = Math.max(-1, Math.min(1, yawErr * 3.5)); 
+        const bankError = targetBank - currentBank;
+        rollVel += bankError * TURN_RATE * subDt * 1.8;
 
-        // 8. Manual roll override (A/D or arrow keys)
+        // 6. Manual roll override (A/D or arrow keys)
         const isLeft  = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
         if (isLeft)  rollVel += subDt * 6;
         if (isRight) rollVel -= subDt * 6;
 
-        // 9. Clamp velocities
+        // 7. Clamp velocities
         pitchVel = Math.max(-2, Math.min(2, pitchVel));
         yawVel   = Math.max(-1, Math.min(1, yawVel));
         rollVel  = Math.max(-3, Math.min(3, rollVel));
@@ -950,27 +946,27 @@ function animate(time) {
     }
 
     // ===================================================
-    // CAMERA – Hard-locked rear chase cam (War Thunder style)
+    // CAMERA – Smooth Chase Cam (War Thunder Style)
     // ===================================================
-    // The plane's local forward is -Z. We offset OPPOSITE that direction
-    // (i.e. local +Z = world behind the plane) to position the camera.
     const planeFwdCam = new THREE.Vector3(0, 0, -1)
         .applyQuaternion(airplaneContainer.quaternion);
-
-    // Use horizontal-only component for yaw-follow so camera never dips underground
-    const planeFlatFwd = new THREE.Vector3(planeFwdCam.x, 0, planeFwdCam.z);
-    if (planeFlatFwd.lengthSq() < 0.001) planeFlatFwd.set(0, 0, -1);
-    planeFlatFwd.normalize();
 
     // Speed-based zoom
     const speedFactor = currentSpeed / BASE_MAX_SPEED;
     const camDist   = 55 + speedFactor * 20;
     const camHeight = 15 + speedFactor * 6;
 
-    // Perfect rear position – no lerp so it never creeps inside the model
-    const camIdeal = planePos.clone()
-        .addScaledVector(planeFlatFwd, -camDist)
-        .add(new THREE.Vector3(0, camHeight, 0));
+    // We want the camera to lag smoothly behind the plane's actual motion.
+    let camIdeal = planePos.clone().addScaledVector(planeFwdCam, -camDist);
+    camIdeal.y += camHeight; // Stay slightly above to look down the nose
+    
+    // Optional free-look offset (C key)
+    if (isFreeLook) {
+        const offset = camIdeal.clone().sub(planePos);
+        const flQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(flOrbitPitch, flOrbitYaw, 0, 'YXZ'));
+        offset.applyQuaternion(flQuat);
+        camIdeal = planePos.clone().add(offset);
+    }
 
     // Boost shake
     if (keys.shift && currentSpeed > 2.0) {
@@ -979,10 +975,11 @@ function animate(time) {
         camIdeal.y += (Math.random() - 0.5) * sh * 0.2;
     }
 
-    // Fast lerp (0.3) gives slight smooth feel without any clip-into-model lag
-    camera.position.lerp(camIdeal, 0.3);
-    camera.up.set(0, 1, 0);
-    // Look slightly ahead of the plane for better framing
+    // Fast lerp gives a slight elastic feel but prevents tracking lag completely
+    camera.position.lerp(camIdeal, 0.4);
+    camera.up.set(0, 1, 0); // horizon always level
+    
+    // Look slightly ahead of the plane
     const lookTarget = planePos.clone().addScaledVector(planeFwdCam, 15);
     camera.lookAt(lookTarget);
 
