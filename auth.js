@@ -329,33 +329,50 @@ function updateUI_LoggedOut() {
 
     document.getElementById('liar-auth-request')?.setAttribute('style', 'display:block !important');
     document.getElementById('liar-game-controls')?.setAttribute('style', 'display:none !important');
+    
+    // Attempt to load leaderboard for everyone (if DB rules allow)
+    loadLeaderboard();
 }
 
-async function loadLeaderboard() {
+let leaderboardUnsubscribe = null;
+
+function loadLeaderboard() {
     if (!db) return;
     try {
-        const snap = await db.collection('users').orderBy('highScore', 'desc').limit(10).get();
-        const list = document.getElementById('leaderboard-list');
-        if (list) {
-            list.innerHTML = '';
-            let rank = 1;
-            snap.forEach(doc => {
-                const d = doc.data();
-                const li = document.createElement('li');
-                li.innerText = `${rank}. ${d.displayName}: ${d.highScore}`;
-
-                // Highlight current user
-                if (currentUser && doc.id === currentUser.uid) {
-                    li.style.color = '#2ecc71';
-                    li.style.fontWeight = 'bold';
-                    li.innerText += ' (나)';
-                }
-
-                list.appendChild(li);
-                rank++;
-            });
+        if (leaderboardUnsubscribe) {
+            leaderboardUnsubscribe();
         }
-    } catch (e) { }
+
+        leaderboardUnsubscribe = db.collection('users')
+            .orderBy('highScore', 'desc')
+            .limit(10)
+            .onSnapshot((snap) => {
+                const list = document.getElementById('leaderboard-list');
+                if (list) {
+                    list.innerHTML = '';
+                    let rank = 1;
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const li = document.createElement('li');
+                        li.innerText = `${rank}. ${d.displayName || 'Anonymous'}: ${d.highScore || 0}`;
+
+                        // Highlight current user
+                        if (currentUser && doc.id === currentUser.uid) {
+                            li.style.color = '#2ecc71';
+                            li.style.fontWeight = 'bold';
+                            li.innerText += ' (나)';
+                        }
+
+                        list.appendChild(li);
+                        rank++;
+                    });
+                }
+            }, (error) => {
+                console.error("Leaderboard Real-time Sync Error:", error);
+            });
+    } catch (e) {
+        console.error("Leaderboard Setup Error:", e);
+    }
 }
 
 // --- Listeners ---
