@@ -708,12 +708,43 @@ function animate(time) {
 
         let turnForce = subDt * 4.0;
         
-        // --- MOUSE AIM (Pitch & Yaw) ---
-        // mouseY: -1 (Top) to 1 (Bottom). Pitching Up means negative pitchVel.
-        pitchVel += mouseY * turnForce * 1.5; 
+        // --- WAR THUNDER MOUSE AIM (Instructor approach) ---
+        // 1. Get Camera Axes
+        const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const camUp    = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+        const camFwd   = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+
+        // 2. Compute Target Point in World Space
+        const targetDistance = 2000;
+        const targetPoint = airplaneContainer.position.clone()
+            .add(camFwd.multiplyScalar(targetDistance))
+            .add(camRight.multiplyScalar(mouseX * targetDistance))
+            .add(camUp.multiplyScalar(-mouseY * targetDistance));
+
+        // 3. Convert Target Point to Airplane Local Space
+        const toTarget = targetPoint.clone().sub(airplaneContainer.position);
+        const invQuat = airplaneContainer.quaternion.clone().invert();
+        const localTarget = toTarget.applyQuaternion(invQuat);
+
+        // 4. Calculate Pitch and Yaw Errors (Radiant angles)
+        // In three.js, local forward is -Z. x is right, y is up.
+        const yawError = Math.atan2(localTarget.x, -localTarget.z);
+        const pitchError = Math.atan2(localTarget.y, -localTarget.z);
+
+        // 5. Apply turn forces based on errors
+        const PITCH_STRENGTH = 4.0;
+        const YAW_STRENGTH = 1.2;
         
-        // mouseX: -1 (Left) to 1 (Right). Yawing Right means negative yawVel.
-        yawVel -= mouseX * turnForce * 1.5;
+        pitchVel += pitchError * turnForce * PITCH_STRENGTH;
+        yawVel -= yawError * turnForce * YAW_STRENGTH; 
+
+        // Clamp maximum angular velocities
+        const MAX_PITCH_VEL = 2.0;
+        const MAX_YAW_VEL = 1.0;
+        if (pitchVel > MAX_PITCH_VEL) pitchVel = MAX_PITCH_VEL;
+        if (pitchVel < -MAX_PITCH_VEL) pitchVel = -MAX_PITCH_VEL;
+        if (yawVel > MAX_YAW_VEL) yawVel = MAX_YAW_VEL;
+        if (yawVel < -MAX_YAW_VEL) yawVel = -MAX_YAW_VEL;
 
         // --- KEYBOARD AIM (Roll only) ---
         const isLeft = keys['a'] || keys['arrowleft'];
@@ -861,12 +892,16 @@ function animate(time) {
     // Smooth lerp - nearly instant camera follow
     camera.position.lerp(camPos, 0.8);
 
-    // CAMERA ROLL SYNC - Screen tilts with airplane!
-    // Get airplane's local up vector and apply to camera
+    // CAMERA: War Thunder Style (Horizon stays mostly flat)
     const planeUp = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
-    camera.up.lerp(planeUp, 0.5); // Faster roll transition
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    // Mix plane up and world up to keep aiming intuitive while preventing gimbal lock
+    const mixedUp = worldUp.clone().lerp(planeUp, 0.15).normalize();
+    camera.up.lerp(mixedUp, 0.08); 
+
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-    camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(80))); // Look ahead further
+    // Decouple camera look target slightly to track smoothly ahead
+    camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(150)));
 
     // Update speed display
     updateSpeedHUD();
