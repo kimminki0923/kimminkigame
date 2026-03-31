@@ -592,30 +592,98 @@ function createHeroAirplane() {
 
 let mouseX = 0;
 let mouseY = 0;
+let aimTargetX = 0;
+let aimTargetY = 0;
+let isFreeLook = false;
+let camOrbitYaw = 0;
+let camOrbitPitch = 0;
+let freeLookStartX = 0;
+let freeLookStartY = 0;
+const cameraRig = new THREE.Object3D();
+
+function createWTUI() {
+    if (window.mouseCursorEl) return;
+    const container = document.getElementById("flight-game-container");
+    
+    window.mouseCursorEl = document.createElement('div');
+    window.mouseCursorEl.style.cssText = `
+        position: absolute; top: 0; left: 0; width: 34px; height: 34px;
+        border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 50%;
+        transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    `;
+    const dot = document.createElement('div');
+    dot.style.cssText = `
+        position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+        background: white; border-radius: 50%; transform: translate(-50%, -50%);
+    `;
+    window.mouseCursorEl.appendChild(dot);
+    container.appendChild(window.mouseCursorEl);
+
+    window.planeCrosshairEl = document.createElement('div');
+    window.planeCrosshairEl.style.cssText = `
+        position: absolute; top: 0; left: 0; width: 40px; height: 40px;
+        transform: translate(-50%, -50%); pointer-events: none; z-index: 999;
+    `;
+    const hLine = document.createElement('div');
+    hLine.style.cssText = `position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(0, 255, 136, 0.9); transform: translateY(-50%); box-shadow: 0 0 3px black;`;
+    const vLine = document.createElement('div');
+    vLine.style.cssText = `position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: rgba(0, 255, 136, 0.9); transform: translateX(-50%); box-shadow: 0 0 3px black;`;
+    window.planeCrosshairEl.appendChild(hLine);
+    window.planeCrosshairEl.appendChild(vLine);
+    container.appendChild(window.planeCrosshairEl);
+    
+    container.style.cursor = 'none';
+}
 
 function setupInputs() {
+    createWTUI();
     window.addEventListener('keydown', (e) => {
         keys[e.key.toLowerCase()] = true;
         if (e.key === "Shift") keys.shift = true;
         if (e.key === " ") currentSpeed = 0;
+        if (e.code === "KeyC") {
+            if (!isFreeLook) {
+                isFreeLook = true;
+                freeLookStartX = mouseX;
+                freeLookStartY = mouseY;
+            }
+        }
     });
     window.addEventListener('keyup', (e) => {
         keys[e.key.toLowerCase()] = false;
         if (e.key === "Shift") keys.shift = false;
+        if (e.code === "KeyC") {
+            isFreeLook = false;
+            camOrbitYaw = 0;
+            camOrbitPitch = 0;
+        }
     });
 
     const container = document.getElementById("flight-game-container");
     if (container) {
         container.addEventListener('mousemove', (e) => {
             const rect = container.getBoundingClientRect();
-            // Normalize coordinates from -1 to 1 based on center of container
-            mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouseY = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+            const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+            mouseX = nx;
+            mouseY = ny;
+
+            if (isFreeLook) {
+                camOrbitYaw = -(nx - freeLookStartX) * 2.5;
+                camOrbitPitch = -(ny - freeLookStartY) * 2.5; 
+            } else {
+                aimTargetX = nx;
+                aimTargetY = ny;
+            }
+
+            if (window.mouseCursorEl) {
+                window.mouseCursorEl.style.transform = `translate(${e.clientX - rect.left}px, ${e.clientY - rect.top}px)`;
+            }
         });
 
         container.addEventListener('mouseleave', () => {
-            mouseX = 0;
-            mouseY = 0;
+            // retain vectors when mouse leaves canvas
         });
     }
 }
@@ -709,17 +777,21 @@ function animate(time) {
         let turnForce = subDt * 4.0;
         
         // --- WAR THUNDER MOUSE AIM (Instructor approach) ---
-        // 1. Get Camera Axes
-        const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-        const camUp    = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
-        const camFwd   = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        // 1. Get Camera Axes based on plane's unrolled forward vector
+        cameraRig.position.copy(airplaneContainer.position);
+        const pFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
+        cameraRig.lookAt(cameraRig.position.clone().add(pFwd));
+
+        const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(cameraRig.quaternion);
+        const camUp    = new THREE.Vector3(0, 1, 0).applyQuaternion(cameraRig.quaternion);
+        const camFwd   = new THREE.Vector3(0, 0, -1).applyQuaternion(cameraRig.quaternion);
 
         // 2. Compute Target Point in World Space
         const targetDistance = 2000;
         const targetPoint = airplaneContainer.position.clone()
             .add(camFwd.multiplyScalar(targetDistance))
-            .add(camRight.multiplyScalar(mouseX * targetDistance))
-            .add(camUp.multiplyScalar(-mouseY * targetDistance));
+            .add(camRight.multiplyScalar(aimTargetX * targetDistance))
+            .add(camUp.multiplyScalar(-aimTargetY * targetDistance));
 
         // 3. Convert Target Point to Airplane Local Space
         const toTarget = targetPoint.clone().sub(airplaneContainer.position);
@@ -727,15 +799,14 @@ function animate(time) {
         const localTarget = toTarget.applyQuaternion(invQuat);
 
         // 4. Calculate Pitch and Yaw Errors (Radiant angles)
-        // In three.js, local forward is -Z. x is right, y is up.
         const yawError = Math.atan2(localTarget.x, -localTarget.z);
         const pitchError = Math.atan2(localTarget.y, -localTarget.z);
 
         // 5. Apply turn forces based on errors
         const PITCH_STRENGTH = 4.0;
-        const YAW_STRENGTH = 1.2;
+        const YAW_STRENGTH = 1.0;
         
-        // Invert pitchError application since positive X rotation pitches the nose down on this model
+        // Use -= for pitchError because positive X rotation models nose down
         pitchVel -= pitchError * turnForce * PITCH_STRENGTH;
         yawVel -= yawError * turnForce * YAW_STRENGTH;  
 
@@ -752,9 +823,9 @@ function animate(time) {
         const planeUpWorld = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
         const currentBankSin = planeUpWorld.x;
         
-        // Auto-roll bank target based on mouse
-        // Mouse Right (mouseX=1) -> Bank Right (targetBankSin = -0.9)
-        const targetBankSin = -mouseX * 0.95;
+        // Auto-roll bank target based on aimTarget
+        // Mouse Right (aimTargetX=1) -> Bank Right (targetBankSin = -0.9)
+        const targetBankSin = -aimTargetX * 0.95;
         const autoRollError = targetBankSin - currentBankSin;
         let targetRollVel = autoRollError * 2.5;
 
@@ -882,40 +953,48 @@ function animate(time) {
         if (currentSpeed > 1.0) currentSpeed = 0.5; // Drag on ground
     }
 
-    // Camera - DYNAMIC based on speed
-    const baseCamHeight = 10;
-    const baseCamDist = 30;
+    // --- CAMERA: War Thunder Style ---
+    cameraRig.position.copy(planePos);
+    const forwardVec = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
+    cameraRig.lookAt(cameraRig.position.clone().add(forwardVec));
+    
+    // Apply Free Look Orbit
+    const euler = new THREE.Euler(camOrbitPitch, camOrbitYaw, 0, 'YXZ');
+    const freeLookQuat = new THREE.Quaternion().setFromEuler(euler);
+    const finalCamQuat = cameraRig.quaternion.clone().multiply(freeLookQuat);
 
-    // Speed-based camera zoom out (more distance at higher speed)
+    // Speed-based camera zoom out
     const speedFactor = currentSpeed / BASE_MAX_SPEED;
-    const dynamicHeight = baseCamHeight + speedFactor * 8;  // +8 at max normal speed
-    const dynamicDist = baseCamDist + speedFactor * 25;     // +25 at max normal speed
+    const dynamicDist = 30 + speedFactor * 15;
+    const dynamicHeight = 10 + speedFactor * 5;
 
-    const camOffset = new THREE.Vector3(0, dynamicHeight, dynamicDist);
-    camOffset.applyQuaternion(airplaneContainer.quaternion);
-    const camPos = planePos.clone().add(camOffset);
-
+    const offset = new THREE.Vector3(0, dynamicHeight, dynamicDist).applyQuaternion(finalCamQuat);
+    
     // Shake during boost
     if (keys.shift && currentSpeed > 2.0) {
         const shake = 0.5;
-        camPos.x += (Math.random() - 0.5) * shake;
-        camPos.y += (Math.random() - 0.5) * shake * 0.3;
-        camPos.z += (Math.random() - 0.5) * shake;
+        offset.x += (Math.random() - 0.5) * shake;
+        offset.y += (Math.random() - 0.5) * shake * 0.3;
+        offset.z += (Math.random() - 0.5) * shake;
     }
 
-    // Smooth lerp - nearly instant camera follow
-    camera.position.lerp(camPos, 0.8);
+    camera.position.lerp(planePos.clone().add(offset), 0.8);
+    camera.quaternion.slerp(finalCamQuat, 0.5);
 
-    // CAMERA: War Thunder Style (Horizon stays mostly flat)
-    const planeUp = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
-    const worldUp = new THREE.Vector3(0, 1, 0);
-    // Mix plane up and world up to keep aiming intuitive while preventing gimbal lock
-    const mixedUp = worldUp.clone().lerp(planeUp, 0.15).normalize();
-    camera.up.lerp(mixedUp, 0.08); 
-
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-    // Decouple camera look target slightly to track smoothly ahead
-    camera.lookAt(planePos.clone().add(fwd.clone().multiplyScalar(150)));
+    // Update UI Crosshair (Plane Nose Direction)
+    if (window.planeCrosshairEl) {
+        const nosePos = planePos.clone().add(forwardVec.clone().multiplyScalar(2000));
+        nosePos.project(camera);
+        const rect = document.getElementById("flight-game-container").getBoundingClientRect();
+        const px = (nosePos.x * 0.5 + 0.5) * rect.width;
+        const py = (-nosePos.y * 0.5 + 0.5) * rect.height;
+        if (nosePos.z < 1) { // In front of camera
+            window.planeCrosshairEl.style.display = 'block';
+            window.planeCrosshairEl.style.transform = `translate(${px}px, ${py}px)`;
+        } else {
+            window.planeCrosshairEl.style.display = 'none';
+        }
+    }
 
     // Update speed display
     updateSpeedHUD();
