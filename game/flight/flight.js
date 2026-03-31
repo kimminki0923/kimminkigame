@@ -436,10 +436,6 @@ function createHeroAirplane() {
     airplaneContainer.position.set(0, 500, 4000); // Higher start, near red side, scaled
     scene.add(airplaneContainer);
     airplaneMesh = new THREE.Group();
-    // The mesh is built with nose at -Z and tail at +Z, but the container
-    // moves in -Z (translateZ(-speed)). Rotate 180° Y so the nose visually
-    // faces the direction of travel.
-    airplaneMesh.rotation.y = Math.PI;
     airplaneContainer.add(airplaneMesh);
 
     // === DETAILED HERO JET MODEL ===
@@ -954,40 +950,40 @@ function animate(time) {
     }
 
     // ===================================================
-    // CAMERA – Simple reliable 3rd-person chase cam
+    // CAMERA – Hard-locked rear chase cam (War Thunder style)
     // ===================================================
-    // Get the plane's forward direction in world space (local -Z)
+    // The plane's local forward is -Z. We offset OPPOSITE that direction
+    // (i.e. local +Z = world behind the plane) to position the camera.
     const planeFwdCam = new THREE.Vector3(0, 0, -1)
         .applyQuaternion(airplaneContainer.quaternion);
 
-    // Flatten to horizontal so camera doesn't dive underground during steep pitch
-    const planeFlatFwd = planeFwdCam.clone();
-    planeFlatFwd.y = 0;
-    if (planeFlatFwd.lengthSq() < 0.001) planeFlatFwd.set(0, 0, -1); // safety
+    // Use horizontal-only component for yaw-follow so camera never dips underground
+    const planeFlatFwd = new THREE.Vector3(planeFwdCam.x, 0, planeFwdCam.z);
+    if (planeFlatFwd.lengthSq() < 0.001) planeFlatFwd.set(0, 0, -1);
     planeFlatFwd.normalize();
 
     // Speed-based zoom
     const speedFactor = currentSpeed / BASE_MAX_SPEED;
-    const camDist   = 60 + speedFactor * 25;  // units behind plane
-    const camHeight = 18 + speedFactor * 8;   // units above plane
+    const camDist   = 55 + speedFactor * 20;
+    const camHeight = 15 + speedFactor * 6;
 
-    // Target camera position: behind (opposite of flat fwd) + height
-    const camTargetPos = planePos.clone()
-        .addScaledVector(planeFlatFwd, -camDist)  // step back
-        .add(new THREE.Vector3(0, camHeight, 0)); // step up
+    // Perfect rear position – no lerp so it never creeps inside the model
+    const camIdeal = planePos.clone()
+        .addScaledVector(planeFlatFwd, -camDist)
+        .add(new THREE.Vector3(0, camHeight, 0));
 
     // Boost shake
     if (keys.shift && currentSpeed > 2.0) {
         const sh = 0.5;
-        camTargetPos.x += (Math.random() - 0.5) * sh;
-        camTargetPos.y += (Math.random() - 0.5) * sh * 0.2;
+        camIdeal.x += (Math.random() - 0.5) * sh;
+        camIdeal.y += (Math.random() - 0.5) * sh * 0.2;
     }
 
-    // Smooth follow
-    camera.position.lerp(camTargetPos, 0.1);
-    camera.up.set(0, 1, 0); // horizon always level
-    // Look at a point slightly ahead of the plane (not the center) for better framing
-    const lookTarget = planePos.clone().addScaledVector(planeFwdCam, 20);
+    // Fast lerp (0.3) gives slight smooth feel without any clip-into-model lag
+    camera.position.lerp(camIdeal, 0.3);
+    camera.up.set(0, 1, 0);
+    // Look slightly ahead of the plane for better framing
+    const lookTarget = planePos.clone().addScaledVector(planeFwdCam, 15);
     camera.lookAt(lookTarget);
 
     // Nose crosshair (green cross projected onto screen)
