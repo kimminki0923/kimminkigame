@@ -436,6 +436,10 @@ function createHeroAirplane() {
     airplaneContainer.position.set(0, 500, 4000); // Higher start, near red side, scaled
     scene.add(airplaneContainer);
     airplaneMesh = new THREE.Group();
+    // The mesh is built with nose at -Z and tail at +Z, but the container
+    // moves in -Z (translateZ(-speed)). Rotate 180° Y so the nose visually
+    // faces the direction of travel.
+    airplaneMesh.rotation.y = Math.PI;
     airplaneContainer.add(airplaneMesh);
 
     // === DETAILED HERO JET MODEL ===
@@ -590,102 +594,94 @@ function createHeroAirplane() {
     airplaneMesh.add(lineR);
 }
 
-let mouseX = 0;
-let mouseY = 0;
-let aimTargetX = 0;
-let aimTargetY = 0;
+// Normalized mouse position: -1 (left/top) to +1 (right/bottom)
+let aimX = 0;   // positive = cursor right of center -> plane banks right
+let aimY = 0;   // positive = cursor below center  -> plane noses down
+
+// Free-look (C key) camera orbit
 let isFreeLook = false;
-let camOrbitYaw = 0;
-let camOrbitPitch = 0;
-let freeLookStartX = 0;
-let freeLookStartY = 0;
-const cameraRig = new THREE.Object3D();
+let flOrbitYaw = 0;
+let flOrbitPitch = 0;
 
 function createWTUI() {
-    if (window.mouseCursorEl) return;
-    const container = document.getElementById("flight-game-container");
-    
-    window.mouseCursorEl = document.createElement('div');
-    window.mouseCursorEl.style.cssText = `
-        position: absolute; top: 0; left: 0; width: 34px; height: 34px;
-        border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 50%;
-        transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;
-        box-shadow: 0 0 5px rgba(0,0,0,0.5);
-    `;
-    const dot = document.createElement('div');
-    dot.style.cssText = `
-        position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-        background: white; border-radius: 50%; transform: translate(-50%, -50%);
-    `;
-    window.mouseCursorEl.appendChild(dot);
-    container.appendChild(window.mouseCursorEl);
+    if (window._wtUICreated) return;
+    window._wtUICreated = true;
+    const container = document.getElementById('flight-game-container');
+    if (!container) return;
 
-    window.planeCrosshairEl = document.createElement('div');
-    window.planeCrosshairEl.style.cssText = `
-        position: absolute; top: 0; left: 0; width: 40px; height: 40px;
-        transform: translate(-50%, -50%); pointer-events: none; z-index: 999;
-    `;
-    const hLine = document.createElement('div');
-    hLine.style.cssText = `position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(0, 255, 136, 0.9); transform: translateY(-50%); box-shadow: 0 0 3px black;`;
-    const vLine = document.createElement('div');
-    vLine.style.cssText = `position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: rgba(0, 255, 136, 0.9); transform: translateX(-50%); box-shadow: 0 0 3px black;`;
-    window.planeCrosshairEl.appendChild(hLine);
-    window.planeCrosshairEl.appendChild(vLine);
-    container.appendChild(window.planeCrosshairEl);
-    
+    // Aim cursor (white circle = where you want to go)
+    const aim = document.createElement('div');
+    aim.id = 'aim-cursor';
+    aim.style.cssText = 'position:absolute;top:0;left:0;width:30px;height:30px;border:2px solid rgba(255,255,255,0.9);border-radius:50%;pointer-events:none;z-index:1000;transform:translate(-50%,-50%);';
+    const aimDot = document.createElement('div');
+    aimDot.style.cssText = 'position:absolute;top:50%;left:50%;width:4px;height:4px;background:white;border-radius:50%;transform:translate(-50%,-50%);';
+    aim.appendChild(aimDot);
+    container.appendChild(aim);
+    window.aimCursorEl = aim;
+
+    // Gun cross (green cross = where plane nose points)
+    const cross = document.createElement('div');
+    cross.id = 'nose-cross';
+    cross.style.cssText = 'position:absolute;top:0;left:0;width:44px;height:44px;pointer-events:none;z-index:999;transform:translate(-50%,-50%);';
+    const ch = document.createElement('div');
+    ch.style.cssText = 'position:absolute;top:50%;left:0;width:100%;height:2px;background:rgba(0,255,136,0.95);transform:translateY(-50%);';
+    const cv = document.createElement('div');
+    cv.style.cssText = 'position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(0,255,136,0.95);transform:translateX(-50%);';
+    cross.appendChild(ch); cross.appendChild(cv);
+    container.appendChild(cross);
+    window.noseCrossEl = cross;
+
     container.style.cursor = 'none';
 }
 
 function setupInputs() {
     createWTUI();
+
     window.addEventListener('keydown', (e) => {
         keys[e.key.toLowerCase()] = true;
-        if (e.key === "Shift") keys.shift = true;
-        if (e.key === " ") currentSpeed = 0;
-        if (e.code === "KeyC") {
-            if (!isFreeLook) {
-                isFreeLook = true;
-                freeLookStartX = mouseX;
-                freeLookStartY = mouseY;
-            }
-        }
+        if (e.key === 'Shift') keys.shift = true;
+        if (e.key === ' ') currentSpeed = 0;
+        if (e.code === 'KeyC') isFreeLook = true;
     });
     window.addEventListener('keyup', (e) => {
         keys[e.key.toLowerCase()] = false;
-        if (e.key === "Shift") keys.shift = false;
-        if (e.code === "KeyC") {
+        if (e.key === 'Shift') keys.shift = false;
+        if (e.code === 'KeyC') {
             isFreeLook = false;
-            camOrbitYaw = 0;
-            camOrbitPitch = 0;
+            flOrbitYaw = 0;
+            flOrbitPitch = 0;
         }
     });
 
-    const container = document.getElementById("flight-game-container");
-    if (container) {
-        container.addEventListener('mousemove', (e) => {
-            const rect = container.getBoundingClientRect();
-            const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-            mouseX = nx;
-            mouseY = ny;
+    const container = document.getElementById('flight-game-container');
+    if (!container) return;
 
-            if (isFreeLook) {
-                camOrbitYaw = -(nx - freeLookStartX) * 2.5;
-                camOrbitPitch = -(ny - freeLookStartY) * 2.5; 
-            } else {
-                aimTargetX = nx;
-                aimTargetY = ny;
-            }
+    // Track raw pixel position for UI cursor element
+    let rawPX = 0, rawPY = 0;
 
-            if (window.mouseCursorEl) {
-                window.mouseCursorEl.style.transform = `translate(${e.clientX - rect.left}px, ${e.clientY - rect.top}px)`;
-            }
-        });
+    container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        rawPX = e.clientX - rect.left;
+        rawPY = e.clientY - rect.top;
 
-        container.addEventListener('mouseleave', () => {
-            // retain vectors when mouse leaves canvas
-        });
-    }
+        const nx = (rawPX / rect.width)  * 2 - 1;   // -1 left, +1 right
+        const ny = (rawPY / rect.height) * 2 - 1;   // -1 top,  +1 bottom
+
+        if (isFreeLook) {
+            // Free-look: move camera without changing aim target
+            flOrbitYaw   = -nx * Math.PI * 0.7; // up to ~126 deg side
+            flOrbitPitch =  ny * Math.PI * 0.4; // up to ~72 deg up/down
+        } else {
+            aimX = nx;
+            aimY = ny;
+        }
+
+        if (window.aimCursorEl) {
+            window.aimCursorEl.style.left = rawPX + 'px';
+            window.aimCursorEl.style.top  = rawPY + 'px';
+            window.aimCursorEl.style.transform = 'translate(-50%,-50%)';
+        }
+    });
 }
 
 
@@ -774,68 +770,72 @@ function animate(time) {
         }
         if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
 
-        let turnForce = subDt * 4.0;
-        
-        // --- WAR THUNDER MOUSE AIM (Instructor approach) ---
-        // 1. Get Camera Axes based on plane's unrolled forward vector
-        cameraRig.position.copy(airplaneContainer.position);
-        const pFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-        cameraRig.lookAt(cameraRig.position.clone().add(pFwd));
+        // ===================================================
+        // WAR THUNDER MOUSE AIM – CLEAN IMPLEMENTATION
+        // ===================================================
+        // The container's local -Z axis is the direction the plane flies.
+        // We build a target point in world space using WORLD axes (not camera
+        // axes), so the aim never gets confused by camera roll.
+        // aimX: -1=left, +1=right  (cursor left→bank left, nose left)
+        // aimY: -1=top, +1=bottom  (cursor up→nose up, cursor down→nose down)
 
-        const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(cameraRig.quaternion);
-        const camUp    = new THREE.Vector3(0, 1, 0).applyQuaternion(cameraRig.quaternion);
-        const camFwd   = new THREE.Vector3(0, 0, -1).applyQuaternion(cameraRig.quaternion);
+        const TURN_RATE = 2.8;   // overall responsiveness
+        const BANK_FACTOR = 0.9; // how far (0-1) the plane banks when turning
 
-        // 2. Compute Target Point in World Space
-        const targetDistance = 2000;
-        const targetPoint = airplaneContainer.position.clone()
-            .add(camFwd.multiplyScalar(targetDistance))
-            .add(camRight.multiplyScalar(aimTargetX * targetDistance))
-            .add(camUp.multiplyScalar(-aimTargetY * targetDistance));
+        // 1. Forward direction of the plane in world space
+        const planeFwd = new THREE.Vector3(0, 0, -1)
+            .applyQuaternion(airplaneContainer.quaternion);
 
-        // 3. Convert Target Point to Airplane Local Space
-        const toTarget = targetPoint.clone().sub(airplaneContainer.position);
-        const invQuat = airplaneContainer.quaternion.clone().invert();
-        const localTarget = toTarget.applyQuaternion(invQuat);
+        // 2. "Screen right" and "Screen up" in the plane's frame
+        //    Use world-up so axes don't flip with roll:
+        const worldUp  = new THREE.Vector3(0, 1, 0);
+        const screenRight = new THREE.Vector3()
+            .crossVectors(planeFwd, worldUp).normalize();
+        if (screenRight.lengthSq() < 0.001)
+            screenRight.set(1, 0, 0); // safety when pitching straight up/down
+        const screenUp = new THREE.Vector3()
+            .crossVectors(screenRight, planeFwd).normalize(); // points up on screen
 
-        // 4. Calculate Pitch and Yaw Errors (Radiant angles)
-        const yawError = Math.atan2(localTarget.x, -localTarget.z);
-        const pitchError = Math.atan2(localTarget.y, -localTarget.z);
+        // 3. World-space target point the instructor should steer toward
+        const REACH = 2000;
+        const targetWS = airplaneContainer.position.clone()
+            .addScaledVector(planeFwd,   REACH)          // out in front
+            .addScaledVector(screenRight, aimX * REACH)  // cursor left/right
+            .addScaledVector(screenUp,   -aimY * REACH); // cursor up/down (inverted Y)
 
-        // 5. Apply turn forces based on errors
-        const PITCH_STRENGTH = 4.0;
-        const YAW_STRENGTH = 1.0;
-        
-        // Use -= for pitchError because positive X rotation models nose down
-        pitchVel -= pitchError * turnForce * PITCH_STRENGTH;
-        yawVel -= yawError * turnForce * YAW_STRENGTH;  
+        // 4. Convert target to plane local space
+        const toTargetLocal = targetWS.clone()
+            .sub(airplaneContainer.position)
+            .applyQuaternion(airplaneContainer.quaternion.clone().invert());
 
-        // Clamp maximum angular velocities
-        const MAX_PITCH_VEL = 2.0;
-        const MAX_YAW_VEL = 1.0;
-        if (pitchVel > MAX_PITCH_VEL) pitchVel = MAX_PITCH_VEL;
-        if (pitchVel < -MAX_PITCH_VEL) pitchVel = -MAX_PITCH_VEL;
-        if (yawVel > MAX_YAW_VEL) yawVel = MAX_YAW_VEL;
-        if (yawVel < -MAX_YAW_VEL) yawVel = -MAX_YAW_VEL;
+        // 5. Angular errors (radians)  – local -Z is forward
+        const pitchErr =  Math.atan2(toTargetLocal.y,  -toTargetLocal.z); // +ve = nose must go up
+        const yawErr   =  Math.atan2(toTargetLocal.x,  -toTargetLocal.z); // +ve = nose must go right
 
-        // --- AUTO ROLL & MANUAL ROLL ---
-        // planeUpWorld.x goes from -1 (Banked Right 90) to +1 (Banked Left 90)
-        const planeUpWorld = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
-        const currentBankSin = planeUpWorld.x;
-        
-        // Auto-roll bank target based on aimTarget
-        // Mouse Right (aimTargetX=1) -> Bank Right (targetBankSin = -0.9)
-        const targetBankSin = -aimTargetX * 0.95;
-        const autoRollError = targetBankSin - currentBankSin;
-        let targetRollVel = autoRollError * 2.5;
+        // 6. Drive pitch and yaw toward zero error
+        pitchVel += pitchErr * TURN_RATE * subDt;
+        yawVel   -= yawErr   * TURN_RATE * subDt * 0.4; // yaw is weaker; roll does most lateral work
 
-        // Manual Roll Override
-        const isLeft = keys['a'] || keys['arrowleft'];
+        // 7. Auto-bank: lean into the turn like a real aircraft
+        //    planeRight.y tells us how much the plane's right wing
+        //    points up (+) or down (-).  We want it to match -aimX.
+        const planeRight = new THREE.Vector3(1, 0, 0)
+            .applyQuaternion(airplaneContainer.quaternion);
+        const currentBank = -planeRight.y;             // +1 = banked right
+        const targetBank  = aimX * BANK_FACTOR;        // +1 = bank right
+        const bankError   = targetBank - currentBank;
+        rollVel += bankError * TURN_RATE * subDt * 1.4;
+
+        // 8. Manual roll override (A/D or arrow keys)
+        const isLeft  = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
-        if (isLeft) { targetRollVel = 3.5; }   
-        if (isRight) { targetRollVel = -3.5; } 
+        if (isLeft)  rollVel += subDt * 6;
+        if (isRight) rollVel -= subDt * 6;
 
-        rollVel += targetRollVel * turnForce;
+        // 9. Clamp velocities
+        pitchVel = Math.max(-2, Math.min(2, pitchVel));
+        yawVel   = Math.max(-1, Math.min(1, yawVel));
+        rollVel  = Math.max(-3, Math.min(3, rollVel));
 
         // Damping adjusted for sub-steps
         pitchVel *= Math.pow(ROT_DAMPING, 1 / steps);
@@ -953,46 +953,64 @@ function animate(time) {
         if (currentSpeed > 1.0) currentSpeed = 0.5; // Drag on ground
     }
 
-    // --- CAMERA: War Thunder Style ---
-    cameraRig.position.copy(planePos);
-    const forwardVec = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-    cameraRig.lookAt(cameraRig.position.clone().add(forwardVec));
-    
-    // Apply Free Look Orbit
-    const euler = new THREE.Euler(camOrbitPitch, camOrbitYaw, 0, 'YXZ');
-    const freeLookQuat = new THREE.Quaternion().setFromEuler(euler);
-    const finalCamQuat = cameraRig.quaternion.clone().multiply(freeLookQuat);
+    // ===================================================
+    // CAMERA – War Thunder 3rd-person follow
+    // ===================================================
+    // Base: camera sits behind and above the plane, following the plane's
+    // heading but always keeping world-up so the horizon stays level.
+    const planeFwdCam = new THREE.Vector3(0, 0, -1)
+        .applyQuaternion(airplaneContainer.quaternion);
 
-    // Speed-based camera zoom out
+    // Build a flat (no-roll) quaternion so the camera doesn't spin with the plane
+    const flatTarget = planePos.clone().add(planeFwdCam);
+    flatTarget.y = planePos.y; // zero the vertical component for a flat yaw
+    const baseCamQuat = new THREE.Quaternion().setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(
+            new THREE.Vector3(0, 0, 0),
+            planeFwdCam.clone().setY(0).normalize().negate(),
+            new THREE.Vector3(0, 1, 0)
+        )
+    );
+
+    // Optional free-look offset (C key)
+    const flQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(flOrbitPitch, flOrbitYaw, 0, 'YXZ')
+    );
+    const finalCamQuat = baseCamQuat.clone().multiply(flQuat);
+
+    // Position: behind the plane
     const speedFactor = currentSpeed / BASE_MAX_SPEED;
-    const dynamicDist = 30 + speedFactor * 15;
-    const dynamicHeight = 10 + speedFactor * 5;
+    const camDist   = 35 + speedFactor * 15;
+    const camHeight = 10 + speedFactor * 5;
+    const camOffset = new THREE.Vector3(0, camHeight, camDist)
+        .applyQuaternion(finalCamQuat);
 
-    const offset = new THREE.Vector3(0, dynamicHeight, dynamicDist).applyQuaternion(finalCamQuat);
-    
-    // Shake during boost
+    // Boost shake
     if (keys.shift && currentSpeed > 2.0) {
-        const shake = 0.5;
-        offset.x += (Math.random() - 0.5) * shake;
-        offset.y += (Math.random() - 0.5) * shake * 0.3;
-        offset.z += (Math.random() - 0.5) * shake;
+        const sh = 0.4;
+        camOffset.x += (Math.random() - 0.5) * sh;
+        camOffset.y += (Math.random() - 0.5) * sh * 0.3;
     }
 
-    camera.position.lerp(planePos.clone().add(offset), 0.8);
-    camera.quaternion.slerp(finalCamQuat, 0.5);
+    camera.position.lerp(planePos.clone().add(camOffset), 0.85);
+    camera.up.set(0, 1, 0);   // always keep world-up → horizon never tilts
+    const lookAhead = planePos.clone().addScaledVector(planeFwdCam, 80);
+    camera.lookAt(lookAhead);
 
-    // Update UI Crosshair (Plane Nose Direction)
-    if (window.planeCrosshairEl) {
-        const nosePos = planePos.clone().add(forwardVec.clone().multiplyScalar(2000));
-        nosePos.project(camera);
-        const rect = document.getElementById("flight-game-container").getBoundingClientRect();
-        const px = (nosePos.x * 0.5 + 0.5) * rect.width;
-        const py = (-nosePos.y * 0.5 + 0.5) * rect.height;
-        if (nosePos.z < 1) { // In front of camera
-            window.planeCrosshairEl.style.display = 'block';
-            window.planeCrosshairEl.style.transform = `translate(${px}px, ${py}px)`;
+    // Nose crosshair (green cross projected onto screen)
+    if (window.noseCrossEl) {
+        const noseWS = planePos.clone().addScaledVector(planeFwdCam, 2000);
+        const ndc = noseWS.clone().project(camera);
+        const rect = document.getElementById('flight-game-container').getBoundingClientRect();
+        const px = (ndc.x * 0.5 + 0.5) * rect.width;
+        const py = (-ndc.y * 0.5 + 0.5) * rect.height;
+        if (ndc.z < 1) {
+            window.noseCrossEl.style.display = 'block';
+            window.noseCrossEl.style.left = px + 'px';
+            window.noseCrossEl.style.top  = py + 'px';
+            window.noseCrossEl.style.transform = 'translate(-50%,-50%)';
         } else {
-            window.planeCrosshairEl.style.display = 'none';
+            window.noseCrossEl.style.display = 'none';
         }
     }
 
