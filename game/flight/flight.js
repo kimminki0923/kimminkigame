@@ -746,11 +746,24 @@ function animate(time) {
         if (yawVel > MAX_YAW_VEL) yawVel = MAX_YAW_VEL;
         if (yawVel < -MAX_YAW_VEL) yawVel = -MAX_YAW_VEL;
 
-        // --- KEYBOARD AIM (Roll only) ---
+        // --- AUTO ROLL & MANUAL ROLL ---
+        // planeUpWorld.x goes from -1 (Banked Right 90) to +1 (Banked Left 90)
+        const planeUpWorld = new THREE.Vector3(0, 1, 0).applyQuaternion(airplaneContainer.quaternion);
+        const currentBankSin = planeUpWorld.x;
+        
+        // Auto-roll bank target based on mouse
+        // Mouse Right (mouseX=1) -> Bank Right (targetBankSin = -0.9)
+        const targetBankSin = -mouseX * 0.95;
+        const autoRollError = targetBankSin - currentBankSin;
+        let targetRollVel = autoRollError * 2.5;
+
+        // Manual Roll Override
         const isLeft = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
-        if (isLeft) { rollVel += turnForce * 2.5; }
-        if (isRight) { rollVel -= turnForce * 2.5; }
+        if (isLeft) { targetRollVel = 3.5; }   
+        if (isRight) { targetRollVel = -3.5; } 
+
+        rollVel += targetRollVel * turnForce;
 
         // Damping adjusted for sub-steps
         pitchVel *= Math.pow(ROT_DAMPING, 1 / steps);
