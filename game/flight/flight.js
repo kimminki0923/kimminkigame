@@ -735,8 +735,9 @@ function animate(time) {
         const PITCH_STRENGTH = 4.0;
         const YAW_STRENGTH = 1.2;
         
-        pitchVel += pitchError * turnForce * PITCH_STRENGTH;
-        yawVel -= yawError * turnForce * YAW_STRENGTH; 
+        // Invert pitchError application since positive X rotation pitches the nose down on this model
+        pitchVel -= pitchError * turnForce * PITCH_STRENGTH;
+        yawVel -= yawError * turnForce * YAW_STRENGTH;  
 
         // Clamp maximum angular velocities
         const MAX_PITCH_VEL = 2.0;
