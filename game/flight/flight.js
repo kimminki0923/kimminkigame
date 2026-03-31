@@ -954,48 +954,41 @@ function animate(time) {
     }
 
     // ===================================================
-    // CAMERA – War Thunder 3rd-person follow
+    // CAMERA – Simple reliable 3rd-person chase cam
     // ===================================================
-    // Base: camera sits behind and above the plane, following the plane's
-    // heading but always keeping world-up so the horizon stays level.
+    // Get the plane's forward direction in world space (local -Z)
     const planeFwdCam = new THREE.Vector3(0, 0, -1)
         .applyQuaternion(airplaneContainer.quaternion);
 
-    // Build a flat (no-roll) quaternion so the camera doesn't spin with the plane
-    const flatTarget = planePos.clone().add(planeFwdCam);
-    flatTarget.y = planePos.y; // zero the vertical component for a flat yaw
-    const baseCamQuat = new THREE.Quaternion().setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(
-            new THREE.Vector3(0, 0, 0),
-            planeFwdCam.clone().setY(0).normalize().negate(),
-            new THREE.Vector3(0, 1, 0)
-        )
-    );
+    // Flatten to horizontal so camera doesn't dive underground during steep pitch
+    const planeFlatFwd = planeFwdCam.clone();
+    planeFlatFwd.y = 0;
+    if (planeFlatFwd.lengthSq() < 0.001) planeFlatFwd.set(0, 0, -1); // safety
+    planeFlatFwd.normalize();
 
-    // Optional free-look offset (C key)
-    const flQuat = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(flOrbitPitch, flOrbitYaw, 0, 'YXZ')
-    );
-    const finalCamQuat = baseCamQuat.clone().multiply(flQuat);
-
-    // Position: behind the plane
+    // Speed-based zoom
     const speedFactor = currentSpeed / BASE_MAX_SPEED;
-    const camDist   = 35 + speedFactor * 15;
-    const camHeight = 10 + speedFactor * 5;
-    const camOffset = new THREE.Vector3(0, camHeight, camDist)
-        .applyQuaternion(finalCamQuat);
+    const camDist   = 60 + speedFactor * 25;  // units behind plane
+    const camHeight = 18 + speedFactor * 8;   // units above plane
+
+    // Target camera position: behind (opposite of flat fwd) + height
+    const camTargetPos = planePos.clone()
+        .addScaledVector(planeFlatFwd, -camDist)  // step back
+        .add(new THREE.Vector3(0, camHeight, 0)); // step up
 
     // Boost shake
     if (keys.shift && currentSpeed > 2.0) {
-        const sh = 0.4;
-        camOffset.x += (Math.random() - 0.5) * sh;
-        camOffset.y += (Math.random() - 0.5) * sh * 0.3;
+        const sh = 0.5;
+        camTargetPos.x += (Math.random() - 0.5) * sh;
+        camTargetPos.y += (Math.random() - 0.5) * sh * 0.2;
     }
 
-    camera.position.lerp(planePos.clone().add(camOffset), 0.85);
-    camera.up.set(0, 1, 0);   // always keep world-up → horizon never tilts
-    const lookAhead = planePos.clone().addScaledVector(planeFwdCam, 80);
-    camera.lookAt(lookAhead);
+    // Smooth follow
+    camera.position.lerp(camTargetPos, 0.1);
+    camera.up.set(0, 1, 0); // horizon always level
+    // Look at a point slightly ahead of the plane (not the center) for better framing
+    const lookTarget = planePos.clone().addScaledVector(planeFwdCam, 20);
+    camera.lookAt(lookTarget);
 
     // Nose crosshair (green cross projected onto screen)
     if (window.noseCrossEl) {
