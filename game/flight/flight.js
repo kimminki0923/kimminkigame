@@ -795,36 +795,55 @@ function animate(time) {
             window._lastTargetWS = targetWS.clone();
         }
 
-        // 2. Convert target to plane's local space
+        // 2. Convert target to plane's local space for Pitch and Yaw elevators
         const toTargetLocal = targetWS.clone()
             .sub(airplaneContainer.position)
             .applyQuaternion(airplaneContainer.quaternion.clone().invert());
 
-        // 3. Angular errors (radians)  – local -Z is forward
+        // Angular errors (radians)  – local -Z is forward
         const pitchErr =  Math.atan2(toTargetLocal.y,  -toTargetLocal.z); // +ve = nose must go up
         const yawErr   =  Math.atan2(toTargetLocal.x,  -toTargetLocal.z); // +ve = nose must go right
 
-        // 4. Drive pitch and yaw toward zero error
+        // 3. Drive pitch and yaw toward zero error (Local pitch/yaw physics)
         pitchVel += pitchErr * TURN_RATE * subDt;
-        yawVel   -= yawErr   * TURN_RATE * subDt * 0.4; // yaw is weaker; roll does most lateral work
+        yawVel   -= yawErr   * TURN_RATE * subDt * 0.4;
 
-        // 5. Auto-bank: lean into the turn like a real aircraft
-        const planeRight = new THREE.Vector3(1, 0, 0)
-            .applyQuaternion(airplaneContainer.quaternion);
-        const currentBank = -planeRight.y;             // +1 = banked right
+        // 4. Auto-bank & Auto-level: War Thunder Style (Pilot Head Leveling)
+        // We calculate "unrolled" yaw error—is the target to the true left or right 
+        // regardless of how much the plane is currently rolling?
+        const planeFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
+        let unrolledRight = planeFwd.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+        if (unrolledRight.lengthSq() < 0.001) unrolledRight.set(1, 0, 0); // Anti-gimbal lock if completely vertical
         
-        // Target bank strongly proportional to yaw error. Bank right if target is to the right.
-        const targetBank = Math.max(-1, Math.min(1, yawErr * 3.5)); 
-        const bankError = targetBank - currentBank;
-        rollVel += bankError * TURN_RATE * subDt * 1.8;
+        const toTargetWorld = targetWS.clone().sub(airplaneContainer.position);
+        const unrolledYawErr = Math.atan2(toTargetWorld.dot(unrolledRight), toTargetWorld.dot(planeFwd)); // +ve = target is RIGHT
+        
+        // Calculate where the real "Sky" (World UP) is in the pilot's view to prevent staying upside down
+        const localWorldUp = new THREE.Vector3(0, 1, 0)
+            .applyQuaternion(airplaneContainer.quaternion.clone().invert());
+        
+        // currentRoll: 0 = level, +PI/2 = banked left, -PI/2 = banked right, +/-PI = upside down (belly up)
+        const currentRoll = Math.atan2(localWorldUp.x, localWorldUp.y);
+        
+        // targetRoll: Bank right (negative roll) if target is right (positive unrolledYawErr)
+        const maxBank = Math.PI * 0.45; // ~81 degrees max bank ensures pilot head looks into turn
+        const targetRoll = -Math.max(-1, Math.min(1, unrolledYawErr * 2.5)) * maxBank;
+        
+        let rollError = targetRoll - currentRoll;
+        // Normalize angle difference to [-PI, PI] to always roll the shortest way and instantly correct upside-down
+        while (rollError > Math.PI) rollError -= Math.PI * 2;
+        while (rollError < -Math.PI) rollError += Math.PI * 2;
+        
+        // Apply roll correction aggressively to snap pilot head UP when flying straight
+        rollVel += rollError * TURN_RATE * subDt * 3.0;
 
-        // 6. Manual roll override (A/D or arrow keys)
+        // 5. Manual roll override (A/D or arrow keys)
         const isLeft  = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
-        if (isLeft)  rollVel += subDt * 6;
-        if (isRight) rollVel -= subDt * 6;
+        if (isLeft)  rollVel += subDt * 8;
+        if (isRight) rollVel -= subDt * 8;
 
-        // 7. Clamp velocities
+        // 6. Clamp velocities
         pitchVel = Math.max(-2, Math.min(2, pitchVel));
         yawVel   = Math.max(-1, Math.min(1, yawVel));
         rollVel  = Math.max(-3, Math.min(3, rollVel));
