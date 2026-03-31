@@ -61,6 +61,27 @@ let isStarted = false;
 let lastTime = 0;
 let allObjects = [];
 
+// === GAME MODE / MAP CONFIG ===
+// Read from window globals set by index.html buttons
+let activeMapSize = 'small'; // 'small' | 'large'
+let activeFlightMode = 'arcade'; // 'arcade' | 'real'
+
+// Infinite City State
+let cityChunks = {}; // key = "cx_cz", value = THREE.Group
+let arenaConstraintEnabled = true; // disabled in large map
+const CHUNK_SIZE = 2000;
+const CHUNK_RENDER_RADIUS = 2; // chunks to keep loaded in each direction
+
+window.applyFlightSettings = function () {
+    const newMap  = window.flightMapSize  || 'small';
+    const newMode = window.flightMode     || 'arcade';
+    if (newMap !== activeMapSize || newMode !== activeFlightMode) {
+        activeMapSize  = newMap;
+        activeFlightMode = newMode;
+        rebuildWorld();
+    }
+};
+
 // Multiplayer - Other Players
 window.otherPlayersInScene = {};
 
@@ -150,11 +171,16 @@ function createSimpleAirplane(name) {
 
 // Flight Parameters
 let currentSpeed = 0;
-const BASE_MAX_SPEED = 3.0;   // 300 km/h display
-const BOOST_MAX_SPEED = 6.0;  // 600 km/h display
+// Speed limits per mode (set dynamically)
+let BASE_MAX_SPEED  = 3.0;  // arcade: 300 km/h
+let BOOST_MAX_SPEED = 6.0;  // arcade: 600 km/h
 const ACCEL = 0.03;
 const BOOST_ACCEL = 0.08;
 const DECEL = 0.015;
+
+// Stall state (Realistic mode)
+let isStalling = false;    // true during stall/tailslide
+let stallTimer = 0;        // counts down the stall duration
 
 // Physics
 const GRAVITY = 15.0;
@@ -171,14 +197,187 @@ export function startFlightSimulator() {
     const canvas = document.getElementById("flightCanvas");
     if (!container || container.clientWidth === 0) { setTimeout(startFlightSimulator, 100); return; }
 
+    // Sync mode/map from HTML globals (set before game loads)
+    activeMapSize   = window.flightMapSize  || 'small';
+    activeFlightMode = window.flightMode    || 'arcade';
+
     initGraphics(container, canvas);
-    createEnvironment();
+    buildWorld();
     createHeroAirplane();
     setupInputs();
 
     isStarted = true;
     lastTime = performance.now();
     requestAnimationFrame(animate);
+}
+
+function buildWorld() {
+    applyModeSpeedLimits();
+    if (activeMapSize === 'large') {
+        createInfiniteCity();
+    } else {
+        createEnvironment();
+    }
+}
+
+// ===================================================
+// INFINITE CITY MAP (Large Map mode)
+// ===================================================
+let cityRoot = null;
+
+function createInfiniteCity() {
+    arenaConstraintEnabled = false;
+    cityRoot = new THREE.Group();
+    cityRoot.name = 'cityRoot';
+    scene.add(cityRoot);
+
+    // Large dark ground
+    const groundGeo = new THREE.PlaneGeometry(80000, 80000);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    cityRoot.add(ground);
+
+    cityChunks = {};
+    for (let cx = -CHUNK_RENDER_RADIUS; cx <= CHUNK_RENDER_RADIUS; cx++) {
+        for (let cz = -CHUNK_RENDER_RADIUS; cz <= CHUNK_RENDER_RADIUS; cz++) {
+            spawnCityChunk(cx, cz);
+        }
+    }
+}
+
+function clearInfiniteCity() {
+    if (cityRoot) { scene.remove(cityRoot); cityRoot = null; }
+    cityChunks = {};
+    arenaConstraintEnabled = true;
+}
+
+function seededRandom(seed) {
+    let s = seed;
+    return function() {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        return (s >>> 0) / 0xffffffff;
+    };
+}
+
+function spawnCityChunk(cx, cz) {
+    const key = `${cx}_${cz}`;
+    if (cityChunks[key]) return;
+
+    const group = new THREE.Group();
+    group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
+    if (cityRoot) cityRoot.add(group);
+
+    const rng = seededRandom(cx * 7919 + cz * 6571);
+    const COLS = 3, ROWS = 3;
+    const cellW = CHUNK_SIZE / COLS;
+    const cellD = CHUNK_SIZE / ROWS;
+    const roadGap = 180;
+
+    const palette = [0x445566, 0x334455, 0x556677, 0x8899aa, 0x222233, 0x333344, 0x667788, 0x2a3a4a];
+
+    for (let col = 0; col < COLS; col++) {
+        for (let row = 0; row < ROWS; row++) {
+            const bw = cellW - roadGap;
+            const bd = cellD - roadGap;
+            const bh = 300 + rng() * 1500;
+            const bx = (col + 0.5) * cellW - CHUNK_SIZE / 2;
+            const bz = (row + 0.5) * cellD - CHUNK_SIZE / 2;
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: palette[Math.floor(rng() * palette.length)],
+                roughness: 0.5, metalness: 0.4
+            });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat);
+            mesh.position.set(bx, bh / 2, bz);
+            mesh.castShadow = true;
+            mesh.userData.type = 'BUILDING';
+            mesh.userData.width = bw;
+            mesh.userData.depth = bd;
+            mesh.userData.height = bh;
+            group.add(mesh);
+
+            // Emissive window strip (simulates lit windows at night)
+            const winMat = new THREE.MeshBasicMaterial({ color: 0xffee55, transparent: true, opacity: 0.5 });
+            const win = new THREE.Mesh(new THREE.PlaneGeometry(bw * 0.7, bh * 0.7), winMat);
+            win.position.set(bx, bh / 2, bz + bd / 2 + 0.5);
+            group.add(win);
+        }
+    }
+
+    cityChunks[key] = group;
+}
+
+function updateInfiniteCity(planePos) {
+    if (!cityRoot || activeMapSize !== 'large') return;
+
+    const pcx = Math.round(planePos.x / CHUNK_SIZE);
+    const pcz = Math.round(planePos.z / CHUNK_SIZE);
+
+    for (let cx = pcx - CHUNK_RENDER_RADIUS; cx <= pcx + CHUNK_RENDER_RADIUS; cx++) {
+        for (let cz = pcz - CHUNK_RENDER_RADIUS; cz <= pcz + CHUNK_RENDER_RADIUS; cz++) {
+            spawnCityChunk(cx, cz);
+        }
+    }
+
+    // Cull far chunks
+    for (const key of Object.keys(cityChunks)) {
+        const [kcx, kcz] = key.split('_').map(Number);
+        if (Math.abs(kcx - pcx) > CHUNK_RENDER_RADIUS + 1 || Math.abs(kcz - pcz) > CHUNK_RENDER_RADIUS + 1) {
+            if (cityRoot) cityRoot.remove(cityChunks[key]);
+            delete cityChunks[key];
+        }
+    }
+
+    // Rebuild collision list from active chunks
+    allObjects = [];
+    for (const group of Object.values(cityChunks)) {
+        group.children.forEach(child => {
+            if (child.userData.type === 'BUILDING') {
+                // Store world position for collision
+                const wp = new THREE.Vector3();
+                child.getWorldPosition(wp);
+                child.userData._wx = wp.x;
+                child.userData._wy = wp.y;
+                child.userData._wz = wp.z;
+                allObjects.push(child);
+            }
+        });
+    }
+}
+
+
+function applyModeSpeedLimits() {
+    if (activeFlightMode === 'real') {
+        BASE_MAX_SPEED  = 5.0;  // base 500 km/h — can grav-dive past this
+        BOOST_MAX_SPEED = 10.0; // 1000 km/h
+    } else {
+        BASE_MAX_SPEED  = 3.0;
+        BOOST_MAX_SPEED = 6.0;
+    }
+}
+
+
+function rebuildWorld() {
+    // Clear old scene objects (keep airplane & renderer)
+    applyModeSpeedLimits();
+
+    // Remove all tracked collision objects
+    allObjects.forEach(obj => { if (obj.parent) obj.parent.remove(obj); });
+    allObjects = [];
+
+    // Clear city chunks
+    clearInfiniteCity();
+
+    // Remove arena groups (anything named arenaGroup-like)
+    const toRemove = [];
+    scene.traverse(obj => {
+        if (obj.name === 'arenaRoot' || obj.name === 'cityRoot') toRemove.push(obj);
+    });
+    toRemove.forEach(g => scene.remove(g));
+
+    buildWorld();
 }
 
 function initGraphics(container, canvas) {
@@ -218,6 +417,7 @@ function initGraphics(container, canvas) {
 }
 
 function createEnvironment() {
+    arenaConstraintEnabled = true;
     // 1. ARENA BASICS - 10x SCALE
     const arenaWidth = 6000;
     const arenaLength = 12000;
@@ -822,18 +1022,59 @@ function animate(time) {
     const subDt = dt / steps;
 
     for (let s = 0; s < steps; s++) {
+        // ===================================================
+        // STALL CHECK (Realistic mode)
+        // ===================================================
+        if (activeFlightMode === 'real' && isStalling) {
+            // During stall: disable instructor, let gravity pull tail down (plane flips nose up → tail slides)
+            stallTimer -= subDt;
+            // Push tail DOWN: apply angular momentum to rotate plane nose-up/backward
+            pitchVel -= subDt * 1.5;   // pitch nose backward
+            rollVel  *= 0.9;           // damp roll
+            // Speed bleeds to 0 and slightly negative (falling)
+            currentSpeed -= subDt * 2.0;
+            if (currentSpeed < -1.5) currentSpeed = -1.5;
+            if (stallTimer <= 0 && currentSpeed > -0.5) {
+                // Recovery: if the plane has fallen enough and has some downward speed, exit stall
+                isStalling = false;
+            }
+        } else {
+        // ===================================================
         // MOVEMENT
+        // ===================================================
         const targetMax = keys.shift ? BOOST_MAX_SPEED : BASE_MAX_SPEED;
         const accel = keys.shift ? BOOST_ACCEL : ACCEL;
         if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accel; }
         if (keys['s']) currentSpeed -= DECEL;
-        if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
+
+        if (activeFlightMode === 'real') {
+            // ---- REALISTIC AERODYNAMICS ----
+            // Get nose pitch angle vs horizontal world plane
+            const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
+            const sinPitch = fwd.y; // +1 = straight up, -1 = straight down
+
+            // Climbing slows down (gravity component), diving speeds up
+            const gravEffect = sinPitch * subDt * 3.5;
+            currentSpeed -= gravEffect;
+
+            // Hard cap at BOOST_MAX_SPEED
+            if (currentSpeed > BOOST_MAX_SPEED) currentSpeed = BOOST_MAX_SPEED;
+
+            // STALL: if speed drops near 0 and nose is up, enter stall
+            if (currentSpeed < 0.2 && sinPitch > 0.3 && !isStalling) {
+                isStalling = true;
+                stallTimer = 2.0; // 2 seconds of uncontrolled stall
+            }
+        } else {
+            // Arcade: soft cap
+            if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
+        }
 
         // Prevent reversing unless crash bounce
         if (!scene.userData.crashCooldown) {
             if (currentSpeed < 0) currentSpeed = 0;
         }
-        if (currentSpeed > targetMax + 0.1) currentSpeed = targetMax + 0.1;
+        } // end non-stall block
 
         // ===================================================
         // WAR THUNDER MOUSE AIM – UNPROJECT METHOD
@@ -896,14 +1137,21 @@ function animate(time) {
         while (rollError > Math.PI) rollError -= Math.PI * 2;
         while (rollError < -Math.PI) rollError += Math.PI * 2;
         
-        // Apply roll correction aggressively to snap pilot head UP when flying straight
-        rollVel += rollError * TURN_RATE * subDt * 3.0;
-
         // 5. Manual roll override (A/D or arrow keys)
         const isLeft  = keys['a'] || keys['arrowleft'];
         const isRight = keys['d'] || keys['arrowright'];
-        if (isLeft)  rollVel += subDt * 8;
-        if (isRight) rollVel -= subDt * 8;
+
+        if (isLeft || isRight) {
+            // --- 360-DEGREE FREE ROLL ---
+            // Completely suppress the auto-level instructor when A/D is held.
+            // This allows full barrel rolls without the instructor fighting back.
+            if (isLeft)  rollVel += subDt * 10;
+            if (isRight) rollVel -= subDt * 10;
+            // Do NOT add rollError correction while key is held
+        } else if (!isStalling) {
+            // Apply auto-level only when not manually rolling and not stalling
+            rollVel += rollError * TURN_RATE * subDt * 3.0;
+        }
 
         // 6. Clamp velocities
         pitchVel = Math.max(-2, Math.min(2, pitchVel));
@@ -927,20 +1175,19 @@ function animate(time) {
         const moveDist = currentSpeed * 200 * subDt;
         airplaneContainer.translateZ(-moveDist);
 
-        // --- HARD BOUNDARY CLAMP (Arena Box) ---
-        // Arena is 6000x12000. X: [-3000, 3000], Z: [-6000, 6000]
-        const PADDING = 100;
-        let clamped = false;
-
-        if (airplaneContainer.position.x < -3000 + PADDING) { airplaneContainer.position.x = -3000 + PADDING; clamped = true; }
-        if (airplaneContainer.position.x > 3000 - PADDING) { airplaneContainer.position.x = 3000 - PADDING; clamped = true; }
-        if (airplaneContainer.position.z < -6000 + PADDING) { airplaneContainer.position.z = -6000 + PADDING; clamped = true; }
-        if (airplaneContainer.position.z > 6000 - PADDING) { airplaneContainer.position.z = 6000 - PADDING; clamped = true; }
-        if (airplaneContainer.position.y > 30000 - PADDING) { airplaneContainer.position.y = 30000 - PADDING; clamped = true; }
-
-        if (clamped && currentSpeed > 1) {
-            currentSpeed = 0.5; // Slow down on wall hit
-            airplaneContainer.translateZ(10); // Bounce slightly
+        // --- HARD BOUNDARY CLAMP (Arena Box — only small map) ---
+        if (arenaConstraintEnabled) {
+            const PADDING = 100;
+            let clamped = false;
+            if (airplaneContainer.position.x < -3000 + PADDING) { airplaneContainer.position.x = -3000 + PADDING; clamped = true; }
+            if (airplaneContainer.position.x >  3000 - PADDING) { airplaneContainer.position.x =  3000 - PADDING; clamped = true; }
+            if (airplaneContainer.position.z < -6000 + PADDING) { airplaneContainer.position.z = -6000 + PADDING; clamped = true; }
+            if (airplaneContainer.position.z >  6000 - PADDING) { airplaneContainer.position.z =  6000 - PADDING; clamped = true; }
+            if (airplaneContainer.position.y > 30000 - PADDING) { airplaneContainer.position.y = 30000 - PADDING; clamped = true; }
+            if (clamped && currentSpeed > 1) {
+                currentSpeed = 0.5;
+                airplaneContainer.translateZ(10);
+            }
         }
 
         // Get plane position for collision
@@ -984,8 +1231,11 @@ function animate(time) {
             const halfD = bD / 2;
 
             for (let wp of worldPoints) {
-                const dx = wp.x - obj.position.x;
-                const dz = wp.z - obj.position.z;
+                // For city buildings, use the stored world-space position
+                const objX = obj.userData._wx !== undefined ? obj.userData._wx : obj.position.x;
+                const objZ = obj.userData._wz !== undefined ? obj.userData._wz : obj.position.z;
+                const dx = wp.x - objX;
+                const dz = wp.z - objZ;
                 if (Math.abs(dx) < halfW && Math.abs(dz) < halfD) {
                     if (wp.y < bH) {
                         crash = true;
@@ -1019,6 +1269,8 @@ function animate(time) {
     scene.userData.sun.target.updateMatrixWorld();
     starsSystem.position.copy(planePos);
 
+    // Infinite city chunk streaming (large map mode)
+    updateInfiniteCity(planePos);
     // Timer updates
     if (scene.userData.crashCooldown > 0) scene.userData.crashCooldown -= dt;
 
