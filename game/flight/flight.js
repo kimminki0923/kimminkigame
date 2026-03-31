@@ -270,7 +270,69 @@ function createEnvironment() {
     bRight.position.set(arenaWidth / 2 + borderWidth / 2, 1, 0);
     arenaGroup.add(bRight);
 
-    // Boundary Walls (30000 height - complete box cage)\n    const wallHeight = 30000;\n    const wallThickness = 100;\n    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });\n\n    // Front/Back Walls\n    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);\n    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);\n    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);\n    wallBack.receiveShadow = true;\n    wallBack.castShadow = true;\n    wallBack.userData.type = \"WALL\";\n    wallBack.userData.width = arenaWidth + wallThickness * 2;\n    wallBack.userData.height = wallHeight;\n    wallBack.userData.depth = wallThickness;\n    arenaGroup.add(wallBack);\n    allObjects.push(wallBack);\n\n    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);\n    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);\n    wallFront.receiveShadow = true;\n    wallFront.castShadow = true;\n    wallFront.userData.type = \"WALL\";\n    wallFront.userData.width = arenaWidth + wallThickness * 2;\n    wallFront.userData.height = wallHeight;\n    wallFront.userData.depth = wallThickness;\n    arenaGroup.add(wallFront);\n    allObjects.push(wallFront);\n\n    // Side Walls\n    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);\n    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);\n    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);\n    wallLeft.receiveShadow = true;\n    wallLeft.castShadow = true;\n    wallLeft.userData.type = \"WALL\";\n    wallLeft.userData.width = wallThickness;\n    wallLeft.userData.height = wallHeight;\n    wallLeft.userData.depth = arenaLength;\n    arenaGroup.add(wallLeft);\n    allObjects.push(wallLeft);\n\n    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);\n    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);\n    wallRight.receiveShadow = true;\n    wallRight.castShadow = true;\n    wallRight.userData.type = \"WALL\";\n    wallRight.userData.width = wallThickness;\n    wallRight.userData.height = wallHeight;\n    wallRight.userData.depth = arenaLength;\n    arenaGroup.add(wallRight);\n    allObjects.push(wallRight);\n\n    // CEILING (Top of the box)\n    const ceilingGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);\n    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, side: THREE.DoubleSide }); // Sky blue\n    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);\n    ceiling.rotation.x = Math.PI / 2;\n    ceiling.position.y = wallHeight;\n    ceiling.userData.type = \"CEILING\";\n    ceiling.userData.height = wallHeight;\n    arenaGroup.add(ceiling);\n    allObjects.push(ceiling);\n\n    // 2. THE RIVER (10x scale)
+    // Boundary Walls (30000 height - complete box cage)
+    const wallHeight = 30000;
+    const wallThickness = 100;
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });
+
+    // Front/Back Walls
+    const fbWallGeo = new THREE.BoxGeometry(arenaWidth + wallThickness * 2, wallHeight, wallThickness);
+    const wallBack = new THREE.Mesh(fbWallGeo, wallMat);
+    wallBack.position.set(0, wallHeight / 2, -arenaLength / 2 - wallThickness / 2);
+    wallBack.receiveShadow = true;
+    wallBack.castShadow = true;
+    wallBack.userData.type = "WALL";
+    wallBack.userData.width = arenaWidth + wallThickness * 2;
+    wallBack.userData.height = wallHeight;
+    wallBack.userData.depth = wallThickness;
+    arenaGroup.add(wallBack);
+    allObjects.push(wallBack);
+
+    const wallFront = new THREE.Mesh(fbWallGeo, wallMat);
+    wallFront.position.set(0, wallHeight / 2, arenaLength / 2 + wallThickness / 2);
+    wallFront.receiveShadow = true;
+    wallFront.castShadow = true;
+    wallFront.userData.type = "WALL";
+    wallFront.userData.width = arenaWidth + wallThickness * 2;
+    wallFront.userData.height = wallHeight;
+    wallFront.userData.depth = wallThickness;
+    arenaGroup.add(wallFront);
+    allObjects.push(wallFront);
+
+    // Side Walls
+    const sideWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, arenaLength);
+    const wallLeft = new THREE.Mesh(sideWallGeo, wallMat);
+    wallLeft.position.set(-arenaWidth / 2 - wallThickness / 2, wallHeight / 2, 0);
+    wallLeft.receiveShadow = true;
+    wallLeft.castShadow = true;
+    wallLeft.userData.type = "WALL";
+    wallLeft.userData.width = wallThickness;
+    wallLeft.userData.height = wallHeight;
+    wallLeft.userData.depth = arenaLength;
+    arenaGroup.add(wallLeft);
+    allObjects.push(wallLeft);
+
+    const wallRight = new THREE.Mesh(sideWallGeo, wallMat);
+    wallRight.position.set(arenaWidth / 2 + wallThickness / 2, wallHeight / 2, 0);
+    wallRight.receiveShadow = true;
+    wallRight.castShadow = true;
+    wallRight.userData.type = "WALL";
+    wallRight.userData.width = wallThickness;
+    wallRight.userData.height = wallHeight;
+    wallRight.userData.depth = arenaLength;
+    arenaGroup.add(wallRight);
+    allObjects.push(wallRight);
+
+    // CEILING (Top of the box)
+    const ceilingGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);
+    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, side: THREE.DoubleSide }); // Sky blue
+    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = wallHeight;
+    // Removed userData and allObjects.push here so we don't accidentally create an invisible 100x100 collision pillar at 0,Z,0
+    arenaGroup.add(ceiling);
+
+    // 2. THE RIVER (10x scale)
     const riverWidth = 800;
     const riverGeo = new THREE.PlaneGeometry(arenaWidth - 200, riverWidth);
     const riverMat = new THREE.MeshStandardMaterial({
@@ -939,9 +1001,11 @@ function animate(time) {
                 scene.userData.crashCooldown = 0.5; // 0.5 second cooldown
                 console.log("CRASH - BOUNCE");
 
-                // BOUNCE LOGIC (Reverse speed)
-                currentSpeed = -currentSpeed * 0.5;
-                if (Math.abs(currentSpeed) < 2.0) currentSpeed = -2.0; // Minimum bounce force
+                // BOUNCE LOGIC (Reset speed positive to prevent infinite backward tumbling)
+                currentSpeed = 0.5;
+                pitchVel *= 0.2; // kill wild spins
+                rollVel *= 0.2;
+                yawVel *= 0.2;
 
                 airplaneContainer.translateZ(30); // Immediate push to clear collider
             }
@@ -962,6 +1026,7 @@ function animate(time) {
         airplaneContainer.position.y = 5.0;
         if (pitchVel < 0) pitchVel = 0;
         if (currentSpeed > 1.0) currentSpeed = 0.5; // Drag on ground
+        if (currentSpeed < 0) currentSpeed = 0; // Prevent infinite backwards sliding
     }
 
     // ===================================================
