@@ -80,7 +80,10 @@ window.applyFlightSettings = function () {
     if (newMap !== activeMapSize || newMode !== activeFlightMode) {
         activeMapSize  = newMap;
         activeFlightMode = newMode;
-        rebuildWorld();
+        // Safety guard: only rebuild if game has actually started
+        if (isStarted && scene) {
+            rebuildWorld();
+        }
     }
 };
 
@@ -89,7 +92,7 @@ window.otherPlayersInScene = {};
 
 // Export player position for multiplayer sync
 window.getPlayerPosition = function () {
-    if (!airplaneContainer) return null;
+    if (!isStarted || !airplaneContainer) return null;
     return {
         x: airplaneContainer.position.x,
         y: airplaneContainer.position.y,
@@ -99,6 +102,7 @@ window.getPlayerPosition = function () {
         rz: airplaneContainer.rotation.z
     };
 };
+
 
 // Update other player's airplane
 window.updateOtherPlayer = function (uid, data) {
@@ -1097,7 +1101,6 @@ function animate(time) {
     for (let s = 0; s < steps; s++) {
         // ===================================================
         // STALL CHECK (Realistic mode)
-        // =================================================        // ===================================================
         // 1. MOVEMENT & PHYSICS (Sub-stepping)
         // ===================================================
         const targetMax = keys.shift ? BOOST_MAX_SPEED : BASE_MAX_SPEED;
@@ -1107,26 +1110,23 @@ function animate(time) {
             // ---- REALISTIC AERODYNAMICS (Lift & Weight Model) ----
             const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
             const pitchSin = fwd.y; // Nose pitch angle sin
+            const cosPitch = Math.max(0.01, Math.sqrt(1 - pitchSin * pitchSin));
 
             // A. Engine Power
             if (keys['w']) {
-                if (currentSpeed < targetMax) currentSpeed += (accelVal * 0.5) * subDt;
+                if (currentSpeed < targetMax) currentSpeed += (accelVal * 0.3) * subDt; // Slower engine accel
             }
             if (keys['s']) currentSpeed -= DECEL * 4 * subDt;
 
-            // B. Speed Gradient (Trade height for speed)
-            const gravStep = pitchSin * subDt * 3.5; 
-            currentSpeed -= gravStep;
+            // B. Lift Calculation
+            const liftCoeff = 0.45; 
+            const speedSq = Math.max(0, currentSpeed * currentSpeed);
+            const liftForce = speedSq * liftCoeff * cosPitch * 100.0; // Scaled up
 
-            // C. Atmospheric Drag
+            // C. Gravity Exchange (Pitch affects speed)
+            currentSpeed -= pitchSin * 2.5 * subDt; // Climbing slows, diving speeds up
+            
             const dragCoeff = 0.04;
-            currentSpeed -= currentSpeed * currentSpeed * dragCoeff * subDt;
-            if (currentSpeed < 0.01) currentSpeed = 0.01; // Minimum nudge forward
-
-            // D. Lift Model (Speed-based lift)
-            const liftCoeff = 14.0; 
-            const cosPitch = Math.abs(fwd.z); // ~1 when level
-            const liftForce = (currentSpeed * currentSpeed) * liftCoeff * cosPitch;
             const gravityForce = 45.0; // Static gravity pull
 
             const netVerticalForce = liftForce - gravityForce;
