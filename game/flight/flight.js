@@ -213,12 +213,31 @@ export function startFlightSimulator() {
 
 function buildWorld() {
     applyModeSpeedLimits();
+    createCommonObjects(); // Always create stars, clouds, etc.
     if (activeMapSize === 'large') {
         createInfiniteCity();
     } else {
         createEnvironment();
     }
 }
+
+function createCommonObjects() {
+    // 5. SPEED PARTICLES (larger spread)
+    if (starsSystem) scene.remove(starsSystem);
+    const starsGeo = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const posArray = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 20000;
+    }
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, transparent: true, opacity: 0.4 });
+    starsSystem = new THREE.Points(starsGeo, starsMat);
+    scene.add(starsSystem);
+
+    createClouds();
+}
+
 
 // ===================================================
 // INFINITE CITY MAP (Large Map mode)
@@ -363,22 +382,38 @@ function rebuildWorld() {
     // Clear old scene objects (keep airplane & renderer)
     applyModeSpeedLimits();
 
-    // Remove all tracked collision objects
+    // 1. Remove specific tracked objects from scene
     allObjects.forEach(obj => { if (obj.parent) obj.parent.remove(obj); });
     allObjects = [];
+
+    missiles.forEach(m => { if (m.mesh.parent) m.mesh.parent.remove(m.mesh); });
+    missiles = [];
+
+    explosions.forEach(e => { if (e.mesh.parent) e.mesh.parent.remove(e.mesh); });
+    explosions = [];
 
     // Clear city chunks
     clearInfiniteCity();
 
-    // Remove arena groups (anything named arenaGroup-like)
+    // 2. Remove old groups by name
     const toRemove = [];
     scene.traverse(obj => {
-        if (obj.name === 'arenaRoot' || obj.name === 'cityRoot') toRemove.push(obj);
+        if (obj.name === 'arenaRoot' || obj.name === 'cityRoot' || obj.name === 'cloudRoot') {
+            toRemove.push(obj);
+        }
     });
-    toRemove.forEach(g => scene.remove(g));
+    toRemove.forEach(g => {
+        if (g.parent) g.parent.remove(g);
+    });
+
+    // 3. Reset internal state
+    isStalling = false;
+    currentSpeed = 0;
+    pitchVel = 0; rollVel = 0; yawVel = 0;
 
     buildWorld();
 }
+
 
 function initGraphics(container, canvas) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -422,7 +457,9 @@ function createEnvironment() {
     const arenaWidth = 6000;
     const arenaLength = 12000;
     const arenaGroup = new THREE.Group();
+    arenaGroup.name = 'arenaRoot';
     scene.add(arenaGroup);
+
 
     // Ground - Lush Green Grass
     const groundGeo = new THREE.PlaneGeometry(arenaWidth, arenaLength);
@@ -586,24 +623,8 @@ function createEnvironment() {
     createTower(0, 0, 5000, true, arenaGroup, true); // Red King
     createTower(-1500, 0, 3500, false, arenaGroup, true); // Red Princess L
     createTower(1500, 0, 3500, false, arenaGroup, true); // Red Princess R
-
-    // 5. SPEED PARTICLES (larger spread)
-    const starsGeo = new THREE.BufferGeometry();
-    const starCount = 2000;
-    const posArray = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 20000;
-    }
-    starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, transparent: true, opacity: 0.4 });
-    starsSystem = new THREE.Points(starsGeo, starsMat);
-    scene.add(starsSystem);
-
-    airplaneContainer = new THREE.Group();
-
-    // Create Clouds
-    createClouds();
 }
+
 
 function createClouds() {
     clouds = [];
@@ -647,9 +668,11 @@ function createClouds() {
         cloudGroup.userData.velocity = (Math.random() * 20 + 10); // Drift speed
 
         scene.add(cloudGroup);
+        cloudGroup.name = 'cloudRoot';
         clouds.push(cloudGroup);
     }
 }
+
 
 function createTower(x, y, z, isKing, parent, isRed = false) {
     const color = isRed ? 0xe74c3c : 0x3498db;
@@ -1026,19 +1049,25 @@ function animate(time) {
         // STALL CHECK (Realistic mode)
         // ===================================================
         if (activeFlightMode === 'real' && isStalling) {
-            // During stall: disable instructor, let gravity pull tail down (plane flips nose up → tail slides)
             stallTimer -= subDt;
             // Push tail DOWN: apply angular momentum to rotate plane nose-up/backward
-            pitchVel -= subDt * 1.5;   // pitch nose backward
-            rollVel  *= 0.9;           // damp roll
-            // Speed bleeds to 0 and slightly negative (falling)
-            currentSpeed -= subDt * 2.0;
-            if (currentSpeed < -1.5) currentSpeed = -1.5;
-            if (stallTimer <= 0 && currentSpeed > -0.5) {
-                // Recovery: if the plane has fallen enough and has some downward speed, exit stall
+            pitchVel -= subDt * 2.0;
+            rollVel  *= 0.9;
+            
+            // Allow pilot to still apply some thrust to recover
+            if (keys['w']) currentSpeed += ACCEL * 0.8;
+            
+            // Speed bleeds but gravity pulls down. In Realistic, stall usually ends when nose drops.
+            currentSpeed -= subDt * 1.5;
+            if (currentSpeed < -2.0) currentSpeed = -2.0;
+            
+            // Recovery: Powering out or enough time passed
+            if (stallTimer <= 0 || (currentSpeed > 0.5 && keys['w'])) {
                 isStalling = false;
             }
         } else {
+
+
         // ===================================================
         // MOVEMENT
         // ===================================================
@@ -1213,13 +1242,18 @@ function animate(time) {
                 const radius = Math.max(obj.userData.width, obj.userData.depth) / 2;
                 if (planePos.y > obj.userData.height) continue;
 
-                const dist = Math.sqrt(Math.pow(planePos.x - obj.position.x, 2) + Math.pow(planePos.z - obj.position.z, 2));
+                // For city buildings, use the stored world-space position
+                const objX = obj.userData._wx !== undefined ? obj.userData._wx : obj.position.x;
+                const objZ = obj.userData._wz !== undefined ? obj.userData._wz : obj.position.z;
+                
+                const dist = Math.sqrt(Math.pow(planePos.x - objX, 2) + Math.pow(planePos.z - objZ, 2));
                 if (dist < radius + 10) {
                     crash = true;
                     break;
                 }
                 continue;
             }
+
 
             // Box Collision (Bridge, Wall, etc)
             let bW = obj.userData.width || 100;
