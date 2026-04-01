@@ -1240,9 +1240,10 @@ function animate(time) {
             new THREE.Vector3(0, 0, -8).applyMatrix4(airplaneContainer.matrixWorld),
             new THREE.Vector3(0, 0, 0).applyMatrix4(airplaneContainer.matrixWorld),
             new THREE.Vector3(7, 0, 0).applyMatrix4(airplaneContainer.matrixWorld),
-            new THREE.Vector3(-7, 0, 0).applyMatrix4(airplaneMatrixWorld = airplaneContainer.matrixWorld),
+            new THREE.Vector3(-7, 0, 0).applyMatrix4(airplaneContainer.matrixWorld),
             new THREE.Vector3(0, 1, 0).applyMatrix4(airplaneContainer.matrixWorld)
         ];
+
 
         let crash = false;
         for (let obj of allObjects) {
