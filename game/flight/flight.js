@@ -183,8 +183,9 @@ let currentSpeed = 0;
 let BASE_MAX_SPEED  = 3.0;  // arcade: 300 km/h
 let BOOST_MAX_SPEED = 6.0;  // arcade: 600 km/h
 const ACCEL = 1.5;         // units/sec
-const BOOST_ACCEL = 3.5;   // units/sec
+let BOOST_ACCEL = 6.0;   // Increased for better 체감
 const DECEL = 1.0;         // units/sec
+
 
 
 let verticalVel = 0;      // m/s downward or upward (m per unit frame)
@@ -464,11 +465,12 @@ function updateInfiniteCity(planePos) {
 function applyModeSpeedLimits() {
     if (activeFlightMode === 'real') {
         BASE_MAX_SPEED  = 5.0;  // base 500 km/h — can grav-dive past this
-        BOOST_MAX_SPEED = 10.0; // 1000 km/h
+        BOOST_MAX_SPEED = 12.0; // 1200 km/h
     } else {
-        BASE_MAX_SPEED  = 3.0;
-        BOOST_MAX_SPEED = 6.0;
+        BASE_MAX_SPEED  = 3.5;
+        BOOST_MAX_SPEED = 9.0; // 900 km/h
     }
+
 }
 
 
@@ -1391,16 +1393,29 @@ function animate(time) {
         camIdeal = planePos.clone().add(offset);
     }
 
-    // Boost shake
+    // Boost FX: Shake & FOV Zoom
+    let targetFOV = 60;
     if (keys.shift && currentSpeed > 2.0) {
-        const sh = 0.5;
+        // Reduced shake intensity
+        const sh = 0.15;
         camIdeal.x += (Math.random() - 0.5) * sh;
         camIdeal.y += (Math.random() - 0.5) * sh * 0.2;
+        
+        // Speed-based FOV increase (Zoom out feeling)
+        const boostFactor = (currentSpeed - BASE_MAX_SPEED) / (BOOST_MAX_SPEED - BASE_MAX_SPEED);
+        targetFOV = 60 + Math.max(0, boostFactor) * 25;
+    }
+    
+    // Smoothly interpolate FOV
+    if (camera.fov !== targetFOV) {
+        camera.fov += (targetFOV - camera.fov) * 0.1;
+        camera.updateProjectionMatrix();
     }
 
     // Fast lerp gives a slight elastic feel but prevents tracking lag completely
     camera.position.lerp(camIdeal, 0.4);
     camera.up.set(0, 1, 0); // horizon always level
+
     
     // Look slightly ahead of the plane
     const lookTarget = planePos.clone().addScaledVector(planeFwdCam, 15);
