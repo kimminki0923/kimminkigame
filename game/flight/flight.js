@@ -258,13 +258,36 @@ function createInfiniteCity() {
     cityRoot.name = 'cityRoot';
     scene.add(cityRoot);
 
-    // Large dark ground
-    const groundGeo = new THREE.PlaneGeometry(80000, 80000);
+    // Large dark ground (extended for fixed map feel)
+    const groundGeo = new THREE.PlaneGeometry(100000, 100000);
     const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     cityRoot.add(ground);
+
+    // Create Runway Mesh
+    const runwayGeo = new THREE.PlaneGeometry(600, 8000);
+    const runwayMat = new THREE.MeshStandardMaterial({ 
+        color: 0x222222, 
+        emissive: 0x111111,
+        roughness: 0.4 
+    });
+    const runway = new THREE.Mesh(runwayGeo, runwayMat);
+    runway.rotation.x = -Math.PI / 2;
+    runway.position.set(0, 0.5, 7000); // Runway from Z=3000 to Z=11000
+    cityRoot.add(runway);
+
+    // Runway Lines
+    const lineGeo = new THREE.PlaneGeometry(40, 200);
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (let i = 0; i < 20; i++) {
+        const line = new THREE.Mesh(lineGeo, lineMat);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(0, 0.6, 3500 + i * 400);
+        cityRoot.add(line);
+    }
+
 
     cityChunks = {};
     for (let cx = -CHUNK_RENDER_RADIUS; cx <= CHUNK_RENDER_RADIUS; cx++) {
@@ -296,8 +319,11 @@ function spawnCityChunk(cx, cz) {
     group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
     cityRoot.add(group);
 
+    // Building EXCLUSION: No buildings near X=0 center strip (Runway zone)
+    const isRunwayZone = (cx === 0 && cz >= 1 && cz <= 3);
 
     const rng = seededRandom(cx * 104729 + cz * 224737);
+
     
     // Clear Block Design: 3x3 blocks per chunk with wide roads
     const NUM_BLOCKS = 3;
@@ -318,11 +344,14 @@ function spawnCityChunk(cx, cz) {
             const bx = (i - (NUM_BLOCKS-1)/2) * (blockSize + blockGap);
             const bz = (j - (NUM_BLOCKS-1)/2) * (blockSize + blockGap);
             
-            // Create a Block Platform
+            // Create a Block Platform (Skip if runway zone)
+            if (isRunwayZone && Math.abs(bx) < 600) continue;
+
             const blockMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.95 });
             const platform = new THREE.Mesh(new THREE.BoxGeometry(blockSize * 0.98, 10, blockSize * 0.98), blockMat);
             platform.position.set(bx, 5, bz);
             group.add(platform);
+
 
             // Populate buildings inside block
             const buildingsPerBlock = 2 + Math.floor(rng() * 4);
@@ -784,10 +813,18 @@ function createTower(x, y, z, isKing, parent, isRed = false) {
 
 function createHeroAirplane() {
     airplaneContainer = new THREE.Group();
-    airplaneContainer.position.set(0, 500, 4000); // Higher start, near red side, scaled
+    
+    if (activeMapSize === 'large') {
+        // Start on runway at 0 altitude
+        airplaneContainer.position.set(0, 6, 3500); 
+    } else {
+        airplaneContainer.position.set(0, 500, 4000); 
+    }
+    
     scene.add(airplaneContainer);
     airplaneMesh = new THREE.Group();
     airplaneContainer.add(airplaneMesh);
+
 
     // === DETAILED HERO JET MODEL ===
     // Materials
@@ -1298,9 +1335,9 @@ function animate(time) {
             }
             if (crash) break;
         }
-        }
 
         if (crash) {
+
             if (!scene.userData.crashCooldown) {
 
                 scene.userData.crashCooldown = 0.5;
