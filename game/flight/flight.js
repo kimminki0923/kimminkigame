@@ -69,8 +69,9 @@ let activeFlightMode = 'arcade'; // 'arcade' | 'real'
 // Infinite City State
 let cityChunks = {}; // key = "cx_cz", value = THREE.Group
 let arenaConstraintEnabled = true; // disabled in large map
-const CHUNK_SIZE = 2000;
-const CHUNK_RENDER_RADIUS = 2; // chunks to keep loaded in each direction
+const CHUNK_SIZE = 2500; // Larger chunks for better spacing
+const CHUNK_RENDER_RADIUS = 4; // chunks to keep loaded in each direction - 4*2500 = 10km render distance
+
 
 window.applyFlightSettings = function () {
     const newMap  = window.flightMapSize  || 'small';
@@ -174,9 +175,10 @@ let currentSpeed = 0;
 // Speed limits per mode (set dynamically)
 let BASE_MAX_SPEED  = 3.0;  // arcade: 300 km/h
 let BOOST_MAX_SPEED = 6.0;  // arcade: 600 km/h
-const ACCEL = 0.03;
-const BOOST_ACCEL = 0.08;
-const DECEL = 0.015;
+const ACCEL = 1.5;         // units/sec
+const BOOST_ACCEL = 3.5;   // units/sec
+const DECEL = 1.0;         // units/sec
+
 
 // Stall state (Realistic mode)
 let isStalling = false;    // true during stall/tailslide
@@ -288,45 +290,122 @@ function spawnCityChunk(cx, cz) {
     group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
     if (cityRoot) cityRoot.add(group);
 
-    const rng = seededRandom(cx * 7919 + cz * 6571);
-    const COLS = 3, ROWS = 3;
+    const rng = seededRandom(cx * 7919 + cz * 104729);
+    const COLS = 4, ROWS = 4; // 4x4 grid per chunk for more density but smaller cells
     const cellW = CHUNK_SIZE / COLS;
     const cellD = CHUNK_SIZE / ROWS;
-    const roadGap = 180;
+    const roadWidth = 120;
 
-    const palette = [0x445566, 0x334455, 0x556677, 0x8899aa, 0x222233, 0x333344, 0x667788, 0x2a3a4a];
+    // Road Grid (visual planes)
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1.0 });
+    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, CHUNK_SIZE), roadMat);
+    roadNS.rotation.x = -Math.PI / 2;
+    roadNS.position.y = 0.5; // Slightly above ground
+    group.add(roadNS);
+    
+    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(CHUNK_SIZE, roadWidth), roadMat);
+    roadEW.rotation.x = -Math.PI / 2;
+    roadEW.position.y = 0.5;
+    group.add(roadEW);
+
+    const palette = [
+        0x2c3e50, 0x34495e, // Dark Blue Grays
+        0x7f8c8d, 0x95a5a6, // Slates
+        0x2980b9, 0x3498db, // Blues
+        0x16a085, 0x1abc9c, // Teals
+        0xe67e22, 0xd35400, // Oranges (some brick-style)
+        0xbdc3c7, 0xecf0f1, // Light Grays
+        0x27ae60, 0x2ecc71  // Greens (glassy)
+    ];
 
     for (let col = 0; col < COLS; col++) {
         for (let row = 0; row < ROWS; row++) {
-            const bw = cellW - roadGap;
-            const bd = cellD - roadGap;
-            const bh = 300 + rng() * 1500;
-            const bx = (col + 0.5) * cellW - CHUNK_SIZE / 2;
-            const bz = (row + 0.5) * cellD - CHUNK_SIZE / 2;
-
-            const mat = new THREE.MeshStandardMaterial({
-                color: palette[Math.floor(rng() * palette.length)],
-                roughness: 0.5, metalness: 0.4
+            // Skip cells near center axes for main roads
+            if (Math.abs(col - (COLS / 2 - 0.5)) < 0.6 || Math.abs(row - (ROWS / 2 - 0.5)) < 0.6) continue;
+            
+            const bx = (col - (COLS - 1) / 2) * cellW;
+            const bz = (row - (ROWS - 1) / 2) * cellD;
+            
+            const bw = cellW * (0.6 + rng() * 0.3);
+            const bd = cellD * (0.6 + rng() * 0.3);
+            const bh = 400 + rng() * 2000;
+            
+            const type = rng(); // Variety selector
+            const colIdx = Math.floor(rng() * palette.length);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: palette[colIdx], 
+                roughness: 0.4, 
+                metalness: 0.3 
             });
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat);
-            mesh.position.set(bx, bh / 2, bz);
-            mesh.castShadow = true;
-            mesh.userData.type = 'BUILDING';
-            mesh.userData.width = bw;
-            mesh.userData.depth = bd;
-            mesh.userData.height = bh;
-            group.add(mesh);
 
-            // Emissive window strip (simulates lit windows at night)
-            const winMat = new THREE.MeshBasicMaterial({ color: 0xffee55, transparent: true, opacity: 0.5 });
-            const win = new THREE.Mesh(new THREE.PlaneGeometry(bw * 0.7, bh * 0.7), winMat);
-            win.position.set(bx, bh / 2, bz + bd / 2 + 0.5);
-            group.add(win);
+            const buildingGroup = new THREE.Group();
+            buildingGroup.position.set(bx, 0, bz);
+            group.add(buildingGroup);
+
+            let mesh;
+            if (type < 0.6) {
+                // TIERED BUILDING
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat);
+                mesh.position.y = bh / 2;
+                buildingGroup.add(mesh);
+                
+                // Top tier
+                const th = bh * 0.3;
+                const tm = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.7, th, bd * 0.7), mat);
+                tm.position.y = bh + th / 2;
+                buildingGroup.add(tm);
+            } else if (type < 0.85) {
+                // CYLINDRICAL TOWER
+                const radius = Math.min(bw, bd) / 2;
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, bh, 16), mat);
+                mesh.position.y = bh / 2;
+                buildingGroup.add(mesh);
+                
+                // Spire
+                const spire = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.3, 150, 8), mat);
+                spire.position.y = bh + 75;
+                buildingGroup.add(spire);
+            } else {
+                // LARGE PLAZA / COMPLEX
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh * 0.7, bd), mat);
+                mesh.position.y = (bh * 0.7) / 2;
+                buildingGroup.add(mesh);
+            }
+
+            // Window Logic - 4-sided, offset to fix flickering
+            const winMat = new THREE.MeshBasicMaterial({ 
+                color: 0xffee55, 
+                transparent: true, 
+                opacity: 0.6 + rng() * 0.3 
+            });
+            const winSizeW = bw * 0.7;
+            const winSizeH = bh * 0.6;
+            
+            const wOffsets = [
+                { x: 0, z: bd / 2 + 1.5, rotY: 0 },         // Front
+                { x: 0, z: -bd / 2 - 1.5, rotY: Math.PI },   // Back
+                { x: bw / 2 + 1.5, z: 0, rotY: Math.PI / 2 }, // Right
+                { x: -bw / 2 - 1.5, z: 0, rotY: -Math.PI / 2 } // Left
+            ];
+
+            wOffsets.forEach(off => {
+                const win = new THREE.Mesh(new THREE.PlaneGeometry(winSizeW, winSizeH), winMat);
+                win.position.set(off.x, bh / 2, off.z);
+                win.rotation.y = off.rotY;
+                buildingGroup.add(win);
+            });
+
+            // Metadata for Collision
+            buildingGroup.userData.type = 'BUILDING';
+            buildingGroup.userData.width = bw;
+            buildingGroup.userData.depth = bd;
+            buildingGroup.userData.height = bh * 1.3; // Allow for spires
         }
     }
 
     cityChunks[key] = group;
 }
+
 
 function updateInfiniteCity(planePos) {
     if (!cityRoot || activeMapSize !== 'large') return;
@@ -1050,44 +1129,49 @@ function animate(time) {
         // ===================================================
         if (activeFlightMode === 'real' && isStalling) {
             stallTimer -= subDt;
-            // Push tail DOWN: apply angular momentum to rotate plane nose-up/backward
-            pitchVel -= subDt * 2.0;
-            rollVel  *= 0.9;
+            // Stall: let gravity pull nose-up/backward
+            pitchVel -= subDt * 1.5;
+            rollVel  *= 0.92;
             
-            // Allow pilot to still apply some thrust to recover
-            if (keys['w']) currentSpeed += ACCEL * 0.8;
+            // Allow pilot some recovery thrust
+            if (keys['w']) currentSpeed += ACCEL * 0.4;
             
-            // Speed bleeds but gravity pulls down. In Realistic, stall usually ends when nose drops.
-            currentSpeed -= subDt * 1.5;
-            if (currentSpeed < -2.0) currentSpeed = -2.0;
+            // Speed bleeds
+            currentSpeed -= subDt * 0.8;
+            if (currentSpeed < -1.5) currentSpeed = -1.5;
             
-            // Recovery: Powering out or enough time passed
-            if (stallTimer <= 0 || (currentSpeed > 0.5 && keys['w'])) {
+            if (stallTimer <= 0 || (currentSpeed > 0.4 && keys['w'])) {
                 isStalling = false;
             }
         } else {
+
 
 
         // ===================================================
         // MOVEMENT
         // ===================================================
         const targetMax = keys.shift ? BOOST_MAX_SPEED : BASE_MAX_SPEED;
-        const accel = keys.shift ? BOOST_ACCEL : ACCEL;
-        if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accel; }
-        if (keys['s']) currentSpeed -= DECEL;
+        const accelVal = keys.shift ? BOOST_ACCEL : ACCEL;
+        if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accelVal * subDt; }
+        if (keys['s']) currentSpeed -= DECEL * 4 * subDt;
 
         if (activeFlightMode === 'real') {
-            // ---- REALISTIC AERODYNAMICS ----
-            // Get nose pitch angle vs horizontal world plane
+            // ---- REALISTIC AERODYNAMICS (More gradual) ----
             const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(airplaneContainer.quaternion);
-            const sinPitch = fwd.y; // +1 = straight up, -1 = straight down
+            const sinPitch = fwd.y; // +1 up, -1 down
 
-            // Climbing slows down (gravity component), diving speeds up
-            const gravEffect = sinPitch * subDt * 3.5;
+            // Climbing slows, diving gains (more gradual than before)
+            const gravEffect = sinPitch * subDt * 6.0; 
             currentSpeed -= gravEffect;
+            
+            // Drag increases with speed squared (simple model)
+            const dragCoeff = 0.02;
+            currentSpeed -= currentSpeed * currentSpeed * dragCoeff * subDt;
 
-            // Hard cap at BOOST_MAX_SPEED
+            // Cap at BOOST_MAX_SPEED
             if (currentSpeed > BOOST_MAX_SPEED) currentSpeed = BOOST_MAX_SPEED;
+
+
 
             // STALL: if speed drops near 0 and nose is up, enter stall
             if (currentSpeed < 0.2 && sinPitch > 0.3 && !isStalling) {
@@ -1095,9 +1179,10 @@ function animate(time) {
                 stallTimer = 2.0; // 2 seconds of uncontrolled stall
             }
         } else {
-            // Arcade: soft cap
-            if (currentSpeed > targetMax) currentSpeed -= DECEL * 4;
+            // Arcade: soft cap and linear drag to maintain game feel
+            if (currentSpeed > targetMax) currentSpeed -= DECEL * 4 * subDt;
         }
+
 
         // Prevent reversing unless crash bounce
         if (!scene.userData.crashCooldown) {
