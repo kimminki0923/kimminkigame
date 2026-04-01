@@ -1049,29 +1049,102 @@
 
 
 
+    <!-- Flight Settings Script (shared by lobby and game) -->
+    <script>
+        window.flightMapSize = 'small';
+        window.flightMode = 'arcade';
+
+        function setMapSize(size) {
+            window.flightMapSize = size;
+            const small = document.getElementById('map-small-btn');
+            const large = document.getElementById('map-large-btn');
+            if (!small || !large) return;
+            if (size === 'small') {
+                small.style.cssText += ';background:#2ecc71!important;color:#fff!important;border-color:#2ecc71!important;';
+                large.style.background = 'rgba(255,255,255,0.05)'; large.style.color = 'rgba(255,255,255,0.5)'; large.style.borderColor = 'rgba(255,255,255,0.15)';
+            } else {
+                large.style.cssText += ';background:#e67e22!important;color:#fff!important;border-color:#e67e22!important;';
+                small.style.background = 'rgba(255,255,255,0.05)'; small.style.color = 'rgba(255,255,255,0.5)'; small.style.borderColor = 'rgba(255,255,255,0.15)';
+            }
+            if (window.applyFlightSettings) window.applyFlightSettings();
+        }
+
+        function setFlightMode(mode) {
+            window.flightMode = mode;
+            const arcade = document.getElementById('mode-arcade-btn');
+            const real   = document.getElementById('mode-real-btn');
+            const desc   = document.getElementById('mode-desc');
+            if (!arcade || !real) return;
+            if (mode === 'arcade') {
+                arcade.style.cssText += ';background:#3498db!important;color:#fff!important;border-color:#3498db!important;';
+                real.style.background = 'rgba(255,255,255,0.05)'; real.style.color = 'rgba(255,255,255,0.5)'; real.style.borderColor = 'rgba(255,255,255,0.15)';
+                if (desc) desc.innerHTML = '🎮 <b style="color:#94a3b8;">Arcade:</b> 일정 속도 유지, 쉬운 조종';
+            } else {
+                real.style.cssText += ';background:#9b59b6!important;color:#fff!important;border-color:#9b59b6!important;';
+                arcade.style.background = 'rgba(255,255,255,0.05)'; arcade.style.color = 'rgba(255,255,255,0.5)'; arcade.style.borderColor = 'rgba(255,255,255,0.15)';
+                if (desc) desc.innerHTML = '✈️ <b style="color:#94a3b8;">Realistic:</b> 중력·공기역학 적용, 최고 1000km/h, 실속 시 테일슬라이드';
+            }
+            if (window.applyFlightSettings) window.applyFlightSettings();
+        }
+    </script>
+
     <!-- Flight Simulator Page -->
     <div id="page-flight" class="page">
         <!-- Flight Lobby (Multiplayer) -->
         <div id="flight-lobby"
             style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
-            <div style="text-align:center; max-width:400px; padding:40px;">
-                <h1 style="color:#f1f5f9; font-size:48px; margin-bottom:10px;">✈️ Flight Sim</h1>
-                <p style="color:#94a3b8; margin-bottom:30px;">친구들과 함께 비행하세요!</p>
+            <div style="text-align:center; max-width:440px; padding:40px; width:100%;">
+                <h1 style="color:#f1f5f9; font-size:48px; margin-bottom:4px;">✈️ Flight Sim</h1>
+                <p style="color:#94a3b8; margin-bottom:28px;">친구들과 함께 비행하세요!</p>
+
+                <!-- ── MAP SIZE ── -->
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:18px 20px; margin-bottom:14px; text-align:left;">
+                    <div style="color:#94a3b8; font-size:11px; font-weight:700; letter-spacing:1.5px; margin-bottom:12px;">🗺️ MAP SIZE</div>
+                    <div style="display:flex; gap:10px;">
+                        <button id="map-small-btn" onclick="setMapSize('small')"
+                            style="flex:1; padding:11px 0; font-size:14px; font-weight:700; border:2px solid #2ecc71; border-radius:12px; cursor:pointer; background:#2ecc71; color:#fff; transition:all 0.2s;">
+                            ▪ Small Arena
+                        </button>
+                        <button id="map-large-btn" onclick="setMapSize('large')"
+                            style="flex:1; padding:11px 0; font-size:14px; font-weight:700; border:2px solid rgba(255,255,255,0.15); border-radius:12px; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); transition:all 0.2s;">
+                            🌆 Infinite City
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── FLIGHT MODE ── -->
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:18px 20px; margin-bottom:24px; text-align:left;">
+                    <div style="color:#94a3b8; font-size:11px; font-weight:700; letter-spacing:1.5px; margin-bottom:12px;">⚙️ FLIGHT MODE</div>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button id="mode-arcade-btn" onclick="setFlightMode('arcade')"
+                            style="flex:1; padding:11px 0; font-size:14px; font-weight:700; border:2px solid #3498db; border-radius:12px; cursor:pointer; background:#3498db; color:#fff; transition:all 0.2s;">
+                            🎮 Arcade
+                        </button>
+                        <button id="mode-real-btn" onclick="setFlightMode('real')"
+                            style="flex:1; padding:11px 0; font-size:14px; font-weight:700; border:2px solid rgba(255,255,255,0.15); border-radius:12px; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); transition:all 0.2s;">
+                            ✈️ Realistic
+                        </button>
+                    </div>
+                    <div id="mode-desc" style="font-size:12px; color:#64748b; min-height:32px; line-height:1.5;">
+                        🎮 <b style="color:#94a3b8;">Arcade:</b> 일정 속도 유지, 쉬운 조종
+                    </div>
+                </div>
 
                 <input type="text" id="flight-room-id" class="room-input" placeholder="방 코드 (입력 또는 자동생성)"
-                    style="width:100%; padding:15px; font-size:18px; margin-bottom:20px; border-radius:12px; border:2px solid rgba(255,255,255,0.1); background:rgba(30,41,59,0.8); color:#f1f5f9; text-align:center;">
+                    style="width:100%; padding:15px; font-size:18px; margin-bottom:16px; border-radius:12px; border:2px solid rgba(255,255,255,0.1); background:rgba(30,41,59,0.8); color:#f1f5f9; text-align:center; box-sizing:border-box;">
 
-                <div style="display:flex; gap:12px; justify-content:center; margin-bottom:30px;">
+                <div style="display:flex; gap:12px; justify-content:center; margin-bottom:14px;">
                     <button id="flight-create-btn" class="primary-btn" style="flex:1; padding:15px;">방 만들기</button>
                     <button id="flight-join-btn" class="secondary-btn" style="flex:1; padding:15px;">참가하기</button>
                 </div>
 
                 <button id="flight-solo-btn"
-                    style="width:100%; padding:12px; background:rgba(100,100,100,0.3); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); border-radius:12px; cursor:pointer; font-size:14px;">
-                    🎮 혼자 플레이 (Solo Mode)
+                    style="width:100%; padding:13px; background:linear-gradient(135deg,rgba(52,152,219,0.2),rgba(155,89,182,0.2)); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); border-radius:12px; cursor:pointer; font-size:15px; font-weight:600; letter-spacing:0.3px; transition:all 0.2s;">
+                    🚀 혼자 플레이 (Solo Mode)
                 </button>
             </div>
         </div>
+
 
         <!-- Flight Waiting Room -->
         <div id="flight-waiting"
@@ -1104,74 +1177,14 @@
         <div id="flight-game-container" style="display:none; width:100%; height:100%; position:relative;">
             <canvas id="flightCanvas" style="width:100%; height:100%; display:block;"></canvas>
 
-            <!-- Map Size Selector -->
-            <div id="flight-map-selector" style="position:absolute; top:10px; right:20px; z-index:1000; display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
-                <div style="color:rgba(255,255,255,0.7); font-size:11px; font-weight:bold; letter-spacing:1px;">🗺️ MAP SIZE</div>
-                <div style="display:flex; gap:6px;">
-                    <button id="map-small-btn" onclick="setMapSize('small')"
-                        style="padding:7px 16px; font-size:13px; font-weight:bold; border:2px solid #2ecc71; border-radius:20px; cursor:pointer; background:#2ecc71; color:#fff; transition:all 0.2s;">
-                        ▪ Small
-                    </button>
-                    <button id="map-large-btn" onclick="setMapSize('large')"
-                        style="padding:7px 16px; font-size:13px; font-weight:bold; border:2px solid rgba(255,255,255,0.3); border-radius:20px; cursor:pointer; background:rgba(0,0,0,0.4); color:rgba(255,255,255,0.6); transition:all 0.2s;">
-                        🌆 Large City
-                    </button>
-                </div>
-            </div>
 
             <!-- Exit Button -->
             <button id="flight-exit-btn" onclick="location.reload()"
-                style="position:absolute; top:80px; right:20px; z-index:1000; padding:10px 20px; background:#e74c3c; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
-                나가기 (Main Menu)
+                style="position:absolute; top:16px; right:20px; z-index:1000; padding:10px 22px; background:#e74c3c; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:14px;">
+                ✕ 나가기
             </button>
 
-            <!-- Flight Mode Selector -->
-            <div id="flight-mode-selector" style="position:absolute; top:128px; right:20px; z-index:1000; display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
-                <div style="color:rgba(255,255,255,0.7); font-size:11px; font-weight:bold; letter-spacing:1px;">⚙️ FLIGHT MODE</div>
-                <div style="display:flex; gap:6px;">
-                    <button id="mode-arcade-btn" onclick="setFlightMode('arcade')"
-                        style="padding:7px 16px; font-size:13px; font-weight:bold; border:2px solid #3498db; border-radius:20px; cursor:pointer; background:#3498db; color:#fff; transition:all 0.2s;">
-                        🎮 Arcade
-                    </button>
-                    <button id="mode-real-btn" onclick="setFlightMode('real')"
-                        style="padding:7px 16px; font-size:13px; font-weight:bold; border:2px solid rgba(255,255,255,0.3); border-radius:20px; cursor:pointer; background:rgba(0,0,0,0.4); color:rgba(255,255,255,0.6); transition:all 0.2s;">
-                        ✈️ Realistic
-                    </button>
-                </div>
-            </div>
 
-            <script>
-                window.flightMapSize = 'small';
-                window.flightMode = 'arcade';
-
-                function setMapSize(size) {
-                    window.flightMapSize = size;
-                    const small = document.getElementById('map-small-btn');
-                    const large = document.getElementById('map-large-btn');
-                    if (size === 'small') {
-                        small.style.background = '#2ecc71'; small.style.color = '#fff'; small.style.borderColor = '#2ecc71';
-                        large.style.background = 'rgba(0,0,0,0.4)'; large.style.color = 'rgba(255,255,255,0.6)'; large.style.borderColor = 'rgba(255,255,255,0.3)';
-                    } else {
-                        large.style.background = '#e67e22'; large.style.color = '#fff'; large.style.borderColor = '#e67e22';
-                        small.style.background = 'rgba(0,0,0,0.4)'; small.style.color = 'rgba(255,255,255,0.6)'; small.style.borderColor = 'rgba(255,255,255,0.3)';
-                    }
-                    if (window.applyFlightSettings) window.applyFlightSettings();
-                }
-
-                function setFlightMode(mode) {
-                    window.flightMode = mode;
-                    const arcade = document.getElementById('mode-arcade-btn');
-                    const real = document.getElementById('mode-real-btn');
-                    if (mode === 'arcade') {
-                        arcade.style.background = '#3498db'; arcade.style.color = '#fff'; arcade.style.borderColor = '#3498db';
-                        real.style.background = 'rgba(0,0,0,0.4)'; real.style.color = 'rgba(255,255,255,0.6)'; real.style.borderColor = 'rgba(255,255,255,0.3)';
-                    } else {
-                        real.style.background = '#9b59b6'; real.style.color = '#fff'; real.style.borderColor = '#9b59b6';
-                        arcade.style.background = 'rgba(0,0,0,0.4)'; arcade.style.color = 'rgba(255,255,255,0.6)'; arcade.style.borderColor = 'rgba(255,255,255,0.3)';
-                    }
-                    if (window.applyFlightSettings) window.applyFlightSettings();
-                }
-            </script>
 
             <div id="flight-controls-info"
                 style="position:absolute; bottom:20px; left:20px; background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; color:white; font-family:'Outfit', sans-serif;">
