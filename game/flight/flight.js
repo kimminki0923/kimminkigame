@@ -1363,12 +1363,15 @@ function animate(time) {
     // Timer updates
     if (scene.userData.crashCooldown > 0) scene.userData.crashCooldown -= dt;
 
-    if (airplaneContainer.position.y < 5.0) {
-        airplaneContainer.position.y = 5.0;
-        if (pitchVel < 0) pitchVel = 0;
-        if (currentSpeed > 1.0) currentSpeed = 0.5; // Drag on ground
-        if (currentSpeed < 0) currentSpeed = 0; // Prevent infinite backwards sliding
+    if (airplaneContainer.position.y < 6.1) {
+        airplaneContainer.position.y = 6.0;
+        // Subtle ground drag if not accelerating
+        if (!keys['w']) {
+            if (currentSpeed > 0.1) currentSpeed -= 1.0 * dt; 
+        }
+        if (pitchVel < 0) pitchVel *= 0.8; // Resistance to pitching down into ground
     }
+
 
     // ===================================================
     // CAMERA – Smooth Chase Cam (War Thunder Style)
