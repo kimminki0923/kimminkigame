@@ -69,8 +69,10 @@ let activeFlightMode = 'arcade'; // 'arcade' | 'real'
 // Infinite City State
 let cityChunks = {}; // key = "cx_cz", value = THREE.Group
 let arenaConstraintEnabled = true; // disabled in large map
-const CHUNK_SIZE = 3000; // Even larger chunks for more space
-const CHUNK_RENDER_RADIUS = 4;
+const CHUNK_SIZE = 3500; // Larger chunks, fewer updates
+const CHUNK_RENDER_RADIUS = 2; // 5x5 chunks (25 total) is enough for ~10km visibility
+let chunksDirty = true;
+
 
 
 
@@ -287,12 +289,13 @@ function seededRandom(seed) {
 }
 
 function spawnCityChunk(cx, cz) {
-    const key = `${cx}_${cz}`;
-    if (cityChunks[key]) return;
+    const key = cx + "_" + cz;
+    if (cityChunks[key]) return false;
 
     const group = new THREE.Group();
     group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
-    if (cityRoot) cityRoot.add(group);
+    cityRoot.add(group);
+
 
     const rng = seededRandom(cx * 104729 + cz * 224737);
     
@@ -367,17 +370,22 @@ function spawnCityChunk(cx, cz) {
                     bGroup.add(b2);
                 }
 
-                // Metadata for collision
+                // Metadata for collision (World Positions)
                 bGroup.userData.type = 'BUILDING';
                 bGroup.userData.width = bw * 1.5;
                 bGroup.userData.depth = bd * 1.5;
                 bGroup.userData.height = bh * 1.5;
+                
+                bGroup.userData._wx = cx * CHUNK_SIZE + bpx;
+                bGroup.userData._wz = cz * CHUNK_SIZE + bpz;
             }
         }
     }
 
     cityChunks[key] = group;
+    return true;
 }
+
 
 
 
@@ -387,9 +395,12 @@ function updateInfiniteCity(planePos) {
     const pcx = Math.round(planePos.x / CHUNK_SIZE);
     const pcz = Math.round(planePos.z / CHUNK_SIZE);
 
+    let changed = false;
     for (let cx = pcx - CHUNK_RENDER_RADIUS; cx <= pcx + CHUNK_RENDER_RADIUS; cx++) {
         for (let cz = pcz - CHUNK_RENDER_RADIUS; cz <= pcz + CHUNK_RENDER_RADIUS; cz++) {
-            spawnCityChunk(cx, cz);
+            if (spawnCityChunk(cx, cz)) {
+                changed = true;
+            }
         }
     }
 
@@ -399,25 +410,26 @@ function updateInfiniteCity(planePos) {
         if (Math.abs(kcx - pcx) > CHUNK_RENDER_RADIUS + 1 || Math.abs(kcz - pcz) > CHUNK_RENDER_RADIUS + 1) {
             if (cityRoot) cityRoot.remove(cityChunks[key]);
             delete cityChunks[key];
+            changed = true;
         }
     }
 
-    // Rebuild collision list from active chunks
-    allObjects = [];
-    for (const group of Object.values(cityChunks)) {
-        group.children.forEach(child => {
-            if (child.userData.type === 'BUILDING') {
-                // Store world position for collision
-                const wp = new THREE.Vector3();
-                child.getWorldPosition(wp);
-                child.userData._wx = wp.x;
-                child.userData._wy = wp.y;
-                child.userData._wz = wp.z;
-                allObjects.push(child);
-            }
-        });
+    if (changed) chunksDirty = true;
+    
+    if (chunksDirty) {
+        // Rebuild collision list only when needed
+        allObjects = [];
+        for (const group of Object.values(cityChunks)) {
+            group.children.forEach(child => {
+                if (child.userData.type === 'BUILDING') {
+                    allObjects.push(child);
+                }
+            });
+        }
+        chunksDirty = false;
     }
 }
+
 
 
 function applyModeSpeedLimits() {
@@ -1129,29 +1141,37 @@ function animate(time) {
             const dragCoeff = 0.04;
             const gravityForce = 45.0; // Static gravity pull
 
-            const netVerticalForce = liftForce - gravityForce;
-            verticalVel += netVerticalForce * subDt * 1.5;
+            // Apply total vertical acceleration
+            verticalVel += (liftForce - GRAVITY * 80.0) * subDt; // Scaled gravity/lift
+            
+            // Atmospheric damping
+            verticalVel *= Math.pow(0.98, subDt * 60);
 
-            // Damping (Aerodynamic stability)
-            verticalVel *= 0.98;
+            if (currentSpeed < 0) currentSpeed = 0;
+            if (currentSpeed > BOOST_MAX_SPEED + 10) currentSpeed = BOOST_MAX_SPEED + 10; 
 
-            // Cap speeds for stability
-            if (currentSpeed > BOOST_MAX_SPEED * 1.2) currentSpeed = BOOST_MAX_SPEED * 1.2;
-            if (verticalVel > 60) verticalVel = 60;
-            if (verticalVel < -120) verticalVel = -120;
-
-            // Applied Displacement
+            // Movement
             airplaneContainer.translateZ(-currentSpeed * subDt * 60);
-            airplaneContainer.position.y += verticalVel * subDt;
+            airplaneContainer.position.y += verticalVel * subDt * 60;
         } else {
-            // Arcade: simple movement
-            if (keys['w']) { if (currentSpeed < targetMax) currentSpeed += accelVal * subDt; }
-            if (keys['s']) currentSpeed -= DECEL * 4 * subDt;
-            if (currentSpeed > targetMax) currentSpeed -= DECEL * 4 * subDt;
+            // Arcade Mode
+            if (keys['w']) {
+                if (currentSpeed < targetMax) currentSpeed += accelVal * subDt;
+            } else if (keys['s']) {
+                currentSpeed -= DECEL * 4 * subDt;
+            } else {
+                if (currentSpeed > 2.0) currentSpeed -= DECEL * 0.5 * subDt;
+                if (currentSpeed < 2.0) currentSpeed += ACCEL * 0.5 * subDt;
+            }
             if (currentSpeed < 0) currentSpeed = 0;
 
             airplaneContainer.translateZ(-currentSpeed * subDt * 60);
+            verticalVel = 0;
         }
+
+        // Final NaN guard
+        if (isNaN(currentSpeed)) currentSpeed = 0;
+        if (isNaN(verticalVel)) verticalVel = 0;
 
         // ===================================================
         // 2. MOUSE AIM & ROTATION (Sub-stepping)
@@ -1224,7 +1244,7 @@ function animate(time) {
         airplaneContainer.rotateY(yawVel * subDt);
 
         // ===================================================
-        // 3. COLLISION (Sub-stepping)
+        // 3. COLLISION (Sub-stepping - Optimized to check only local chunks)
         // ===================================================
         if (arenaConstraintEnabled) {
             const PADDING = 100;
@@ -1236,6 +1256,9 @@ function animate(time) {
         }
 
         const planePos = airplaneContainer.position;
+        const pcx = Math.round(planePos.x / CHUNK_SIZE);
+        const pcz = Math.round(planePos.z / CHUNK_SIZE);
+
         const worldPoints = [
             new THREE.Vector3(0, 0, -8).applyMatrix4(airplaneContainer.matrixWorld),
             new THREE.Vector3(0, 0, 0).applyMatrix4(airplaneContainer.matrixWorld),
@@ -1244,31 +1267,42 @@ function animate(time) {
             new THREE.Vector3(0, 1, 0).applyMatrix4(airplaneContainer.matrixWorld)
         ];
 
-
         let crash = false;
-        for (let obj of allObjects) {
-            if (obj.userData.type === "RING" || obj.userData.type === "SQUARE") continue;
-            
-            const bW = (obj.userData.width || 100) / 2;
-            const bD = (obj.userData.depth || 100) / 2;
-            const bH = obj.userData.height || 100;
+        // Search only in neighboring chunks (9 chunks total)
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const chunk = cityChunks[(pcx + dx) + "_" + (pcz + dz)];
+                if (!chunk) continue;
+                
+                for (let obj of chunk.children) {
+                    if (obj.userData.type !== 'BUILDING') continue;
+                    
+                    const bW = (obj.userData.width || 100) / 2;
+                    const bD = (obj.userData.depth || 100) / 2;
+                    const bH = obj.userData.height || 100;
 
-            const objX = obj.userData._wx !== undefined ? obj.userData._wx : obj.position.x;
-            const objZ = obj.userData._wz !== undefined ? obj.userData._wz : obj.position.z;
+                    const objX = obj.userData._wx;
+                    const objZ = obj.userData._wz;
 
-            // Boundary broad phase
-            if (Math.abs(planePos.x - objX) > bW + 20 || Math.abs(planePos.z - objZ) > bD + 20) continue;
+                    // Broad phase
+                    if (Math.abs(planePos.x - objX) > bW + 20 || Math.abs(planePos.z - objZ) > bD + 20) continue;
 
-            for (let wp of worldPoints) {
-                if (Math.abs(wp.x - objX) < bW && Math.abs(wp.z - objZ) < bD) {
-                    if (wp.y < bH) { crash = true; break; }
+                    for (let wp of worldPoints) {
+                        if (Math.abs(wp.x - objX) < bW && Math.abs(wp.z - objZ) < bD) {
+                            if (wp.y < bH) { crash = true; break; }
+                        }
+                    }
+                    if (crash) break;
                 }
+                if (crash) break;
             }
             if (crash) break;
+        }
         }
 
         if (crash) {
             if (!scene.userData.crashCooldown) {
+
                 scene.userData.crashCooldown = 0.5;
                 currentSpeed = 0.2;
                 verticalVel = -2;
